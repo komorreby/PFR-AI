@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ввод данных дела</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Ввод данных дела для проверки</h1>
+        <form method="POST" action="/" onsubmit="return validateForm()">
+            <h2>Общие данные</h2>
+            <label for="case_id">ID дела:</label>
+            <input type="text" id="case_id" name="case_id" required><br>
+
+            <h2>Персональные данные</h2>
+            <label for="full_name">ФИО:</label>
+            <input type="text" id="full_name" name="full_name" placeholder="Иванов Иван Иванович" required><br>
+
+            <label for="birth_date">Дата рождения (ДД.ММ.ГГГГ):</label>
+            <input type="text" id="birth_date" name="birth_date" placeholder="12.03.1960" required><br>
+
+            <label for="snils">СНИЛС:</label>
+            <input type="text" id="snils" name="snils" placeholder="123-456-789 00" required><br>
+
+            <label for="gender">Пол:</label>
+            <select id="gender" name="gender" required>
+                <option value="male">Мужской</option>
+                <option value="female">Женский</option>
+            </select><br>
+
+            <label for="citizenship">Гражданство:</label>
+            <input type="text" id="citizenship" name="citizenship" placeholder="Российская Федерация" required><br>
+
+            <label for="has_name_change">Была ли смена имени?</label>
+            <select id="has_name_change" name="has_name_change" onchange="toggleNameChange()">
+                <option value="no">Нет</option>
+                <option value="yes">Да</option>
+            </select><br>
+
+            <div id="name_change_fields" style="display: none;">
+                <label for="old_full_name">Старое ФИО:</label>
+                <input type="text" id="old_full_name" name="old_full_name" placeholder="Петров Петр Петрович"><br>
+
+                <label for="date_changed">Дата смены имени (ДД.ММ.ГГГГ):</label>
+                <input type="text" id="date_changed" name="date_changed" placeholder="15.05.2023"><br>
+            </div>
+
+            <label for="dependents">Количество иждивенцев:</label>
+            <input type="number" id="dependents" name="dependents" min="0" max="3" value="0" required><br>
+
+            <h2>Трудовой стаж</h2>
+            <label for="total_years">Общий стаж (лет):</label>
+            <input type="number" id="total_years" name="total_years" min="0" required><br>
+
+            <label for="num_records">Количество мест работы:</label>
+            <input type="number" id="num_records" name="num_records" min="0" max="5" value="0" onchange="generateWorkRecords()"><br>
+
+            <div id="work_records"></div>
+
+            <h2>Прочие данные</h2>
+            <label for="pension_points">Пенсионные баллы:</label>
+            <input type="number" step="0.1" id="pension_points" name="pension_points" min="0" value="0" required><br>
+
+            <label for="benefits">Льготы (через запятую):</label>
+            <input type="text" id="benefits" name="benefits" placeholder="Ветеран труда, Инвалид 2 группы"><br>
+
+            <label for="has_incorrect_document">Есть ли некорректные документы?</label>
+            <select id="has_incorrect_document" name="has_incorrect_document">
+                <option value="no">Нет</option>
+                <option value="yes">Да</option>
+            </select><br>
+            <label for="documents">Документы (через запятую):</label>
+            <input type="text" id="documents" name="documents" placeholder="Паспорт, СНИЛС, Трудовая книжка" required><br>
+
+            <button type="submit">Проверить</button>
+        </form>
+        <a href="/history">Посмотреть историю дел</a>
+    </div>
+
+    <script>
+        function validateForm() {
+            const birthDate = document.getElementById("birth_date").value;
+            const dateChanged = document.getElementById("date_changed").value;
+            const snils = document.getElementById("snils").value;
+            const datePattern = /^\d{2}\.\d{2}\.\d{4}$/;
+            const snilsPattern = /^\d{3}-\d{3}-\d{3} \d{2}$/;
+    
+            if (birthDate && !datePattern.test(birthDate)) {
+                alert("Дата рождения должна быть в формате ДД.ММ.ГГГГ (например, 12.03.1960)");
+                return false;
+            }
+    
+            if (dateChanged && !datePattern.test(dateChanged)) {
+                alert("Дата смены имени должна быть в формате ДД.ММ.ГГГГ (например, 15.05.2023)");
+                return false;
+            }
+    
+            if (snils && !snilsPattern.test(snils)) {
+                alert("СНИЛС должен быть в формате XXX-XXX-XXX XX (например, 123-456-789 00)");
+                return false;
+            }
+    
+            const numRecords = parseInt(document.getElementById("num_records").value);
+            for (let i = 0; i < numRecords; i++) {
+                const startDate = document.getElementById(`start_date_${i}`).value;
+                const endDate = document.getElementById(`end_date_${i}`).value;
+                if (startDate && !datePattern.test(startDate)) {
+                    alert(`Дата начала для места работы ${i+1} должна быть в формате ДД.ММ.ГГГГ`);
+                    return false;
+                }
+                if (endDate && !datePattern.test(endDate)) {
+                    alert(`Дата окончания для места работы ${i+1} должна быть в формате ДД.ММ.ГГГГ`);
+                    return false;
+                }
+            }
+    
+            return true;
+        }
+    
+        function toggleNameChange() {
+            const hasNameChange = document.getElementById("has_name_change").value;
+            const nameChangeFields = document.getElementById("name_change_fields");
+            nameChangeFields.style.display = hasNameChange === "yes" ? "block" : "none";
+        }
+    
+        function generateWorkRecords() {
+            const numRecords = parseInt(document.getElementById("num_records").value);
+            const workRecordsDiv = document.getElementById("work_records");
+            workRecordsDiv.innerHTML = "";
+    
+            for (let i = 0; i < numRecords; i++) {
+                const recordHtml = `
+                    <h3>Место работы ${i + 1}</h3>
+                    <label for="organization_${i}">Организация:</label>
+                    <input type="text" id="organization_${i}" name="organization_${i}" required><br>
+    
+                    <label for="start_date_${i}">Дата начала (ДД.ММ.ГГГГ):</label>
+                    <input type="text" id="start_date_${i}" name="start_date_${i}" required><br>
+    
+                    <label for="end_date_${i}">Дата окончания (ДД.ММ.ГГГГ):</label>
+                    <input type="text" id="end_date_${i}" name="end_date_${i}" required><br>
+    
+                    <label for="position_${i}">Должность:</label>
+                    <input type="text" id="position_${i}" name="position_${i}" required><br>
+    
+                    <label for="special_conditions_${i}">Особые условия труда?</label>
+                    <select id="special_conditions_${i}" name="special_conditions_${i}">
+                        <option value="no">Нет</option>
+                        <option value="yes">Да</option>
+                    </select><br>
+                `;
+                workRecordsDiv.innerHTML += recordHtml;
+            }
+        }
+    </script>
+</body>
+</html>
