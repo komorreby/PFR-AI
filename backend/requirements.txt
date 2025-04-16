@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-multipart
+reportlab
+python-docx
+sqlalchemy
+aiosqlite
+pydantic 
