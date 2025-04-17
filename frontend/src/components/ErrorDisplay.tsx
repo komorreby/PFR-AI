@@ -1,21 +1,14 @@
 import React from 'react';
 import { ApiError } from './CaseForm'; // Тип для ошибки
-// import './ErrorDisplay.css'; // <--- Удаляем
 
 import { 
     Alert, 
     AlertIcon, 
     AlertTitle, 
     AlertDescription, 
-    // Убираем Box
-    // Убираем Code
     List, 
     ListItem,
-    // Убираем ListIcon
-    // Убираем VStack
 } from '@chakra-ui/react';
-// Убираем MdError
-// import { MdError } from 'react-icons/md'; // Используем иконку
 
 interface ErrorDisplayProps {
     errors: ApiError[] | null;

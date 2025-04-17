@@ -1,6 +1,11 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+# --- Добавляем импорты для RAG и Lifespan ---
+from contextlib import asynccontextmanager
+from pydantic import BaseModel
+from app.rag_core.query_engine import get_query_engine, query_case
+# -------------------------------------------
 # Добавляем импорты моделей и классификатора
 # Обратите внимание: предполагается, что error_classifier.py находится в папке backend/
 # Возможно, потребуется настроить PYTHONPATH или изменить импорт в зависимости от структуры
@@ -17,11 +22,46 @@ from app import crud # Импортируем crud
 from app import services # Импортируем services
 from typing import List # Добавляем List
 
-# Создаем таблицы при старте приложения
-# В реальном приложении используйте Alembic для миграций
-create_db_and_tables()
+# --- Инициализация при старте через Lifespan ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.classifier = None # Инициализируем состояние для классификатора
+    print("Starting up...")
+    # Создаем таблицы БД
+    print("Creating DB tables if they don't exist...")
+    create_db_and_tables()
+    
+    # Инициализируем RAG Query Engine
+    print("Initializing RAG Query Engine...")
+    try:
+        get_query_engine() # Вызываем для загрузки/создания индекса
+        print("RAG Query Engine initialized.")
+    except Exception as e:
+        print(f"!!! ERROR initializing RAG Query Engine: {e}")
+        # Можно добавить логику обработки, если RAG критичен
+    
+    # --- Инициализируем ErrorClassifier ЗДЕСЬ --- 
+    print("Initializing Error Classifier...")
+    try:
+        # Сохраняем экземпляр в состоянии приложения
+        app.state.classifier = ErrorClassifier()
+        print("Error Classifier initialized.")
+    except Exception as e:
+        print(f"!!! ERROR initializing ErrorClassifier: {e}")
+        app.state.classifier = None # Убедимся, что None, если ошибка
+    # -------------------------------------------
 
-app = FastAPI()
+    print("Startup complete.")
+    yield # Приложение работает здесь
+    # --- Shutdown --- 
+    print("Shutting down...")
+    await async_engine.dispose()
+    print("Database connection pool closed.")
+    print("Shutdown complete.")
+# ---------------------------------------------
+
+# Передаем lifespan менеджер в FastAPI
+app = FastAPI(lifespan=lifespan)
 
 # --- Настройка CORS --- 
 # Список источников (origins), которым разрешено делать запросы
@@ -41,29 +81,44 @@ app.add_middleware(
 )
 # -----------------------
 
-# Создаем экземпляр классификатора при старте приложения
-# В реальном приложении лучше использовать dependency injection (Depends)
-try:
-    classifier = ErrorClassifier()
-except Exception as e:
-    # Обработка возможной ошибки при загрузке модели/классификатора
-    print(f"Error initializing ErrorClassifier: {e}")
-    classifier = None # Устанавливаем в None, чтобы потом проверять
+# --- Pydantic модели для RAG эндпоинта ---
+class CaseAnalysisRequest(BaseModel):
+    case_description: str
 
-@app.on_event("shutdown")
-async def shutdown():
-    # Корректно закрываем пул соединений при остановке
-    await async_engine.dispose()
+class CaseAnalysisResponse(BaseModel):
+    analysis_result: str
+# ---------------------------------------
+
+# --- API Endpoints --- 
 
 @app.get("/")
 async def read_root():
     return {"message": "PFR-AI Backend is running!"}
 
-# Новый эндпоинт /process
+# --- НОВЫЙ ЭНДПОИНТ ДЛЯ RAG АНАЛИЗА ---
+@app.post("/api/v1/analyze_case", response_model=CaseAnalysisResponse)
+async def analyze_pension_case(request: CaseAnalysisRequest):
+    print(f"Received case analysis request: {request.case_description[:100]}...")
+    try:
+        # Вызываем функцию RAG анализа
+        analysis = query_case(request.case_description)
+        print(f"RAG analysis result (start): {analysis[:100]}...")
+        return CaseAnalysisResponse(analysis_result=analysis)
+    except Exception as e:
+        print(f"!!! ERROR during RAG analysis: {e}")
+        import traceback
+        traceback.print_exc()
+        # Возвращаем 500 ошибку, если RAG не сработал
+        raise HTTPException(status_code=500, detail=f"Internal server error during RAG analysis: {str(e)}")
+# ---------------------------------------
+
+# Эндпоинт /process
 @app.post("/process", response_model=ProcessOutput)
-async def process_case(case_data: CaseDataInput, conn: AsyncConnection = Depends(get_db_connection)):
+async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncConnection = Depends(get_db_connection)):
+    # Получаем классификатор из состояния приложения
+    classifier = request.app.state.classifier
     if classifier is None:
-        raise HTTPException(status_code=500, detail="Error Classifier not initialized")
+        raise HTTPException(status_code=500, detail="Error Classifier not initialized or failed to initialize")
 
     try:
         # Используем model_dump(mode='json') для получения JSON-совместимого словаря

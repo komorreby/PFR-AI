@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useForm, useFieldArray, SubmitHandler, FieldErrors } from 'react-hook-form';
-import { format, isValid } from 'date-fns';
+import { format, isValid, differenceInYears } from 'date-fns';
 
 // Импорты Chakra UI (оставляем только нужные для обертки формы и навигации)
 import {
   Box, Button, Heading, Stepper, Step, StepIndicator, StepStatus,
   StepIcon, StepNumber, StepTitle, StepDescription, StepSeparator,
-  Flex, Spacer, useSteps
+  Flex, Spacer, useSteps,
+  // Добавляем нужные компоненты для вывода результата
+  Alert, AlertIcon, AlertTitle, AlertDescription, CircularProgress, Text, VStack
 } from '@chakra-ui/react';
 
 // Импортируем типы и компоненты шагов
@@ -52,7 +54,6 @@ export type CaseFormDataType = {
   benefits: string; // Будем хранить как строку, разделим при отправке
   documents: string; // Будем хранить как строку, разделим при отправке
   has_incorrect_document: boolean;
-  // Убираем show_name_change_toggle, будем управлять напрямую через name_change_info
 };
 
 // Определяем тип для ошибок (соответствует ErrorOutput в бэкенде)
@@ -76,8 +77,27 @@ const steps = [
   { title: 'Шаг 3', description: 'Доп. информация' },
 ];
 
+// Функция для вычисления возраста
+const calculateAge = (birthDateString: string): number | string => {
+  try {
+    const birthDate = new Date(birthDateString);
+    if (isValid(birthDate)) {
+      return differenceInYears(new Date(), birthDate);
+    }
+  } catch (e) {
+    // ignore
+  }
+  return 'неизвестно'; // Возвращаем строку, если дата некорректна
+};
+
 function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // --- Состояния для RAG анализа --- 
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  // ----------------------------------
+
   const { activeStep, goToNext, goToPrevious, setActiveStep } = useSteps({ index: 0, count: steps.length });
 
   const {
@@ -117,6 +137,8 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   const onSubmit: SubmitHandler<CaseFormDataType> = async (data) => {
     setIsSubmitting(true);
     onSubmitError('');
+    setAnalysisResult(null);
+    setAnalysisError(null);
     const dataToSend = JSON.parse(JSON.stringify(data));
     dataToSend.benefits = (data.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
     dataToSend.documents = (data.documents || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -192,6 +214,60 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     }
   };
 
+  // --- НОВЫЙ Обработчик для RAG анализа --- 
+  const handleAnalyzeCase = async () => {
+      setIsLoadingAnalysis(true);
+      setAnalysisResult(null);
+      setAnalysisError(null);
+      onSubmitError(''); // Сброс основной ошибки
+
+      try {
+          const formData = getValues();
+          // Формируем описание дела (упрощенный вариант)
+          const genderText = formData.personal_data.gender === 'male' ? 'Мужчина' : formData.personal_data.gender === 'female' ? 'Женщина' : 'Пол не указан';
+          const age = calculateAge(formData.personal_data.birth_date);
+          const incorrectDocsText = formData.has_incorrect_document ? 'Есть некорректные документы' : 'Документы в порядке';
+          // TODO: Добавить тип пенсии, если будет такое поле
+          const case_description = [
+              `${genderText}, ${age} лет`,
+              `пенсия по старости`, // Заглушка
+              `стаж ${formData.work_experience.total_years} лет`,
+              `ИПК ${formData.pension_points}`,
+              `${incorrectDocsText}`,
+              `Гражданство: ${formData.personal_data.citizenship || 'не указано'}`,
+              `Иждивенцы: ${formData.personal_data.dependents}`,
+          ].join(', ');
+
+          console.log("Sending for RAG analysis:", case_description);
+
+          const response = await fetch('http://127.0.0.1:8000/api/v1/analyze_case', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({ case_description }), // Отправляем объект
+          });
+
+          if (response.ok) {
+              const result: { analysis_result: string } = await response.json();
+              setAnalysisResult(result.analysis_result);
+          } else {
+              let errorDetail = `Ошибка ${response.status}: ${response.statusText}`;
+              try {
+                  const errorData = await response.json();
+                  errorDetail = errorData.detail || JSON.stringify(errorData);
+              } catch (jsonError) { /* ignore */ }
+              console.error("RAG Analysis Error:", errorDetail);
+              setAnalysisError(`Ошибка RAG-анализа: ${errorDetail}`);
+          }
+      } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.error("Network/Fetch Error during RAG analysis:", errorMessage);
+          setAnalysisError(`Сетевая ошибка или другая проблема при RAG-анализе: ${errorMessage}`);
+      } finally {
+          setIsLoadingAnalysis(false);
+      }
+  };
+  // ------------------------------------------
+
   return (
     <Box as="form" onSubmit={handleSubmit(onSubmit)} p={5} borderWidth="1px" borderRadius="lg" boxShadow="md" bg="white">
        <Heading as="h2" size="lg" textAlign="center" mb={6} color="primary">
@@ -244,15 +320,64 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
            )}
         </Box>
 
-        <Flex>
-             <Button onClick={goToPrevious} isDisabled={activeStep === 0} variant="outline">Назад</Button>
-             <Spacer />
-             {activeStep === steps.length - 1 ? (
-                 <Button type="submit" isLoading={isSubmitting} isDisabled={!isDirty || isSubmitting} colorScheme="primary">Отправить на проверку</Button>
-             ) : (
-                 <Button onClick={handleNext} colorScheme="primary">Далее</Button>
-             )}
-        </Flex>
+        <VStack spacing={4} align="stretch">
+            <Flex>
+                <Button onClick={goToPrevious} isDisabled={activeStep === 0} variant="outline">Назад</Button>
+                <Spacer />
+                {activeStep < steps.length - 1 && (
+                    <Button onClick={handleNext} colorScheme="blue">Далее</Button>
+                )}
+                {activeStep === steps.length - 1 && (
+                    <>
+                        <Button
+                            onClick={handleAnalyzeCase}
+                            isLoading={isLoadingAnalysis}
+                            isDisabled={isLoadingAnalysis || isSubmitting}
+                            colorScheme="teal"
+                            variant="outline"
+                            mr={3}
+                        >
+                            Провести RAG-анализ
+                        </Button>
+                        <Button 
+                            type="submit" 
+                            isLoading={isSubmitting} 
+                            isDisabled={!isDirty || isSubmitting || isLoadingAnalysis}
+                            colorScheme="primary"
+                        >
+                            Отправить на проверку
+                        </Button>
+                    </>
+                )}
+            </Flex>
+
+            {isLoadingAnalysis && (
+                <Flex justify="center" align="center" direction="column" p={4}>
+                    <CircularProgress isIndeterminate color="teal.300" />
+                    <Text mt={2} color="gray.500">Выполняется RAG-анализ...</Text>
+                </Flex>
+            )}
+            {analysisError && (
+                <Alert status="error" mt={4}>
+                    <AlertIcon />
+                    <Box>
+                       <AlertTitle>Ошибка RAG-анализа!</AlertTitle>
+                       <AlertDescription>{analysisError}</AlertDescription>
+                    </Box>
+                </Alert>
+            )}
+            {analysisResult && !isLoadingAnalysis && (
+                <Alert status="info" mt={4} variant="subtle">
+                    <AlertIcon />
+                    <Box>
+                        <AlertTitle>Результат RAG-анализа:</AlertTitle>
+                        <AlertDescription whiteSpace="pre-wrap">
+                            {analysisResult}
+                        </AlertDescription>
+                    </Box>
+                </Alert>
+            )}
+        </VStack>
     </Box>
   );
 }

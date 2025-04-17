@@ -5,4 +5,12 @@ reportlab
 python-docx
 sqlalchemy
 aiosqlite
-pydantic 
+pydantic
+pypdf
+
+# Зависимости для RAG
+chromadb
+sentence-transformers
+llama-index
+ollama 
+llama-index-llms-ollama
