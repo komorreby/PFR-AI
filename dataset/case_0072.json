@@ -1,0 +1,31 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Платон Августович Козлов",
+        "birth_date": "29.05.1965",
+        "snils": "075-616-410 87",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

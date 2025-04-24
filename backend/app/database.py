@@ -33,6 +33,8 @@ cases_table = Table(
     Column("id", Integer, primary_key=True),
     Column("personal_data", Text, nullable=False),  # Storing as JSON string
     Column("errors", Text, nullable=False),         # Storing as JSON string
+    Column("pension_type", String(100), nullable=True), # <<< Тип пенсии
+    Column("disability", Text, nullable=True)          # <<< Данные об инвалидности (JSON)
 )
 
 # --- Функция для создания таблицы при старте (если не существует) ---

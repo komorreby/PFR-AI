@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Попова Лора Матвеевна",
+        "birth_date": "06.12.1964",
+        "snils": "603-306-170 34",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2021-06-20",
+        "cert_number": "1974475354"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

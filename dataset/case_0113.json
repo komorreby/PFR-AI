@@ -1,0 +1,53 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Владимирова Оксана Андреевна",
+        "birth_date": "06.11.1967",
+        "snils": "589-646-723 98",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 6,
+        "records": [
+            {
+                "organization": "ИП «Шубина, Гущина и Ершова»",
+                "start_date": "01.08.2008",
+                "end_date": "27.10.2016",
+                "position": "Писатель",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Аксенов, Петрова и Агафонов»",
+                "start_date": "22.03.2007",
+                "end_date": "25.11.2020",
+                "position": "Операционист",
+                "special_conditions": true
+            },
+            {
+                "organization": "Гаврилов и партнеры",
+                "start_date": "16.10.1990",
+                "end_date": "02.03.1991",
+                "position": "Нейрохирург",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 3.68,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка МСЭ",
+        "Военный билет",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": true
+}

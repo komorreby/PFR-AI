@@ -1,0 +1,38 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Зоя Мироновна Рябова",
+        "birth_date": "29.08.1979",
+        "snils": "726-161-110 81",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Валентин Всеволодович Смирнов",
+            "date_changed": "17.03.2023"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2024-05-12",
+        "cert_number": null
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Паспорт",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

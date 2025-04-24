@@ -2,11 +2,24 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date
 from enum import Enum
+from pydantic import validator
 
 # Enum для формата документа
 class DocumentFormat(str, Enum):
     pdf = "pdf"
     docx = "docx"
+
+class DisabilityInfo(BaseModel):
+    group: str # Значения "1", "2", "3", "child"
+    date: date # Дата установления
+    cert_number: Optional[str] = None # Номер справки МСЭ (опционально)
+
+    @validator('group')
+    def check_group_value(cls, v):
+        allowed_groups = {"1", "2", "3", "child"}
+        if v not in allowed_groups:
+            raise ValueError(f'Недопустимое значение группы инвалидности: {v}. Допустимые: {allowed_groups}')
+        return v
 
 class NameChangeInfo(BaseModel):
     old_full_name: Optional[str] = None
@@ -33,12 +46,14 @@ class WorkExperience(BaseModel):
     records: List[WorkRecord] = []
 
 class CaseDataInput(BaseModel):
+    pension_type: str
     personal_data: PersonalData
     work_experience: WorkExperience
     pension_points: float = Field(ge=0)
     benefits: List[str] = []
     documents: List[str] = []
     has_incorrect_document: bool = False
+    disability: Optional[DisabilityInfo] = None
     # Note: This model expects structured JSON input, not form data like the Flask app.
     # The React frontend will need to send data in this JSON format.
 
@@ -50,6 +65,8 @@ class ErrorOutput(BaseModel):
 
 class ProcessOutput(BaseModel):
     errors: List[ErrorOutput]
+    status: str
+    explanation: str
 
 # Новая модель для представления записи в истории
 class CaseHistoryEntry(BaseModel):

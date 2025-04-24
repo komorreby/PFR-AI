@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Носов Николай Феофанович",
+        "birth_date": "22.11.1964",
+        "snils": "103-414-252 83",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2024-06-19",
+        "cert_number": "4286141263"
+    },
+    "benefits": [],
+    "documents": [
+        "Трудовая книжка",
+        "Паспорт",
+        "Военный билет",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

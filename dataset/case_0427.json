@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Никанор Адрианович Родионов",
+        "birth_date": "29.04.1964",
+        "snils": "229-817-363 74",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Наина Петровна Третьякова",
+            "date_changed": "03.01.2023"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2024-04-21",
+        "cert_number": null
+    },
+    "benefits": [],
+    "documents": [
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Паспорт",
+        "Справка о стаже",
+        "Военный билет"
+    ],
+    "has_incorrect_document": true
+}

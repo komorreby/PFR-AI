@@ -1,0 +1,31 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Валерия Сергеевна Горшкова",
+        "birth_date": "04.05.1960",
+        "snils": "817-230-521 82",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Абрамов Константин Бориславович",
+            "date_changed": "10.08.2023"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "СНИЛС",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

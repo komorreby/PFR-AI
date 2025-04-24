@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Агата Робертовна Шестакова",
+        "birth_date": "27.08.1963",
+        "snils": "574-614-862 04",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2023-03-10",
+        "cert_number": "7656443663"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Военный билет",
+        "Паспорт",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

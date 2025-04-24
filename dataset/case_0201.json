@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Юлиан Ааронович Симонов",
+        "birth_date": "12.09.1962",
+        "snils": "177-143-598 66",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2020-07-27",
+        "cert_number": "6580817500"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет",
+        "СНИЛС",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

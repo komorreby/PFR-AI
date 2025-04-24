@@ -1,0 +1,63 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Анастасия Георгиевна Давыдова",
+        "birth_date": "06.08.1970",
+        "snils": "409-346-080 45",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Валентина Кузьминична Дорофеева",
+            "date_changed": "10.09.2021"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 17,
+        "records": [
+            {
+                "organization": "АО «Беспалов Борисов»",
+                "start_date": "04.12.1985",
+                "end_date": "01.02.1988",
+                "position": "Танкист",
+                "special_conditions": false
+            },
+            {
+                "organization": "Куйбышевазот",
+                "start_date": "04.03.1988",
+                "end_date": "28.05.2009",
+                "position": "Сталевар",
+                "special_conditions": false
+            },
+            {
+                "organization": "Тихонов и партнеры",
+                "start_date": "07.02.1999",
+                "end_date": "17.05.2000",
+                "position": "Преподаватель",
+                "special_conditions": true
+            },
+            {
+                "organization": "Фролов Групп",
+                "start_date": "30.08.1990",
+                "end_date": "13.06.2015",
+                "position": "Лётчик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 18.74,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Военный билет",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

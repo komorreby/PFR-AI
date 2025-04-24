@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Королев Казимир Гурьевич",
+        "birth_date": "10.05.1969",
+        "snils": "131-418-019 84",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Фёкла Ниловна Егорова",
+            "date_changed": "27.06.2020"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка МСЭ",
+        "Военный билет",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

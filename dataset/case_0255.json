@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Александра Наумовна Соболева",
+        "birth_date": "07.05.1962",
+        "snils": "187-095-001 69",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2023-02-19",
+        "cert_number": "8854717847"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "СНИЛС",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

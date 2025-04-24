@@ -1,0 +1,39 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Радим Федосьевич Потапов",
+        "birth_date": "04.01.1973",
+        "snils": "787-195-508 45",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Лидия Ждановна Ефимова",
+            "date_changed": "14.03.2024"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2024-06-09",
+        "cert_number": "5045835178"
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Военный билет",
+        "Паспорт",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

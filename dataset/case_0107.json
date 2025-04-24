@@ -1,0 +1,45 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Константин Бенедиктович Кононов",
+        "birth_date": "30.01.1968",
+        "snils": "400-157-225 94",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 38,
+        "records": [
+            {
+                "organization": "ИП «Князева-Лапин»",
+                "start_date": "17.10.2010",
+                "end_date": "16.03.2023",
+                "position": "Работник органов ЗАГСа",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Князев, Давыдов и Никифорова»",
+                "start_date": "02.07.1991",
+                "end_date": "13.03.2011",
+                "position": "Искусствовед",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 79.42,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

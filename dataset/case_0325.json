@@ -1,0 +1,38 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Таисия Эльдаровна Анисимова",
+        "birth_date": "08.01.1972",
+        "snils": "650-702-729 77",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Зиновий Феоктистович Яковлев",
+            "date_changed": "12.07.2023"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 31,
+        "records": [
+            {
+                "organization": "Первый канал",
+                "start_date": "26.04.1987",
+                "end_date": "03.02.2024",
+                "position": "Политолог",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 52.49,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Справка о стаже",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

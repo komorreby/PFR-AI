@@ -1,0 +1,46 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Ия Романовна Тарасова",
+        "birth_date": "27.06.1978",
+        "snils": "852-234-386 68",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 38,
+        "records": [
+            {
+                "organization": "РАО «Александрова-Юдина»",
+                "start_date": "20.02.2002",
+                "end_date": "06.03.2016",
+                "position": "Садовник",
+                "special_conditions": false
+            },
+            {
+                "organization": "Белова Лтд",
+                "start_date": "04.12.2010",
+                "end_date": "09.01.2013",
+                "position": "Тюремный надзиратель",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 41.25,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Паспорт",
+        "Военный билет",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

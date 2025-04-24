@@ -1,0 +1,54 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Рыбаков Ефрем Гурьевич",
+        "birth_date": "26.02.1971",
+        "snils": "906-335-979 15",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 25,
+        "records": [
+            {
+                "organization": "Абрамова Лтд",
+                "start_date": "03.01.2013",
+                "end_date": "13.10.2024",
+                "position": "Инженер-строитель",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИКЕА Торг (INGKA)",
+                "start_date": "09.04.1991",
+                "end_date": "21.01.2003",
+                "position": "Строитель",
+                "special_conditions": true
+            },
+            {
+                "organization": "РАО «Самойлова-Тарасова»",
+                "start_date": "03.07.1989",
+                "end_date": "20.07.2017",
+                "position": "Историк",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 25.28,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Военный билет",
+        "Паспорт",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

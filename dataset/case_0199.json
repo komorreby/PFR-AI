@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Викентий Федосьевич Родионов",
+        "birth_date": "21.08.1965",
+        "snils": "438-208-598 85",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Николай Жанович Евдокимов",
+            "date_changed": "16.09.2022"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2020-10-15",
+        "cert_number": "3760606905"
+    },
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": true
+}

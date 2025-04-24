@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Гурьева Анжела Мироновна",
+        "birth_date": "02.12.1966",
+        "snils": "182-321-433 14",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Валерия Валериевна Денисова",
+            "date_changed": "05.10.2023"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2020-11-13",
+        "cert_number": "5066057949"
+    },
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка МСЭ",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

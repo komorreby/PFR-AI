@@ -1,0 +1,63 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Ульяна Богдановна Гришина",
+        "birth_date": "06.01.1965",
+        "snils": "219-695-476 58",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Регина Егоровна Рябова",
+            "date_changed": "13.06.2024"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 7,
+        "records": [
+            {
+                "organization": "ИП «Иванов-Шарапова»",
+                "start_date": "29.06.2000",
+                "end_date": "18.05.2003",
+                "position": "Офтальмолог",
+                "special_conditions": true
+            },
+            {
+                "organization": "Нижнекамскнефтехим",
+                "start_date": "14.08.1987",
+                "end_date": "20.06.1988",
+                "position": "Астрофизик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ООО «Копылов»",
+                "start_date": "30.01.1986",
+                "end_date": "13.01.2013",
+                "position": "Математик",
+                "special_conditions": true
+            },
+            {
+                "organization": "ВАД",
+                "start_date": "17.05.1985",
+                "end_date": "03.12.2008",
+                "position": "Расточник",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 18.47,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Паспорт",
+        "Военный билет",
+        "Справка о стаже",
+        "СНИЛС",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

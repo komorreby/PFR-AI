@@ -1,0 +1,48 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Антонина Михайловна Медведева",
+        "birth_date": "22.12.1960",
+        "snils": "196-450-855 23",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Колесников Ювеналий Феодосьевич",
+            "date_changed": "27.12.2022"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 15,
+        "records": [
+            {
+                "organization": "АО «Яковлева Филиппов»",
+                "start_date": "25.07.1998",
+                "end_date": "20.05.2000",
+                "position": "Таможенник",
+                "special_conditions": true
+            },
+            {
+                "organization": "Белякова Групп",
+                "start_date": "16.12.1990",
+                "end_date": "24.05.2006",
+                "position": "Воспитатель",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 30.29,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет",
+        "Паспорт",
+        "СНИЛС",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

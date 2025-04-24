@@ -1,0 +1,54 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Валентина Харитоновна Селезнева",
+        "birth_date": "10.12.1972",
+        "snils": "771-116-789 63",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Фокина Марфа Валериевна",
+            "date_changed": "11.01.2025"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 38,
+        "records": [
+            {
+                "organization": "ОАО «Куликова-Ларионова»",
+                "start_date": "17.07.2016",
+                "end_date": "17.08.2021",
+                "position": "Логопед",
+                "special_conditions": true
+            },
+            {
+                "organization": "ИП «Петухова, Тихонова и Самойлов»",
+                "start_date": "16.05.1993",
+                "end_date": "21.11.2021",
+                "position": "Автогонщик",
+                "special_conditions": true
+            },
+            {
+                "organization": "ЗАО «Фокина, Карпов и Васильева»",
+                "start_date": "14.10.1989",
+                "end_date": "20.07.2008",
+                "position": "Пулемётчик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 42.39,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Военный билет",
+        "Паспорт",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

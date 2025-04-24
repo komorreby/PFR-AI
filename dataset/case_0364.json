@@ -1,0 +1,54 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Шубина Нонна Георгиевна",
+        "birth_date": "24.02.1978",
+        "snils": "954-588-598 08",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 38,
+        "records": [
+            {
+                "organization": "НМЖК",
+                "start_date": "05.03.1990",
+                "end_date": "13.07.1994",
+                "position": "Квасник",
+                "special_conditions": false
+            },
+            {
+                "organization": "Гленкор Агро Мзк (Firada)",
+                "start_date": "19.11.1988",
+                "end_date": "22.02.1996",
+                "position": "Скорняк",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Лихачев-Кузьмина»",
+                "start_date": "07.03.1993",
+                "end_date": "08.12.2010",
+                "position": "Рихтовщик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 36.08,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка о стаже",
+        "СНИЛС",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

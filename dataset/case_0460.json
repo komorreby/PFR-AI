@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Лариса Андреевна Суханова",
+        "birth_date": "16.08.1961",
+        "snils": "729-978-614 70",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Доронина Алевтина Вадимовна",
+            "date_changed": "09.05.2024"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2020-05-13",
+        "cert_number": "5851520489"
+    },
+    "benefits": [],
+    "documents": [
+        "Паспорт",
+        "СНИЛС",
+        "Военный билет",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,37 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Тихон Филиппович Силин",
+        "birth_date": "01.08.1972",
+        "snils": "442-182-551 71",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Быков Конон Викентьевич",
+            "date_changed": "07.03.2025"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2022-07-31",
+        "cert_number": "0563601843"
+    },
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Паспорт",
+        "Справка о стаже",
+        "Военный билет"
+    ],
+    "has_incorrect_document": true
+}

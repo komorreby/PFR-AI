@@ -1,0 +1,38 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Рогов Пахом Георгиевич",
+        "birth_date": "30.07.1967",
+        "snils": "183-928-229 57",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Никита Викторович Смирнов",
+            "date_changed": "02.08.2020"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2021-01-31",
+        "cert_number": "4668538775"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

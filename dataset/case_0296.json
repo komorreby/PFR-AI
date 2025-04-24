@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Остап Бориславович Большаков",
+        "birth_date": "18.05.1978",
+        "snils": "947-340-372 26",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Алина Львовна Суворова",
+            "date_changed": "10.08.2023"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Паспорт",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

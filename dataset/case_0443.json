@@ -1,0 +1,37 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Сильвестр Ефремович Пестов",
+        "birth_date": "01.01.1974",
+        "snils": "279-149-984 97",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Феврония Вячеславовна Веселова",
+            "date_changed": "13.10.2024"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2023-01-25",
+        "cert_number": "0153436548"
+    },
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

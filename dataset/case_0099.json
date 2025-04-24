@@ -1,0 +1,37 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Ермолай Давидович Попов",
+        "birth_date": "16.12.1974",
+        "snils": "945-763-919 63",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Маргарита Владимировна Колесникова",
+            "date_changed": "27.11.2021"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2023-12-04",
+        "cert_number": "7795260097"
+    },
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Паспорт",
+        "СНИЛС",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

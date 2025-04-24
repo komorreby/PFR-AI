@@ -20,27 +20,37 @@ interface AdditionalInfoStepProps {
     register: UseFormRegister<CaseFormDataType>;
     errors: FieldErrors<CaseFormDataType>;
     getErrorMessage: (name: string) => string | undefined;
+    pensionType: string | null;
 }
 
-const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({ register, errors, getErrorMessage }) => {
+const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({ register, errors, getErrorMessage, pensionType }) => {
     return (
         <VStack spacing={4} align="stretch">
             <Heading size="md" mb={4}>Дополнительная информация</Heading>
-            {/* Пенсионные баллы */}
-            <FormControl isInvalid={!!getErrorMessage('pension_points')}>
-                <FormLabel htmlFor="pension_points">Пенсионные баллы</FormLabel>
-                <NumberInput id="pension_points" min={0} defaultValue={0} precision={2} step={0.1}>
-                    <NumberInputField {...register("pension_points", { valueAsNumber: true, required: "Пенсионные баллы обязательны", min: { value: 0, message: "Баллы не могут быть отрицательными" } })} />
-                    <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
-                </NumberInput>
-                <FormErrorMessage>{getErrorMessage('pension_points')}</FormErrorMessage>
-            </FormControl>
-            {/* Льготы */}
-            <FormControl isInvalid={!!getErrorMessage('benefits')}>
-                <FormLabel htmlFor="benefits">Льготы</FormLabel>
-                <Textarea id="benefits" placeholder="Перечислите льготы через запятую" {...register("benefits")} />
-                <FormErrorMessage>{getErrorMessage('benefits')}</FormErrorMessage>
-            </FormControl>
+            {/* Пенсионные баллы (только для страховой по старости) */}
+            {pensionType === 'retirement_standard' && (
+                <FormControl isInvalid={!!getErrorMessage('pension_points')}>
+                    <FormLabel htmlFor="pension_points">Пенсионные баллы (ИПК)</FormLabel>
+                    <NumberInput id="pension_points" min={0} defaultValue={0} precision={2} step={0.1}>
+                        <NumberInputField {...register("pension_points", {
+                             valueAsNumber: true,
+                             required: pensionType === 'retirement_standard' ? "Пенсионные баллы обязательны для этого типа пенсии" : false,
+                             min: { value: 0, message: "Баллы не могут быть отрицательными" }
+                             })}
+                         />
+                        <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
+                    </NumberInput>
+                    <FormErrorMessage>{getErrorMessage('pension_points')}</FormErrorMessage>
+                </FormControl>
+            )}
+            {/* Льготы (скрываем для социальной пенсии по инвалидности - пример) */}
+            {pensionType !== 'disability_social' && (
+                <FormControl isInvalid={!!getErrorMessage('benefits')}>
+                    <FormLabel htmlFor="benefits">Льготы</FormLabel>
+                    <Textarea id="benefits" placeholder="Перечислите льготы через запятую" {...register("benefits")} />
+                    <FormErrorMessage>{getErrorMessage('benefits')}</FormErrorMessage>
+                </FormControl>
+            )}
             {/* Документы */}
             <FormControl isInvalid={!!getErrorMessage('documents')}>
                 <FormLabel htmlFor="documents">Представленные документы</FormLabel>

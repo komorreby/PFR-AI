@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Михайлова Зоя Владиславовна",
+        "birth_date": "30.12.1979",
+        "snils": "018-652-840 54",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2020-08-24",
+        "cert_number": "4988810811"
+    },
+    "benefits": [],
+    "documents": [
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Паспорт",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,60 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Фирс Якубович Зиновьев",
+        "birth_date": "19.03.1966",
+        "snils": "381-968-246 83",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 12,
+        "records": [
+            {
+                "organization": "РАО «Пахомов, Анисимова и Бурова»",
+                "start_date": "02.01.2005",
+                "end_date": "18.03.2009",
+                "position": "Финансист",
+                "special_conditions": true
+            },
+            {
+                "organization": "НПО «Симонов-Мельников»",
+                "start_date": "20.01.1987",
+                "end_date": "07.08.2010",
+                "position": "Оператор кино и телевидения",
+                "special_conditions": false
+            },
+            {
+                "organization": "Fix Price",
+                "start_date": "10.12.1992",
+                "end_date": "25.01.2002",
+                "position": "Старшина",
+                "special_conditions": true
+            },
+            {
+                "organization": "Сазонова Инк",
+                "start_date": "07.04.1997",
+                "end_date": "29.10.2003",
+                "position": "Ботаник",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 14.78,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

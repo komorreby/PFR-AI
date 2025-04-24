@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Аггей Абрамович Лобанов",
+        "birth_date": "12.12.1965",
+        "snils": "143-259-436 05",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2022-06-04",
+        "cert_number": "9122372329"
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Паспорт",
+        "Военный билет",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

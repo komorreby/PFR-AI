@@ -1,0 +1,28 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Никандр Егорович Сазонов",
+        "birth_date": "04.07.1971",
+        "snils": "273-044-181 95",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Паспорт",
+        "Справка МСЭ",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

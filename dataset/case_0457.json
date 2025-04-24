@@ -1,0 +1,47 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Меркушев Святослав Терентьевич",
+        "birth_date": "25.04.1973",
+        "snils": "407-004-510 67",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 36,
+        "records": [
+            {
+                "organization": "ЗАО «Евдокимов Шарова»",
+                "start_date": "26.04.1986",
+                "end_date": "14.12.1987",
+                "position": "Гитарист",
+                "special_conditions": false
+            },
+            {
+                "organization": "Компания Газ-Альянс",
+                "start_date": "07.06.2007",
+                "end_date": "12.05.2018",
+                "position": "Татуировщик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 49.07,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Военный билет",
+        "Паспорт",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

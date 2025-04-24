@@ -1,0 +1,38 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Вышеслав Измаилович Ларионов",
+        "birth_date": "08.11.1976",
+        "snils": "337-565-228 86",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Сидоров Дорофей Феодосьевич",
+            "date_changed": "06.09.2020"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2021-01-19",
+        "cert_number": null
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Военный билет",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Паспорт",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

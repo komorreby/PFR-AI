@@ -1,0 +1,67 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Ладимир Егорович Тарасов",
+        "birth_date": "11.03.1974",
+        "snils": "383-834-213 72",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Анна Матвеевна Миронова",
+            "date_changed": "18.11.2023"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 31,
+        "records": [
+            {
+                "organization": "ИП «Одинцова»",
+                "start_date": "31.03.1989",
+                "end_date": "06.10.2017",
+                "position": "Релайтер",
+                "special_conditions": false
+            },
+            {
+                "organization": "Продимекс-Холдинг",
+                "start_date": "12.10.2002",
+                "end_date": "03.01.2011",
+                "position": "Теолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "Металлсервис",
+                "start_date": "14.07.2002",
+                "end_date": "25.07.2015",
+                "position": "Сиделка",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Назаров-Жукова»",
+                "start_date": "13.09.1999",
+                "end_date": "05.01.2015",
+                "position": "Столяр",
+                "special_conditions": false
+            },
+            {
+                "organization": "НПО «Блинова, Авдеева и Шилова»",
+                "start_date": "17.11.2002",
+                "end_date": "16.10.2004",
+                "position": "Эфферентолог",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 37.73,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Военный билет",
+        "СНИЛС",
+        "Справка о стаже",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

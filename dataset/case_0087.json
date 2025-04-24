@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Селиверстова Светлана Тимуровна",
+        "birth_date": "08.02.1977",
+        "snils": "751-956-779 13",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Филиппова Наталья Леоновна",
+            "date_changed": "27.07.2023"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "СНИЛС",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

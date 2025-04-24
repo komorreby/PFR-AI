@@ -1,0 +1,38 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Наркис Гаврилович Жданов",
+        "birth_date": "21.03.1968",
+        "snils": "277-879-034 28",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 37,
+        "records": [
+            {
+                "organization": "ИП «Кононова-Мишина»",
+                "start_date": "06.02.1997",
+                "end_date": "03.03.2011",
+                "position": "Кинодраматург",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 51.93,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Паспорт",
+        "Военный билет",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

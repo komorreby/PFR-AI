@@ -1,0 +1,57 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Элеонора Антоновна Фомина",
+        "birth_date": "22.07.1965",
+        "snils": "566-936-963 32",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Эраст Феофанович Бобылев",
+            "date_changed": "02.02.2024"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 38,
+        "records": [
+            {
+                "organization": "Группа Газфонд",
+                "start_date": "26.07.2002",
+                "end_date": "29.12.2019",
+                "position": "Инженер-гальваник",
+                "special_conditions": false
+            },
+            {
+                "organization": "Такеда Фармасьютикалс (Takeda Pharmaceutical)",
+                "start_date": "09.01.1992",
+                "end_date": "04.04.2003",
+                "position": "Хирург",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Рыбакова Королев»",
+                "start_date": "22.04.2003",
+                "end_date": "26.06.2009",
+                "position": "Судебный пристав",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 57.58,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Военный билет",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

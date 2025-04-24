@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Елизавета Болеславовна Рыбакова",
+        "birth_date": "20.09.1974",
+        "snils": "945-091-717 77",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2024-05-29",
+        "cert_number": null
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

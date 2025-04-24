@@ -1,0 +1,43 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Никитина Анжелика Матвеевна",
+        "birth_date": "21.06.1964",
+        "snils": "120-516-078 30",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Дарья Аркадьевна Бирюкова",
+            "date_changed": "07.01.2022"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 18,
+        "records": [
+            {
+                "organization": "Попов Лтд",
+                "start_date": "03.04.1996",
+                "end_date": "04.01.2006",
+                "position": "Драпировщик",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 12.4,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

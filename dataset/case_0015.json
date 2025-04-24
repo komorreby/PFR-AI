@@ -1,0 +1,48 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Лора Степановна Якушева",
+        "birth_date": "12.09.1974",
+        "snils": "876-256-808 98",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Авдеева Евпраксия Геннадиевна",
+            "date_changed": "29.04.2021"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 24,
+        "records": [
+            {
+                "organization": "Доронина Инкорпорэйтед",
+                "start_date": "30.03.1989",
+                "end_date": "18.12.2013",
+                "position": "Мастер маникюра",
+                "special_conditions": true
+            },
+            {
+                "organization": "ЗАО «Артемьев Шарапова»",
+                "start_date": "05.10.1990",
+                "end_date": "29.04.1991",
+                "position": "Бактериолог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 25.18,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Справка МСЭ",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

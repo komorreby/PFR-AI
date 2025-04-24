@@ -1,0 +1,40 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Фадеева Клавдия Борисовна",
+        "birth_date": "31.10.1975",
+        "snils": "902-779-348 84",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 13,
+        "records": [
+            {
+                "organization": "ИП «Дорофеев, Брагин и Зайцева»",
+                "start_date": "03.04.1997",
+                "end_date": "03.04.2015",
+                "position": "Горничная",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 14.4,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Военный билет",
+        "СНИЛС",
+        "Паспорт",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

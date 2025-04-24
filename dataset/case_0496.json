@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Ковалев Борис Игнатович",
+        "birth_date": "20.11.1973",
+        "snils": "517-650-926 77",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2021-11-08",
+        "cert_number": null
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Паспорт",
+        "СНИЛС",
+        "Военный билет",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

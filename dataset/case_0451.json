@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Регина Архиповна Тихонова",
+        "birth_date": "01.05.1959",
+        "snils": "687-753-328 11",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Евгения Федоровна Данилова",
+            "date_changed": "22.11.2022"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Паспорт",
+        "Военный билет",
+        "Справка МСЭ",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

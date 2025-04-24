@@ -1,0 +1,39 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Артемьева Ирина Валентиновна",
+        "birth_date": "10.05.1973",
+        "snils": "009-040-214 07",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Ефремова Вера Даниловна",
+            "date_changed": "01.01.2024"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 17,
+        "records": [
+            {
+                "organization": "ГК Российские коммунальные системы",
+                "start_date": "04.11.1987",
+                "end_date": "11.02.2011",
+                "position": "Столяр",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 31.36,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Паспорт",
+        "Справка МСЭ",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

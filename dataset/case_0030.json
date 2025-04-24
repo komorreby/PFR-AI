@@ -1,0 +1,49 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Королева Жанна Афанасьевна",
+        "birth_date": "02.07.1969",
+        "snils": "500-729-706 86",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "София Никифоровна Давыдова",
+            "date_changed": "11.10.2020"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 39,
+        "records": [
+            {
+                "organization": "АО «Лыткина, Вишняков и Рябов»",
+                "start_date": "26.05.1993",
+                "end_date": "06.11.2004",
+                "position": "Кавалерист",
+                "special_conditions": true
+            },
+            {
+                "organization": "ЗАО «Панов»",
+                "start_date": "05.02.1989",
+                "end_date": "28.01.2013",
+                "position": "Издатель",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 39.29,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Военный билет",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Паспорт",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

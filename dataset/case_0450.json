@@ -1,0 +1,69 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Юдина Глафира Юрьевна",
+        "birth_date": "14.10.1967",
+        "snils": "533-829-239 03",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Исаков Наркис Ааронович",
+            "date_changed": "10.12.2022"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 21,
+        "records": [
+            {
+                "organization": "НПО «Никитина, Быков и Фомичева»",
+                "start_date": "05.11.2006",
+                "end_date": "27.12.2023",
+                "position": "Балерина",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Суворова-Гуляев»",
+                "start_date": "26.02.1999",
+                "end_date": "01.09.2005",
+                "position": "Кардиолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Ильин, Константинов и Александрова»",
+                "start_date": "26.03.1995",
+                "end_date": "24.01.2014",
+                "position": "Танцор",
+                "special_conditions": true
+            },
+            {
+                "organization": "АО «Воронов»",
+                "start_date": "26.08.2012",
+                "end_date": "26.12.2018",
+                "position": "Татуировщик",
+                "special_conditions": true
+            },
+            {
+                "organization": "ООО «Шарапова Дементьев»",
+                "start_date": "10.06.1992",
+                "end_date": "01.10.2005",
+                "position": "Кредитный консультант",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 36.49,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Военный билет",
+        "СНИЛС",
+        "Паспорт",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

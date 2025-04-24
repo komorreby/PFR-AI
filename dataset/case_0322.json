@@ -1,0 +1,53 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Иванна Антоновна Карпова",
+        "birth_date": "12.04.1968",
+        "snils": "025-019-611 63",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Лора Анатольевна Калинина",
+            "date_changed": "29.11.2023"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 36,
+        "records": [
+            {
+                "organization": "ЗАО «Горбунов»",
+                "start_date": "26.03.2002",
+                "end_date": "16.07.2012",
+                "position": "Проректор",
+                "special_conditions": false
+            },
+            {
+                "organization": "Жданов Лтд",
+                "start_date": "17.05.1990",
+                "end_date": "22.05.2024",
+                "position": "Метранпаж",
+                "special_conditions": true
+            },
+            {
+                "organization": "Русагро",
+                "start_date": "29.03.2005",
+                "end_date": "06.08.2012",
+                "position": "Сурдопедагог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 52.09,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Военный билет",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

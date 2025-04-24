@@ -1,0 +1,37 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Иванов Карл Тимурович",
+        "birth_date": "22.06.1965",
+        "snils": "350-913-788 80",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Филиппов Ювеналий Харитонович",
+            "date_changed": "25.07.2024"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2024-07-22",
+        "cert_number": "1878720657"
+    },
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

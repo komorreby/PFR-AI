@@ -1,0 +1,59 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Матвей Юлианович Костин",
+        "birth_date": "23.07.1962",
+        "snils": "222-016-127 87",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 40,
+        "records": [
+            {
+                "organization": "Банк ФК Открытие",
+                "start_date": "11.02.1993",
+                "end_date": "17.04.2005",
+                "position": "Дизайнер рекламы",
+                "special_conditions": false
+            },
+            {
+                "organization": "Степанова Инк",
+                "start_date": "13.03.2007",
+                "end_date": "23.11.2008",
+                "position": "Инженер-физик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Субботин-Лобанов»",
+                "start_date": "09.02.1986",
+                "end_date": "15.10.1988",
+                "position": "Фельдшер",
+                "special_conditions": false
+            },
+            {
+                "organization": "Бурова Инкорпорэйтед",
+                "start_date": "25.12.2009",
+                "end_date": "17.04.2014",
+                "position": "Микробиолог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 45.84,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Паспорт",
+        "Военный билет",
+        "СНИЛС",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

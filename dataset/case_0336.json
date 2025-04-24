@@ -1,0 +1,31 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Клавдия Артемовна Котова",
+        "birth_date": "10.05.1972",
+        "snils": "380-119-770 35",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Военный билет",
+        "Паспорт",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": true
+}

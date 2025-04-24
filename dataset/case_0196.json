@@ -1,0 +1,68 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "г-н Одинцов Лука Власович",
+        "birth_date": "07.09.1966",
+        "snils": "295-815-999 88",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 35,
+        "records": [
+            {
+                "organization": "ООО «Константинова Субботин»",
+                "start_date": "19.09.2001",
+                "end_date": "06.06.2005",
+                "position": "Космонавт",
+                "special_conditions": false
+            },
+            {
+                "organization": "Ростех",
+                "start_date": "02.06.1993",
+                "end_date": "21.10.2016",
+                "position": "Кнопочник",
+                "special_conditions": false
+            },
+            {
+                "organization": "Ермакова Инк",
+                "start_date": "15.12.1986",
+                "end_date": "03.07.1994",
+                "position": "Распиловщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Трофимов Галкин»",
+                "start_date": "23.02.2002",
+                "end_date": "01.09.2021",
+                "position": "Лекальщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "Филатов и партнеры",
+                "start_date": "10.10.2000",
+                "end_date": "07.03.2013",
+                "position": "Переводчик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 48.86,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Военный билет",
+        "СНИЛС",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

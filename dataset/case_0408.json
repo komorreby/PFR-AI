@@ -1,0 +1,43 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Кудряшов Лавр Егорович",
+        "birth_date": "05.03.1966",
+        "snils": "462-896-333 40",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 27,
+        "records": [
+            {
+                "organization": "Горшков Инк",
+                "start_date": "03.06.1987",
+                "end_date": "23.02.2001",
+                "position": "Танцор",
+                "special_conditions": true
+            },
+            {
+                "organization": "ИП «Кондратьев-Гришин»",
+                "start_date": "12.05.1997",
+                "end_date": "22.06.1999",
+                "position": "Инженер по механизации",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 17.38,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Справка о стаже",
+        "Паспорт",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

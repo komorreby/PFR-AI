@@ -11,10 +11,14 @@ from app.rag_core.query_engine import get_query_engine, query_case
 # Возможно, потребуется настроить PYTHONPATH или изменить импорт в зависимости от структуры
 import sys
 import os
-# Добавляем родительскую директорию (backend) в путь поиска модулей
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.models import CaseDataInput, ProcessOutput, ErrorOutput, CaseHistoryEntry, DocumentFormat
-from error_classifier import ErrorClassifier # Импорт из корневой папки backend
+# <<< Исправляем добавление пути: нужно добавить корень проекта (на уровень выше backend) >>>
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root) # Используем insert(0, ...) для приоритета
+# logger.debug(f"Добавлен project_root в sys.path: {project_root}") # Опциональный дебаг
+# logger.debug(f"Текущий sys.path: {sys.path}")
+# ----------------------------------------------------------------------------
+from app.models import CaseDataInput, ProcessOutput, ErrorOutput, CaseHistoryEntry, DocumentFormat, DisabilityInfo
+from error_classifier import ErrorClassifier # Теперь импорт из корня должен работать
 # Импорты для БД
 from app.database import create_db_and_tables, get_db_connection, async_engine
 from sqlalchemy.ext.asyncio import AsyncConnection
@@ -112,44 +116,167 @@ async def analyze_pension_case(request: CaseAnalysisRequest):
         raise HTTPException(status_code=500, detail=f"Internal server error during RAG analysis: {str(e)}")
 # ---------------------------------------
 
+# --- Вспомогательная функция для форматирования описания дела --- 
+def format_case_description_for_rag(case_data: CaseDataInput) -> str:
+    parts = []
+    # Персональные данные
+    pd = case_data.personal_data
+    parts.append(f"Заявитель: {pd.full_name}, Дата рождения: {pd.birth_date.strftime('%d.%m.%Y')}, Пол: {pd.gender}, Гражданство: {pd.citizenship}, Иждивенцы: {pd.dependents}.")
+    if pd.name_change_info:
+        parts.append(f"Была смена ФИО: Старое ФИО: {pd.name_change_info.old_full_name}, Дата: {pd.name_change_info.date_changed.strftime('%d.%m.%Y') if pd.name_change_info.date_changed else 'Не указ.'}.")
+
+    # Тип пенсии
+    pension_type_map = {
+        'retirement_standard': 'Страховая по старости (общий случай)',
+        'disability_social': 'Социальная по инвалидности',
+        # Добавить другие типы по мере необходимости
+    }
+    parts.append(f"Запрашиваемый тип пенсии: {pension_type_map.get(case_data.pension_type, case_data.pension_type)}.")
+
+    # Инвалидность (если есть)
+    if case_data.disability:
+        dis_info = case_data.disability
+        group_text = f"{dis_info.group} группа" if dis_info.group != 'child' else "Ребенок-инвалид"
+        parts.append(f"Инвалидность: {group_text}, Дата установления: {dis_info.date.strftime('%d.%m.%Y')}. " +
+                     (f"Номер справки МСЭ: {dis_info.cert_number}." if dis_info.cert_number else ""))
+
+    # Стаж и баллы (если применимо к типу пенсии, например, retirement_standard)
+    if case_data.pension_type == 'retirement_standard':
+        we = case_data.work_experience
+        parts.append(f"Общий страховой стаж: {we.total_years} лет.")
+        parts.append(f"Пенсионные баллы (ИПК): {case_data.pension_points}.")
+        if we.records:
+            parts.append("Записи о стаже:")
+            for i, r in enumerate(we.records):
+                special_text = " (Особые условия)" if r.special_conditions else ""
+                parts.append(f"  {i+1}. {r.organization} ({r.start_date.strftime('%d.%m.%Y')} - {r.end_date.strftime('%d.%m.%Y')}), Должность: {r.position}{special_text}.")
+        else:
+            parts.append("Записи о стаже отсутствуют.")
+
+    # Льготы и документы
+    if case_data.benefits:
+        parts.append(f"Заявленные льготы: {', '.join(case_data.benefits)}.")
+    if case_data.documents:
+        parts.append(f"Представленные документы: {', '.join(case_data.documents)}.")
+    else:
+         parts.append("Документы не представлены.")
+
+    if case_data.has_incorrect_document:
+        parts.append("Заявлено наличие некорректно оформленных документов.")
+
+    return "\n".join(parts)
+# -------------------------------------------------------------
+
+# --- Новая функция для анализа текста RAG на соответствие --- 
+def analyze_rag_for_compliance(rag_text: str) -> bool:
+    """ 
+    Анализирует текст ответа RAG на наличие явной финальной фразы.
+    Возвращает True, если найдена фраза 'ИТОГ: СООТВЕТСТВУЕТ',
+    False - если найдена фраза 'ИТОГ: НЕ СООТВЕТСТВУЕТ'.
+    Если ни одна фраза не найдена, возвращает False (считаем, что есть проблема).
+    """
+    lower_text = rag_text.lower()
+    
+    # Ищем точные фразы в конце (учитывая возможные пробелы)
+    if "итог: соответствует" in lower_text.strip():
+        print("[Compliance Check] Найдена фраза 'ИТОГ: СООТВЕТСТВУЕТ' -> СООТВЕТСТВУЕТ")
+        return True
+    elif "итог: не соответствует" in lower_text.strip():
+        print("[Compliance Check] Найдена фраза 'ИТОГ: НЕ СООТВЕТСТВУЕТ' -> НЕ СООТВЕТСТВУЕТ")
+        return False
+    else:
+        # Если LLM не выдал четкий итог, считаем, что есть проблемы
+        print("[Compliance Check] Четкая фраза ИТОГ не найдена -> ПРЕДПОЛАГАЕМ НЕ СООТВЕТСТВУЕТ")
+        return False # Убираем fallback на ключевые слова
+# ---------------------------------------------------------
+
 # Эндпоинт /process
 @app.post("/process", response_model=ProcessOutput)
 async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncConnection = Depends(get_db_connection)):
-    # Получаем классификатор из состояния приложения
     classifier = request.app.state.classifier
     if classifier is None:
-        raise HTTPException(status_code=500, detail="Error Classifier not initialized or failed to initialize")
+        raise HTTPException(status_code=500, detail="Error Classifier not initialized")
 
     try:
-        # Используем model_dump(mode='json') для получения JSON-совместимого словаря
-        # Это преобразует datetime.date в строки 'YYYY-MM-DD'
+        # 1. Получаем ошибки от ML классификатора
         case_data_dict_json_compatible = case_data.model_dump(mode='json')
-        
-        # Передаем словарь со строками дат в классификатор
-        raw_errors = classifier.classify_errors(case_data_dict_json_compatible) 
-        
-        # Преобразуем результат классификатора (ожидаем dict) в объекты ErrorOutput
-        errors_output = [ErrorOutput(**error) for error in raw_errors]
-        
-        # Сериализуем ошибки обратно в dict для сохранения (это ок, т.к. ErrorOutput не содержит дат)
-        errors_to_save = [error.model_dump() for error in errors_output]
+        ml_errors = classifier.classify_errors(case_data_dict_json_compatible)
+        ml_errors_output = [ErrorOutput(**error) for error in ml_errors]
 
-        # Сохранение в базу данных - передаем personal_data из JSON-совместимого словаря
+        # 2. Формируем описание дела для RAG
+        # Используем оригинальную case_data с объектами дат для форматирования
+        case_description_full = format_case_description_for_rag(case_data)
+        print("--- RAG Input Description ---")
+        print(case_description_full)
+        print("---------------------------")
+
+        # 3. Выполняем RAG-анализ
+        rag_analysis_text = ""
+        try:
+            # <<< Передаем pension_type и disability_info в query_case
+            rag_analysis_text = query_case(
+                case_description=case_description_full,
+                pension_type=case_data.pension_type,
+                disability_info=case_data_dict_json_compatible.get("disability")
+            )
+            print("--- RAG Analysis Result ---")
+            print(rag_analysis_text)
+            print("---------------------------")
+        except Exception as rag_e:
+            print(f"!!! ERROR during RAG query_case call: {rag_e}")
+            import traceback
+            traceback.print_exc()
+            rag_analysis_text = f"Ошибка выполнения RAG анализа: {rag_e}" # Записываем ошибку в результат
+
+        # 4. Комбинируем результаты и определяем статус
+        final_explanation_parts = []
+        has_rejecting_issues = False
+
+        # Добавляем ошибки от ML
+        if ml_errors_output:
+            has_rejecting_issues = True
+            final_explanation_parts.append("**Выявлены следующие ошибки:**")
+            for error in ml_errors_output:
+                final_explanation_parts.append(f"- **{error.code}: {error.description}**")
+                final_explanation_parts.append(f"  *Основание:* {error.law}")
+                final_explanation_parts.append(f"  *Рекомендация:* {error.recommendation}")
+            final_explanation_parts.append("\n") # Добавляем отступ
+
+        # Добавляем результат RAG анализа
+        final_explanation_parts.append("**Анализ соответствия законодательству (RAG):**")
+        final_explanation_parts.append(rag_analysis_text)
+
+        # --- Определяем статус на основе ML и RAG --- 
+        rag_compliant = analyze_rag_for_compliance(rag_analysis_text)
+        has_rejecting_issues = bool(ml_errors_output) or not rag_compliant # Отказ если есть ML ошибки ИЛИ RAG НЕ соответствует
+        # ---------------------------------------------
+        
+        final_status = "rejected" if has_rejecting_issues else "approved"
+        final_explanation = "\n".join(final_explanation_parts)
+
+        # 5. Сохранение в базу данных (можно добавить pension_type и disability)
+        # TODO: Адаптировать crud.create_case для сохранения доп. полей
+        errors_to_save = [error.model_dump() for error in ml_errors_output]
         case_id = await crud.create_case(
-            conn=conn, 
-            personal_data=case_data_dict_json_compatible["personal_data"], # Теперь здесь строки дат
-            errors=errors_to_save
+            conn=conn,
+            personal_data=case_data_dict_json_compatible["personal_data"],
+            errors=errors_to_save,
+            pension_type=case_data.pension_type,
+            disability=case_data_dict_json_compatible.get("disability") # Используем .get для опционального поля
         )
-        print(f"Case saved with ID: {case_id}") # Логгирование для отладки
+        print(f"Case saved with ID: {case_id}")
 
-        return ProcessOutput(errors=errors_output)
+        # 6. Возвращаем полный результат
+        return ProcessOutput(
+            errors=ml_errors_output, # Возвращаем ML ошибки
+            status=final_status,
+            explanation=final_explanation
+        )
+
     except Exception as e:
-        # Важно откатить транзакцию при ошибке, если она была начата
-        # await conn.rollback() # SQLAlchemy Core с `await conn.commit()` не требует явного rollback здесь
         print(f"Error during processing: {e}")
-        # В продакшене здесь должно быть более детальное логгирование
         import traceback
-        traceback.print_exc() # Печатаем полный traceback для лучшей диагностики
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal server error during processing: {str(e)}")
 
 # Новый эндпоинт для истории

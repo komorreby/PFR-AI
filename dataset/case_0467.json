@@ -1,0 +1,45 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Бирюков Радован Демьянович",
+        "birth_date": "18.10.1968",
+        "snils": "407-449-668 15",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 40,
+        "records": [
+            {
+                "organization": "ОАО «Филиппова Коновалов»",
+                "start_date": "11.05.1989",
+                "end_date": "26.12.2018",
+                "position": "Кинодраматург",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Кудряшов»",
+                "start_date": "25.11.1991",
+                "end_date": "06.12.1995",
+                "position": "Офтальмолог",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 57.62,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "СНИЛС",
+        "Справка о стаже",
+        "Паспорт",
+        "Трудовая книжка",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

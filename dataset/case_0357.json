@@ -1,0 +1,39 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Борисов Назар Гертрудович",
+        "birth_date": "19.08.1975",
+        "snils": "128-020-332 43",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Беспалова Фаина Кирилловна",
+            "date_changed": "09.10.2023"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2021-01-06",
+        "cert_number": "1967937069"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "СНИЛС",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,66 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Артемьев Юлий Гертрудович",
+        "birth_date": "03.08.1961",
+        "snils": "421-606-185 89",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 11,
+        "records": [
+            {
+                "organization": "ОАО «Зимина-Фомина»",
+                "start_date": "18.12.1992",
+                "end_date": "26.02.2007",
+                "position": "Детектив",
+                "special_conditions": false
+            },
+            {
+                "organization": "НЛМК",
+                "start_date": "20.06.1998",
+                "end_date": "24.01.2000",
+                "position": "Кавалерист",
+                "special_conditions": true
+            },
+            {
+                "organization": "НПО «Вишнякова, Лебедев и Петухова»",
+                "start_date": "17.12.1995",
+                "end_date": "04.10.2006",
+                "position": "Химик-контролер",
+                "special_conditions": false
+            },
+            {
+                "organization": "Зыков и партнеры",
+                "start_date": "25.02.2000",
+                "end_date": "06.07.2007",
+                "position": "Тележурналист",
+                "special_conditions": false
+            },
+            {
+                "organization": "НПО «Тарасова-Николаева»",
+                "start_date": "09.03.2006",
+                "end_date": "14.05.2018",
+                "position": "Инкассатор",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 15.34,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Паспорт",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Военный билет",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,44 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Сысоева Наина Вадимовна",
+        "birth_date": "01.11.1975",
+        "snils": "926-108-729 44",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 8,
+        "records": [
+            {
+                "organization": "ЗАО «Антонова, Морозова и Федотов»",
+                "start_date": "12.06.2003",
+                "end_date": "19.10.2004",
+                "position": "Дознаватель",
+                "special_conditions": false
+            },
+            {
+                "organization": "Группа ГМС",
+                "start_date": "28.02.1998",
+                "end_date": "28.02.2010",
+                "position": "Моторист",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 14.15,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Военный билет",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

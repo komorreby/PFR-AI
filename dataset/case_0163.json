@@ -1,0 +1,46 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Савин Владлен Арсенович",
+        "birth_date": "10.02.1965",
+        "snils": "379-822-271 52",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 28,
+        "records": [
+            {
+                "organization": "Макдоналдc (McDonald`s)",
+                "start_date": "03.07.1991",
+                "end_date": "07.10.2010",
+                "position": "Физик",
+                "special_conditions": true
+            },
+            {
+                "organization": "Калашников Лимитед",
+                "start_date": "21.04.2007",
+                "end_date": "29.03.2014",
+                "position": "Дилер",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 37.37,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,50 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Терентьева Зоя Аскольдовна",
+        "birth_date": "15.09.1966",
+        "snils": "361-080-060 26",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Михайлова Прасковья Матвеевна",
+            "date_changed": "06.03.2021"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 25,
+        "records": [
+            {
+                "organization": "РАО «Бобылев»",
+                "start_date": "06.11.2004",
+                "end_date": "13.05.2019",
+                "position": "Бульдозерист",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Лукина, Авдеев и Носков»",
+                "start_date": "06.03.1993",
+                "end_date": "07.03.1996",
+                "position": "Специалист по клеточным технологиям",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 35.99,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "СНИЛС",
+        "Справка о стаже",
+        "Паспорт",
+        "Военный билет",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

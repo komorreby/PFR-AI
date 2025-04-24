@@ -4,93 +4,173 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, hamming_loss, accuracy_score
 from imblearn.over_sampling import SMOTE
 import logging
-import numpy as np
+import os
 
+# <<< Переносим инициализацию логгера ВВЕРХ >>>
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+# -----------------------------------------------
 
-def train_model():
-    # Загрузка данных
-    df = pd.read_csv("pension_cases.csv")
-    X = df.drop(columns=["E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008"])
-    y = df[["E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008"]]
+# <<< Импортируем определения колонок из error_classifier >>>
+# (Чтобы гарантировать согласованность)
+try:
+    # Попытка импорта ErrorClassifier для получения списков колонок
+    from error_classifier import ErrorClassifier 
+    # Создаем временный экземпляр, чтобы получить списки
+    # Указываем путь к модели, но НЕ загружаем ее здесь (изменено в ErrorClassifier)
+    temp_classifier = ErrorClassifier(model_path="dummy_path_for_columns") 
+    FEATURE_COLUMNS = temp_classifier.feature_columns
+    TARGET_COLUMNS = temp_classifier.target_columns
+    logger.info("Успешно импортированы списки колонок из ErrorClassifier.")
+    logger.info(f"Признаки ({len(FEATURE_COLUMNS)}): {FEATURE_COLUMNS}")
+    logger.info(f"Цели ({len(TARGET_COLUMNS)}): {TARGET_COLUMNS}")
+except ImportError:
+    logger.error("Не удалось импортировать ErrorClassifier. Используются ПРЕДУСТАНОВЛЕННЫЕ списки колонок.")
+    # Фоллбек (менее надежный, убедитесь, что списки АКТУАЛЬНЫ)
+    FEATURE_COLUMNS = [
+        'age', 'gender', 'citizenship_rf', 'has_name_change', 'dependents',
+        'is_retirement_standard', 'is_disability_social', 
+        'total_years_declared', 'actual_experience_calc', 'special_experience_calc',
+        'experience_mismatch', 'pension_points', 'record_count', 'has_special_conditions_flag',
+        'has_disability', 'disability_group_1', 'disability_group_2', 'disability_group_3',
+        'disability_group_child', 'disability_cert_provided', 'benefit_count', 
+        'document_count', 'has_incorrect_document_flag', 'has_passport', 'has_snils',
+        'has_work_book', 'has_disability_cert_doc'
+    ]
+    TARGET_COLUMNS = ["E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010"]
+except FileNotFoundError: # Обработка ошибки, если dummy_path не сработал
+     # Теперь logger определен здесь
+     logger.error("Не удалось инициализировать ErrorClassifier для получения колонок (возможно, проблема с путем или зависимостями). Используются ПРЕДУСТАНОВЛЕННЫЕ списки.")
+     # Используем те же фоллбек-списки
+     FEATURE_COLUMNS = [
+        'age', 'gender', 'citizenship_rf', 'has_name_change', 'dependents',
+        'is_retirement_standard', 'is_disability_social', 
+        'total_years_declared', 'actual_experience_calc', 'special_experience_calc',
+        'experience_mismatch', 'pension_points', 'record_count', 'has_special_conditions_flag',
+        'has_disability', 'disability_group_1', 'disability_group_2', 'disability_group_3',
+        'disability_group_child', 'disability_cert_provided', 'benefit_count', 
+        'document_count', 'has_incorrect_document_flag', 'has_passport', 'has_snils',
+        'has_work_book', 'has_disability_cert_doc'
+    ]
+     TARGET_COLUMNS = ["E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010"]
+except Exception as e:
+     # Теперь logger определен здесь
+     logger.error(f"Непредвиденная ошибка при получении списков колонок: {e}. Используются ПРЕДУСТАНОВЛЕННЫЕ списки.")
+     # Используем те же фоллбек-списки
+     FEATURE_COLUMNS = [
+        'age', 'gender', 'citizenship_rf', 'has_name_change', 'dependents',
+        'is_retirement_standard', 'is_disability_social', 
+        'total_years_declared', 'actual_experience_calc', 'special_experience_calc',
+        'experience_mismatch', 'pension_points', 'record_count', 'has_special_conditions_flag',
+        'has_disability', 'disability_group_1', 'disability_group_2', 'disability_group_3',
+        'disability_group_child', 'disability_cert_provided', 'benefit_count', 
+        'document_count', 'has_incorrect_document_flag', 'has_passport', 'has_snils',
+        'has_work_book', 'has_disability_cert_doc'
+    ]
+     TARGET_COLUMNS = ["E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010"]
+# ----------------------------------------------------------
 
-    # Проверка на NaN в y
-    if y.isna().any().any():
-        logger.error("Обнаружены NaN в y перед разделением данных")
-        raise ValueError("Input y contains NaN before splitting")
+# --- Константы --- 
+# <<< Используем обновленный CSV файл >>>
+DATA_PATH = "dataset/pension_cases_features_errors.csv"
+MODEL_DIR = "models"
+MODEL_PATH = os.path.join(MODEL_DIR, "error_classifier_model.joblib")
+TEST_SIZE = 0.2
+RANDOM_STATE = 42
+# Параметры RandomForest
+N_ESTIMATORS = 150 # Можно увеличить для потенциально лучшей точности
+MAX_DEPTH = 20     # Ограничение глубины для предотвращения переобучения
+CLASS_WEIGHT = 'balanced' # Важно для несбалансированных ошибок
+# ----------------
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+def train_and_evaluate_model():
+    # 1. Загрузка данных
+    try:
+        logger.info(f"Загрузка данных из {DATA_PATH}...")
+        df = pd.read_csv(DATA_PATH)
+        logger.info(f"Данные успешно загружены. Форма: {df.shape}")
+    except FileNotFoundError:
+        logger.error(f"Ошибка: Файл данных не найден по пути {DATA_PATH}. Запустите generate_data.py и convert_to_csv.py.")
+        return
+    except Exception as e:
+        logger.error(f"Ошибка при загрузке или чтении CSV файла {DATA_PATH}: {e}")
+        return
 
-    # Проверка на NaN в X_train_scaled
-    if np.isnan(X_train_scaled).any():
-        logger.error("Обнаружены NaN в X_train_scaled после масштабирования")
-        raise ValueError("Input X contains NaN after scaling")
+    # Проверка наличия всех необходимых колонок
+    missing_features = [col for col in FEATURE_COLUMNS if col not in df.columns]
+    missing_targets = [col for col in TARGET_COLUMNS if col not in df.columns]
+    if missing_features:
+         logger.error(f"В CSV отсутствуют необходимые колонки признаков: {missing_features}")
+         return
+    if missing_targets:
+         logger.error(f"В CSV отсутствуют необходимые целевые колонки: {missing_targets}")
+         return
+    logger.info("Все необходимые колонки присутствуют в CSV.")
 
-    # Применение SMOTE для каждого класса с синхронизацией
-    smote = SMOTE(random_state=42)
-    X_train_balanced_list = []
-    y_train_balanced_list = []
+    # 2. Подготовка данных
+    # <<< Используем импортированные/фоллбек списки колонок >>>
+    X = df[FEATURE_COLUMNS]
+    y = df[TARGET_COLUMNS]
+    # ---------------------------------------------------
 
-    for column in y_train.columns:
-        X_resampled, y_resampled = smote.fit_resample(X_train_scaled, y_train[column])
-        X_train_balanced_list.append(X_resampled)
-        y_train_balanced_list.append(y_resampled)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE
+    )
+    logger.info(f"Данные разделены на обучающую ({X_train.shape[0]} записей) и тестовую ({X_test.shape[0]} записей) выборки.")
 
-    # Выбираем минимальное количество примеров после SMOTE, чтобы синхронизировать размеры
-    min_samples = min(len(y_resampled) for y_resampled in y_train_balanced_list)
-    X_train_balanced = X_train_balanced_list[0][:min_samples]
-    y_train_balanced = pd.DataFrame({
-        col: y_resampled[:min_samples] for col, y_resampled in zip(y_train.columns, y_train_balanced_list)
-    })
+    # 3. Обучение модели
+    logger.info(f"Обучение MultiOutputClassifier с RandomForestClassifier (n_estimators={N_ESTIMATORS}, max_depth={MAX_DEPTH}, class_weight={CLASS_WEIGHT})...")
+    # Используем RandomForestClassifier внутри MultiOutputClassifier
+    base_classifier = RandomForestClassifier(
+        n_estimators=N_ESTIMATORS, 
+        max_depth=MAX_DEPTH,
+        random_state=RANDOM_STATE,
+        class_weight=CLASS_WEIGHT, # Важно!
+        n_jobs=-1 # Используем все доступные ядра процессора
+    )
+    multi_output_model = MultiOutputClassifier(base_classifier, n_jobs=-1)
+    
+    try:
+        multi_output_model.fit(X_train, y_train)
+        logger.info("Модель успешно обучена.")
+    except Exception as e:
+         logger.error(f"Ошибка во время обучения модели: {e}")
+         return
 
-    # Проверка на NaN после SMOTE
-    if np.isnan(X_train_balanced).any():
-        logger.error("Обнаружены NaN в X_train_balanced после SMOTE")
-        raise ValueError("Input X contains NaN after SMOTE")
-    if y_train_balanced.isna().any().any():
-        logger.error("Обнаружены NaN в y_train_balanced после SMOTE")
-        raise ValueError("Input y contains NaN after SMOTE")
+    # 4. Оценка модели
+    logger.info("Оценка модели на тестовой выборке...")
+    y_pred = multi_output_model.predict(X_test)
+    
+    # Hamming Loss: доля неправильно предсказанных меток (чем меньше, тем лучше)
+    h_loss = hamming_loss(y_test, y_pred)
+    logger.info(f"Hamming Loss: {h_loss:.4f}")
+    
+    # Accuracy Score (Subset Accuracy): доля полностью правильно предсказанных наборов меток
+    acc_score = accuracy_score(y_test, y_pred)
+    logger.info(f"Subset Accuracy: {acc_score:.4f}")
+    
+    # Classification Report (для каждой метки отдельно)
+    logger.info("Classification Report (по каждой ошибке):")
+    # <<< Используем TARGET_COLUMNS для имен меток >>>
+    try:
+         report = classification_report(y_test, y_pred, target_names=TARGET_COLUMNS, zero_division=0)
+         print(report)
+    except ValueError as e:
+         logger.warning(f"Не удалось сгенерировать classification_report с target_names: {e}. Вывод без имен.")
+         report = classification_report(y_test, y_pred, zero_division=0)
+         print(report)
+    # ---------------------------------------------
 
-    # Настройка гиперпараметров с помощью GridSearchCV
-    param_grid = {
-        'estimator__n_estimators': [300],
-        'estimator__max_depth': [10, 20, None],
-        'estimator__min_samples_split': [2, 5],
-        'estimator__min_samples_leaf': [1, 2]
-    }
-    base_model = RandomForestClassifier(class_weight="balanced", random_state=42)
-    model = MultiOutputClassifier(base_model)
-    grid_search = GridSearchCV(model, param_grid, cv=5, scoring='f1_macro', n_jobs=-1)
-
-    logger.info("Начинаем GridSearchCV...")
-
-    grid_search.fit(X_train_balanced, y_train_balanced)
-
-    logger.info("GridSearchCV завершён.")
-
-    logger.info(f"Лучшие параметры: {grid_search.best_params_}")
-    model = grid_search.best_estimator_
-
-    # Предсказания и метрики
-    y_pred = model.predict(X_test_scaled)
-    for i, column in enumerate(y.columns):
-        logger.info(f"Метрики для {column}:")
-        print(classification_report(y_test[column], y_pred[:, i], zero_division=0))
-
-    cv_scores = cross_val_score(model, X_train_balanced, y_train_balanced, cv=3, scoring="f1_macro")
-    logger.info(f"Кросс-валидация (F1-macro): {cv_scores.mean():.2f} (+/- {cv_scores.std() * 2:.2f})")
-
-    # Сохранение модели
-    joblib.dump(model, "pension_error_model.pkl")
-    joblib.dump(scaler, "scaler.pkl")
-    logger.info("Модель и масштабировщик сохранены.")
+    # 5. Сохранение модели
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    try:
+        joblib.dump(multi_output_model, MODEL_PATH)
+        logger.info(f"Обученная модель сохранена в {MODEL_PATH}")
+    except Exception as e:
+        logger.error(f"Ошибка при сохранении модели в {MODEL_PATH}: {e}")
 
 if __name__ == "__main__":
-    train_model()
+    train_and_evaluate_model()

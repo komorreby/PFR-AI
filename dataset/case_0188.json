@@ -1,0 +1,39 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Ульяна Харитоновна Самсонова",
+        "birth_date": "17.12.1963",
+        "snils": "578-977-433 22",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Ярополк Евстигнеевич Шестаков",
+            "date_changed": "04.05.2020"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 18,
+        "records": [
+            {
+                "organization": "ООО «Федотов»",
+                "start_date": "26.11.1987",
+                "end_date": "26.01.1994",
+                "position": "Мусоропроводчик",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 30.78,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Справка о стаже",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт",
+        "СНИЛС",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": true
+}

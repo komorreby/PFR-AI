@@ -1,0 +1,39 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Алла Игоревна Ершова",
+        "birth_date": "30.11.1978",
+        "snils": "971-090-889 68",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "София Борисовна Фролова",
+            "date_changed": "14.09.2022"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2023-12-18",
+        "cert_number": "9515150675"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Военный билет",
+        "Справка о стаже",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

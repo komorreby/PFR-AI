@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Харитонов Трифон Еремеевич",
+        "birth_date": "11.03.1965",
+        "snils": "286-666-286 61",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2023-10-11",
+        "cert_number": null
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

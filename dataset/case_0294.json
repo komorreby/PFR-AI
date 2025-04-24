@@ -1,0 +1,63 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Евлампий Игнатьевич Филатов",
+        "birth_date": "28.05.1960",
+        "snils": "427-990-419 96",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Антип Августович Лукин",
+            "date_changed": "10.10.2023"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 24,
+        "records": [
+            {
+                "organization": "ИП «Капустин-Ефремова»",
+                "start_date": "15.07.1991",
+                "end_date": "24.09.1999",
+                "position": "Упаковщик",
+                "special_conditions": true
+            },
+            {
+                "organization": "ЗАО «Яковлева»",
+                "start_date": "12.02.2005",
+                "end_date": "02.11.2017",
+                "position": "Гляциолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Шестакова Кондратьева»",
+                "start_date": "16.03.1988",
+                "end_date": "09.12.2012",
+                "position": "Проводник",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Константинов Одинцова»",
+                "start_date": "15.04.2003",
+                "end_date": "16.11.2012",
+                "position": "Логопед",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 22.07,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "СНИЛС",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

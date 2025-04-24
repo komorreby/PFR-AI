@@ -1,0 +1,63 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Таисия Афанасьевна Назарова",
+        "birth_date": "21.10.1976",
+        "snils": "711-675-375 50",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "г-н Родионов Евдоким Богданович",
+            "date_changed": "08.03.2024"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 19,
+        "records": [
+            {
+                "organization": "ИП «Колесников, Андреев и Орлова»",
+                "start_date": "23.10.1991",
+                "end_date": "02.03.2003",
+                "position": "Инженер-химик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ЗАО «Герасимов Владимирова»",
+                "start_date": "02.12.2001",
+                "end_date": "03.02.2017",
+                "position": "Учёный",
+                "special_conditions": false
+            },
+            {
+                "organization": "ООО «Шубина-Лазарев»",
+                "start_date": "07.09.1990",
+                "end_date": "16.11.2001",
+                "position": "Физик",
+                "special_conditions": false
+            },
+            {
+                "organization": "Сибтрейд",
+                "start_date": "12.01.1987",
+                "end_date": "15.08.1995",
+                "position": "Химик-аналитик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 30.68,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Паспорт",
+        "СНИЛС",
+        "Военный билет",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

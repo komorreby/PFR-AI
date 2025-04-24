@@ -1,0 +1,31 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Турова Анжелика Макаровна",
+        "birth_date": "18.07.1979",
+        "snils": "399-739-872 05",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Чернов Селиван Тимурович",
+            "date_changed": "20.05.2022"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "СНИЛС",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

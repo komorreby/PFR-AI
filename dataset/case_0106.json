@@ -1,0 +1,45 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Устин Ефимьевич Тимофеев",
+        "birth_date": "14.05.1977",
+        "snils": "862-606-577 68",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 31,
+        "records": [
+            {
+                "organization": "Группа УГМК",
+                "start_date": "13.09.2004",
+                "end_date": "13.03.2017",
+                "position": "Командир",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Гришина Константинова»",
+                "start_date": "21.06.1996",
+                "end_date": "28.10.1998",
+                "position": "Модельер",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 60.61,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Справка о стаже",
+        "Паспорт",
+        "Военный билет"
+    ],
+    "has_incorrect_document": true
+}

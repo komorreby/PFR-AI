@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Федосеев Лазарь Фролович",
+        "birth_date": "28.11.1960",
+        "snils": "216-718-895 83",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2023-01-25",
+        "cert_number": "8622348026"
+    },
+    "benefits": [],
+    "documents": [
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "СНИЛС",
+        "Военный билет",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,59 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Зимин Ратибор Богданович",
+        "birth_date": "23.02.1964",
+        "snils": "991-206-235 68",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 5,
+        "records": [
+            {
+                "organization": "ЗАО «Кузнецов Зуева»",
+                "start_date": "17.07.1991",
+                "end_date": "26.06.1993",
+                "position": "Онколог",
+                "special_conditions": false
+            },
+            {
+                "organization": "Нестеров Инкорпорэйтед",
+                "start_date": "04.06.1985",
+                "end_date": "19.01.2013",
+                "position": "Фармацевт",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Абрамова-Романов»",
+                "start_date": "03.05.1998",
+                "end_date": "12.01.2019",
+                "position": "Промышленный альпинист",
+                "special_conditions": false
+            },
+            {
+                "organization": "ГМК Сплав",
+                "start_date": "27.03.1991",
+                "end_date": "25.12.2007",
+                "position": "Прокурор",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 0.31,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Военный билет",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

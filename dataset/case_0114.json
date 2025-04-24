@@ -1,0 +1,37 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Евпраксия Егоровна Евсеева",
+        "birth_date": "22.08.1973",
+        "snils": "231-443-265 60",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Ярослав Трофимович Ситников",
+            "date_changed": "21.01.2020"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2020-09-16",
+        "cert_number": "4143084302"
+    },
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Паспорт",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

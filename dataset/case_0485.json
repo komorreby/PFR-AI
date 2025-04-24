@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Титов Эммануил Всеволодович",
+        "birth_date": "04.05.1968",
+        "snils": "003-904-280 65",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Субботина Лукия Артемовна",
+            "date_changed": "20.07.2024"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Паспорт",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Военный билет",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

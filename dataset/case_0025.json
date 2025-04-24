@@ -1,0 +1,54 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Оксана Георгиевна Елисеева",
+        "birth_date": "29.06.1972",
+        "snils": "165-091-696 51",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 32,
+        "records": [
+            {
+                "organization": "НПО «Турова-Русаков»",
+                "start_date": "10.07.1989",
+                "end_date": "15.11.1989",
+                "position": "Повар",
+                "special_conditions": true
+            },
+            {
+                "organization": "ЗАО «Овчинникова, Брагина и Тихонова»",
+                "start_date": "26.03.1986",
+                "end_date": "17.02.2020",
+                "position": "Актуарий",
+                "special_conditions": true
+            },
+            {
+                "organization": "ИП «Киселева»",
+                "start_date": "19.12.1988",
+                "end_date": "02.08.1996",
+                "position": "Налоговый инспектор",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 44.45,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

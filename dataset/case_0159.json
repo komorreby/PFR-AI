@@ -1,0 +1,57 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Котов Георгий Валерианович",
+        "birth_date": "02.09.1968",
+        "snils": "360-870-277 75",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Всемил Демидович Никитин",
+            "date_changed": "24.05.2023"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 36,
+        "records": [
+            {
+                "organization": "ОАО «Михайлов-Самойлов»",
+                "start_date": "24.09.1987",
+                "end_date": "05.01.2020",
+                "position": "Фермер",
+                "special_conditions": true
+            },
+            {
+                "organization": "ЗАО «Наумова Гордеев»",
+                "start_date": "14.02.2001",
+                "end_date": "27.10.2012",
+                "position": "Пекарь",
+                "special_conditions": true
+            },
+            {
+                "organization": "Ростсельмаш",
+                "start_date": "25.05.1999",
+                "end_date": "09.08.2009",
+                "position": "Военный прокурор",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 39.15,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Паспорт",
+        "Военный билет",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

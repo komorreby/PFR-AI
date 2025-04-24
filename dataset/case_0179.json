@@ -1,0 +1,56 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Синклитикия Эдуардовна Носкова",
+        "birth_date": "22.06.1976",
+        "snils": "380-434-275 71",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Самсонов Еремей Егорович",
+            "date_changed": "28.11.2023"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 33,
+        "records": [
+            {
+                "organization": "НПО «Логинова Фомичева»",
+                "start_date": "12.05.1999",
+                "end_date": "21.10.2019",
+                "position": "Верстальщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ФортеИнвест",
+                "start_date": "10.08.1985",
+                "end_date": "07.06.2011",
+                "position": "Водолаз",
+                "special_conditions": false
+            },
+            {
+                "organization": "СБСВ-Ключавто",
+                "start_date": "20.10.2008",
+                "end_date": "30.03.2025",
+                "position": "Лингвист",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 62.81,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Военный билет",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

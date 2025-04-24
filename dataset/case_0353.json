@@ -1,0 +1,56 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Адриан Харитонович Ильин",
+        "birth_date": "25.05.1979",
+        "snils": "946-879-788 15",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Зинаида Геннадиевна Виноградова",
+            "date_changed": "01.06.2022"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 39,
+        "records": [
+            {
+                "organization": "АО «Суханов Мельникова»",
+                "start_date": "20.01.1997",
+                "end_date": "10.09.2000",
+                "position": "Стрелочник",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Денисова-Смирнов»",
+                "start_date": "13.10.1997",
+                "end_date": "02.05.2013",
+                "position": "Табунщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "Сидоров Групп",
+                "start_date": "31.05.1989",
+                "end_date": "09.03.2019",
+                "position": "Рихтовщик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 46.21,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

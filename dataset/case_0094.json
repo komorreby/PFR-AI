@@ -1,0 +1,60 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Оксана Алексеевна Панфилова",
+        "birth_date": "26.02.1976",
+        "snils": "497-663-562 63",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 25,
+        "records": [
+            {
+                "organization": "ЗАО «Полякова, Колобова и Селиверстов»",
+                "start_date": "25.12.1987",
+                "end_date": "01.10.2002",
+                "position": "Инженер-физик",
+                "special_conditions": true
+            },
+            {
+                "organization": "ГК ЕКС",
+                "start_date": "08.07.2016",
+                "end_date": "12.08.2017",
+                "position": "Фотомодель",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Белозерова»",
+                "start_date": "06.02.1996",
+                "end_date": "29.12.2003",
+                "position": "Токарь-карусельщик",
+                "special_conditions": true
+            },
+            {
+                "organization": "Кузьмин Инкорпорэйтед",
+                "start_date": "20.06.1989",
+                "end_date": "08.02.2001",
+                "position": "Авиатехник",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 31.61,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

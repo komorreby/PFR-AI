@@ -6,11 +6,19 @@ from .database import cases_table, async_engine # Используем async_eng
 from .models import CaseDataInput, ErrorOutput # Нужны для аннотации типов
 from typing import List, Dict, Any, Optional
 
-async def create_case(conn: AsyncConnection, personal_data: Dict[str, Any], errors: List[Dict[str, Any]]):
-    """Сохраняет данные дела и ошибки в базу данных."""
+async def create_case(
+    conn: AsyncConnection,
+    personal_data: Dict[str, Any],
+    errors: List[Dict[str, Any]],
+    pension_type: str,
+    disability: Optional[Dict[str, Any]] = None
+):
+    """Сохраняет данные дела, ошибки, тип пенсии и данные об инвалидности."""
     insert_stmt = insert(cases_table).values(
-        personal_data=json.dumps(personal_data), # Сериализуем в JSON
-        errors=json.dumps(errors)             # Сериализуем в JSON
+        personal_data=json.dumps(personal_data),
+        errors=json.dumps(errors),
+        pension_type=pension_type,
+        disability=json.dumps(disability) if disability else None
     )
     result = await conn.execute(insert_stmt)
     await conn.commit() # Явно коммитим транзакцию
@@ -30,7 +38,9 @@ async def get_cases(conn: AsyncConnection, skip: int = 0, limit: int = 100) -> L
         cases.append({
             "id": case_data["id"],
             "personal_data": json.loads(case_data["personal_data"]),
-            "errors": json.loads(case_data["errors"])
+            "errors": json.loads(case_data["errors"]),
+            "pension_type": case_data["pension_type"],
+            "disability": json.loads(case_data["disability"]) if case_data["disability"] else None
         })
     return cases
 
@@ -46,7 +56,9 @@ async def get_case_by_id(conn: AsyncConnection, case_id: int) -> Optional[Dict[s
         return {
             "id": case_data["id"],
             "personal_data": json.loads(case_data["personal_data"]),
-            "errors": json.loads(case_data["errors"])
+            "errors": json.loads(case_data["errors"]),
+            "pension_type": case_data["pension_type"],
+            "disability": json.loads(case_data["disability"]) if case_data["disability"] else None
         }
     return None
 

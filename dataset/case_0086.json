@@ -1,0 +1,62 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Тамара Михайловна Гордеева",
+        "birth_date": "15.12.1960",
+        "snils": "715-243-415 89",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Надежда Егоровна Агафонова",
+            "date_changed": "29.03.2021"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 10,
+        "records": [
+            {
+                "organization": "ООО «Казаков Шашкова»",
+                "start_date": "20.08.1986",
+                "end_date": "10.01.2011",
+                "position": "Художник",
+                "special_conditions": true
+            },
+            {
+                "organization": "ЗАО «Исаев, Журавлева и Носкова»",
+                "start_date": "25.08.1997",
+                "end_date": "08.04.2018",
+                "position": "Тальман",
+                "special_conditions": true
+            },
+            {
+                "organization": "ОАО «Чернова»",
+                "start_date": "28.06.1989",
+                "end_date": "06.12.1997",
+                "position": "Грейдерист",
+                "special_conditions": true
+            },
+            {
+                "organization": "Агафонова Лтд",
+                "start_date": "25.09.2000",
+                "end_date": "03.05.2003",
+                "position": "Токсиколог",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 10.05,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт",
+        "Справка о стаже",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

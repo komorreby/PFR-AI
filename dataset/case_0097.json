@@ -1,0 +1,50 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Евдоким Денисович Тетерин",
+        "birth_date": "10.01.1977",
+        "snils": "121-990-151 33",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Овчинникова Елена Максимовна",
+            "date_changed": "18.10.2022"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 18,
+        "records": [
+            {
+                "organization": "Полякова Лтд",
+                "start_date": "18.09.1992",
+                "end_date": "30.09.2018",
+                "position": "Андролог",
+                "special_conditions": true
+            },
+            {
+                "organization": "ЗАО «Гаврилова Сорокина»",
+                "start_date": "21.10.2005",
+                "end_date": "02.02.2019",
+                "position": "Кинооператор",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 20.32,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Военный билет",
+        "Паспорт",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import CaseForm from './components/CaseForm';
-import { ApiError } from './components/CaseForm'; 
+import { ProcessResult, ApiError } from './components/CaseForm'; 
 import ErrorDisplay from './components/ErrorDisplay'; 
 import HistoryPage from './pages/HistoryPage';
+import ProcessResultDisplay from './components/ProcessResultDisplay';
 
 // Импорты Chakra UI
 import {
@@ -23,19 +24,17 @@ import {
 const API_BASE_URL = 'http://127.0.0.1:8000'; 
 
 function App() {
-  const [analysisErrors, setAnalysisErrors] = useState<ApiError[]>([]);
-  const [formSubmittedSuccessfully, setFormSubmittedSuccessfully] = useState<boolean>(false);
+  const [processResult, setProcessResult] = useState<ProcessResult | null>(null);
 
   const toast = useToast();
 
-  const handleFormSubmitSuccess = (errors: ApiError[]) => {
-    console.log("Received errors from backend:", errors);
-    setAnalysisErrors(errors);
-    setFormSubmittedSuccessfully(true); 
+  const handleFormSubmitSuccess = (result: ProcessResult) => {
+    console.log("Received result from backend:", result);
+    setProcessResult(result);
     toast({ 
         title: "Анализ завершен",
-        description: errors.length === 0 ? "Ошибок не найдено." : `Найдено ошибок: ${errors.length}`,
-        status: errors.length === 0 ? "success" : "warning",
+        description: `Статус: ${result.status === 'approved' ? 'Одобрено' : 'Отказано'}`,
+        status: result.status === 'approved' ? "success" : "error",
         duration: 5000,
         isClosable: true,
     });
@@ -49,8 +48,7 @@ function App() {
         duration: 9000, 
         isClosable: true,
     });
-    setAnalysisErrors([]); 
-    setFormSubmittedSuccessfully(false); 
+    setProcessResult(null);
   };
 
   return (
@@ -80,17 +78,10 @@ function App() {
               />
             </Box>
 
-            {formSubmittedSuccessfully && (
+            {processResult && (
               <Box mt={6}>
-                <ErrorDisplay errors={analysisErrors} />
+                 <ProcessResultDisplay result={processResult} />
               </Box>
-            )}
-            
-            {formSubmittedSuccessfully && analysisErrors.length === 0 && (
-                 <Alert status="success" variant="subtle" mt={6} borderRadius="md">
-                     <AlertIcon />
-                     <AlertDescription>Ошибок не найдено. Пенсия может быть предоставлена.</AlertDescription>
-                 </Alert>
             )}
           </Box>
         } />

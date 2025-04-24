@@ -1,0 +1,40 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Казакова Вероника Валентиновна",
+        "birth_date": "19.07.1960",
+        "snils": "808-349-351 08",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 36,
+        "records": [
+            {
+                "organization": "Дмитриева Групп",
+                "start_date": "16.02.2012",
+                "end_date": "30.09.2015",
+                "position": "Финансист",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 59.84,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Военный билет",
+        "Паспорт",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

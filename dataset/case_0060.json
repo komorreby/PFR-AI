@@ -1,0 +1,52 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Нина Юрьевна Лобанова",
+        "birth_date": "16.10.1965",
+        "snils": "283-517-794 46",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Иванна Вячеславовна Захарова",
+            "date_changed": "03.06.2021"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 29,
+        "records": [
+            {
+                "organization": "НИПИ НГ Петон",
+                "start_date": "09.11.2000",
+                "end_date": "19.03.2019",
+                "position": "Оператор машинного доения",
+                "special_conditions": true
+            },
+            {
+                "organization": "Богданов Инк",
+                "start_date": "14.02.1999",
+                "end_date": "07.11.2024",
+                "position": "Специалист по стрижке овец",
+                "special_conditions": false
+            },
+            {
+                "organization": "НПО «Воронцов»",
+                "start_date": "10.06.1992",
+                "end_date": "14.04.1997",
+                "position": "Метеоролог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 38.5,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт",
+        "СНИЛС",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,30 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Пахомов Рубен Феоктистович",
+        "birth_date": "06.04.1973",
+        "snils": "412-875-178 43",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Паспорт",
+        "Военный билет",
+        "СНИЛС",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": true
+}

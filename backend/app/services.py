@@ -104,10 +104,10 @@ def _generate_docx_report(masked_data: Dict[str, Any], errors: List[Dict[str, An
     """Генерирует DOCX отчет в байтовый поток."""
     doc = Document()
     # Установка шрифта по умолчанию (опционально)
-    # style = doc.styles['Normal']
-    # font = style.font
-    # font.name = 'Times New Roman' # Или другой шрифт
-    # font.size = Pt(12)
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Times New Roman' # Или другой шрифт
+    font.size = Pt(12)
 
     # Заголовок
     title = doc.add_heading("Решение по пенсионному делу", level=1)
