@@ -1,0 +1,63 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Сафонов Казимир Бенедиктович",
+        "birth_date": "13.11.1966",
+        "snils": "068-747-729 39",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Лидия Кузьминична Колобова",
+            "date_changed": "13.03.2022"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 15,
+        "records": [
+            {
+                "organization": "Центр финансовых технологий",
+                "start_date": "16.04.2015",
+                "end_date": "29.03.2017",
+                "position": "Гример",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Елисеева»",
+                "start_date": "12.11.2003",
+                "end_date": "22.08.2016",
+                "position": "Пастух",
+                "special_conditions": false
+            },
+            {
+                "organization": "Ферреро Руссия (Ferrero)",
+                "start_date": "25.03.2006",
+                "end_date": "09.04.2022",
+                "position": "Инженер-лесотехник",
+                "special_conditions": false
+            },
+            {
+                "organization": "Шилова Инкорпорэйтед",
+                "start_date": "14.04.1994",
+                "end_date": "04.05.1998",
+                "position": "Грейдерист",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 11.17,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Военный билет",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Паспорт",
+        "СНИЛС",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

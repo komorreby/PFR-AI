@@ -1,0 +1,55 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Крюков Самуил Ануфриевич",
+        "birth_date": "16.12.1959",
+        "snils": "586-078-800 57",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Колесникова Татьяна Рудольфовна",
+            "date_changed": "29.02.2020"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 20,
+        "records": [
+            {
+                "organization": "АО «Исакова-Григорьев»",
+                "start_date": "29.01.1996",
+                "end_date": "12.07.2015",
+                "position": "Секретчик",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Пестов»",
+                "start_date": "12.06.1987",
+                "end_date": "21.12.1991",
+                "position": "Шорник",
+                "special_conditions": false
+            },
+            {
+                "organization": "Российские железные дороги",
+                "start_date": "28.05.1990",
+                "end_date": "06.01.2001",
+                "position": "Критик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 37.44,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Военный билет",
+        "Справка о стаже",
+        "Паспорт",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

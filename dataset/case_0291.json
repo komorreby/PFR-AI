@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Олимпиада Егоровна Селезнева",
+        "birth_date": "12.07.1971",
+        "snils": "484-115-177 49",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Кабанов Аким Давидович",
+            "date_changed": "28.10.2022"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет",
+        "СНИЛС",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

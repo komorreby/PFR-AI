@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Дементий Гурьевич Муравьев",
+        "birth_date": "05.07.1962",
+        "snils": "404-048-479 38",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2022-04-20",
+        "cert_number": "2177511802"
+    },
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Паспорт",
+        "Справка о стаже",
+        "Военный билет",
+        "Справка МСЭ",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

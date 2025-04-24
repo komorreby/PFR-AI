@@ -1,0 +1,56 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Ульяна Захаровна Крюкова",
+        "birth_date": "27.01.1976",
+        "snils": "472-512-059 49",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 15,
+        "records": [
+            {
+                "organization": "Устинов и партнеры",
+                "start_date": "06.09.1994",
+                "end_date": "08.10.2012",
+                "position": "Биохимик",
+                "special_conditions": true
+            },
+            {
+                "organization": "ОАО «Семенов»",
+                "start_date": "11.07.2003",
+                "end_date": "06.04.2006",
+                "position": "Ортодонт",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Петухова-Логинов»",
+                "start_date": "27.01.1986",
+                "end_date": "29.01.2025",
+                "position": "Инфекционист",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Мясников-Савина»",
+                "start_date": "22.01.2009",
+                "end_date": "08.05.2019",
+                "position": "Автогонщик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 20.65,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Справка МСЭ",
+        "Военный билет",
+        "СНИЛС",
+        "Паспорт",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": true
+}

@@ -1,0 +1,31 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Пестов Евграф Ефимьевич",
+        "birth_date": "17.07.1963",
+        "snils": "934-498-084 96",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка МСЭ",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

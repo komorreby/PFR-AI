@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Никитин Парамон Бориславович",
+        "birth_date": "20.07.1964",
+        "snils": "038-300-488 20",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Порфирий Изотович Никитин",
+            "date_changed": "19.12.2023"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2020-07-03",
+        "cert_number": "0701349435"
+    },
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "СНИЛС",
+        "Паспорт",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

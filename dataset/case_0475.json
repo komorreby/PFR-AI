@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Богданова Лора Натановна",
+        "birth_date": "30.12.1978",
+        "snils": "339-376-784 54",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2022-06-15",
+        "cert_number": "4038958633"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Паспорт",
+        "СНИЛС",
+        "Военный билет",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

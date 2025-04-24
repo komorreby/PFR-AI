@@ -1,0 +1,63 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Эрнест Чеславович Пестов",
+        "birth_date": "23.09.1971",
+        "snils": "402-117-111 17",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Данилов Всеволод Даниилович",
+            "date_changed": "13.03.2024"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 6,
+        "records": [
+            {
+                "organization": "Транскапиталбанк",
+                "start_date": "20.03.1988",
+                "end_date": "05.11.1999",
+                "position": "Химик-контролер",
+                "special_conditions": false
+            },
+            {
+                "organization": "ЗАО «Громов»",
+                "start_date": "26.03.2012",
+                "end_date": "08.01.2018",
+                "position": "Металлург",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Дорофеева Данилов»",
+                "start_date": "25.08.2011",
+                "end_date": "09.12.2017",
+                "position": "Сборщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ЗАО «Степанова-Фокина»",
+                "start_date": "06.10.1993",
+                "end_date": "09.01.2022",
+                "position": "Стрелок",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 11.75,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Военный билет",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

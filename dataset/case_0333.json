@@ -1,0 +1,39 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Емельянов Азарий Бориславович",
+        "birth_date": "28.05.1974",
+        "snils": "155-231-648 93",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Авдеева Ульяна Мироновна",
+            "date_changed": "03.03.2021"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2022-02-08",
+        "cert_number": "1977431566"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Паспорт",
+        "Военный билет",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

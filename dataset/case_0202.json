@@ -1,0 +1,42 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Баранова Ангелина Викторовна",
+        "birth_date": "02.05.1979",
+        "snils": "571-111-174 80",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Ковалева Акулина Геннадьевна",
+            "date_changed": "10.05.2024"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 5,
+        "records": [
+            {
+                "organization": "ОАО «Бобылева, Филиппов и Панов»",
+                "start_date": "20.11.2002",
+                "end_date": "26.11.2004",
+                "position": "Пастух",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 0.87,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Военный билет",
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,71 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Полина Тимофеевна Кононова",
+        "birth_date": "05.11.1974",
+        "snils": "107-787-324 65",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Нина Владиславовна Силина",
+            "date_changed": "11.02.2023"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 27,
+        "records": [
+            {
+                "organization": "Якушева Лтд",
+                "start_date": "13.05.1986",
+                "end_date": "30.04.2002",
+                "position": "Пастух",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Беспалов»",
+                "start_date": "13.11.1990",
+                "end_date": "26.11.2001",
+                "position": "Агроном-почвовед",
+                "special_conditions": false
+            },
+            {
+                "organization": "Зиновьева Лтд",
+                "start_date": "14.02.2016",
+                "end_date": "23.02.2018",
+                "position": "Гидролог",
+                "special_conditions": true
+            },
+            {
+                "organization": "ООО «Стрелков Антонов»",
+                "start_date": "24.09.1986",
+                "end_date": "27.05.2013",
+                "position": "Автослесарь",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Кузнецов Дементьев»",
+                "start_date": "29.07.1994",
+                "end_date": "12.04.2006",
+                "position": "Инженер-гальваник",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 19.48,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "Паспорт",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

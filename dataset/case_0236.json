@@ -1,0 +1,49 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Юлиан Эдгардович Родионов",
+        "birth_date": "02.03.1978",
+        "snils": "361-731-613 97",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Маркова Алина Тарасовна",
+            "date_changed": "18.10.2021"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 20,
+        "records": [
+            {
+                "organization": "АО «Матвеев»",
+                "start_date": "28.12.1992",
+                "end_date": "13.02.2000",
+                "position": "Бортинженер",
+                "special_conditions": true
+            },
+            {
+                "organization": "НПО «Харитонов Иванова»",
+                "start_date": "13.09.1997",
+                "end_date": "31.12.2007",
+                "position": "Сомелье",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 19.9,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Военный билет",
+        "Паспорт",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

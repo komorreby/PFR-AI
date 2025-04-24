@@ -1,0 +1,39 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Ульяна Матвеевна Куликова",
+        "birth_date": "11.01.1976",
+        "snils": "005-505-243 35",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Смирнова Полина Робертовна",
+            "date_changed": "10.12.2023"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2022-10-29",
+        "cert_number": "3602032757"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

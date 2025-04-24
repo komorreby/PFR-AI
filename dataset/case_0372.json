@@ -1,0 +1,38 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Ермакова Акулина Святославовна",
+        "birth_date": "30.05.1977",
+        "snils": "253-538-438 58",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Надежда Никифоровна Кабанова",
+            "date_changed": "01.01.2025"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2021-06-20",
+        "cert_number": "6251593628"
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка о стаже",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Военный билет",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

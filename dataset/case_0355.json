@@ -1,0 +1,28 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Борислав Ефимьевич Кузьмин",
+        "birth_date": "31.05.1973",
+        "snils": "571-109-606 86",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Паспорт",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

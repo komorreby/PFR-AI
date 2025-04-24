@@ -1,0 +1,68 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Анжелика Павловна Алексеева",
+        "birth_date": "13.11.1972",
+        "snils": "267-537-212 41",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 12,
+        "records": [
+            {
+                "organization": "Август",
+                "start_date": "03.12.1987",
+                "end_date": "18.02.1997",
+                "position": "Тифлопедагог",
+                "special_conditions": false
+            },
+            {
+                "organization": "Салым Петролеум",
+                "start_date": "04.02.1998",
+                "end_date": "29.11.2003",
+                "position": "Коневод",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Тетерин-Королев»",
+                "start_date": "29.05.1985",
+                "end_date": "06.10.1993",
+                "position": "Упаковщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ООО «Крылов»",
+                "start_date": "21.05.1995",
+                "end_date": "08.04.2006",
+                "position": "Музыкант",
+                "special_conditions": false
+            },
+            {
+                "organization": "Зиновьева Инкорпорэйтед",
+                "start_date": "10.05.2010",
+                "end_date": "06.07.2011",
+                "position": "Сурдопедагог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 20.53,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Военный билет",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Справка о стаже",
+        "Паспорт",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

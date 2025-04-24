@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+python-multipart
+reportlab
+python-docx
+sqlalchemy
+aiosqlite
+pydantic
+pypdf
+
+# Зависимости для RAG
+chromadb
+sentence-transformers
+llama-index
+ollama 
+llama-index-llms-ollama

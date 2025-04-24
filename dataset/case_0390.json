@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Беляков Алексей Юльевич",
+        "birth_date": "10.09.1976",
+        "snils": "891-171-399 32",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2023-06-04",
+        "cert_number": "7530886249"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка о стаже",
+        "СНИЛС",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,68 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Евфросиния Матвеевна Галкина",
+        "birth_date": "15.11.1971",
+        "snils": "166-510-833 64",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 10,
+        "records": [
+            {
+                "organization": "ИП «Доронин-Медведева»",
+                "start_date": "08.01.2003",
+                "end_date": "29.11.2016",
+                "position": "Уборщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Емельянова, Соколов и Жуков»",
+                "start_date": "23.05.1993",
+                "end_date": "29.11.2010",
+                "position": "Дознаватель",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Смирнова Моисеев»",
+                "start_date": "20.11.1989",
+                "end_date": "16.01.2002",
+                "position": "Художник",
+                "special_conditions": true
+            },
+            {
+                "organization": "АО «Лапина-Романов»",
+                "start_date": "09.04.1996",
+                "end_date": "20.05.2006",
+                "position": "Астроном",
+                "special_conditions": true
+            },
+            {
+                "organization": "ИП «Гуляев-Некрасова»",
+                "start_date": "12.12.2006",
+                "end_date": "07.02.2010",
+                "position": "Безработный",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 3.49,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Справка о стаже",
+        "СНИЛС",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

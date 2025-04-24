@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Гуляева Октябрина Эльдаровна",
+        "birth_date": "16.01.1966",
+        "snils": "463-971-742 28",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2024-09-04",
+        "cert_number": "0603229083"
+    },
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Военный билет",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Паспорт",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

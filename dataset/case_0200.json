@@ -1,0 +1,43 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Соколова Лукия Борисовна",
+        "birth_date": "15.04.1968",
+        "snils": "591-365-313 28",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 10,
+        "records": [
+            {
+                "organization": "АО «Андреев-Зыков»",
+                "start_date": "28.10.1999",
+                "end_date": "07.07.2010",
+                "position": "Радиомеханик",
+                "special_conditions": true
+            },
+            {
+                "organization": "АО «Щукина»",
+                "start_date": "13.04.2004",
+                "end_date": "19.11.2006",
+                "position": "Кредитный консультант",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 15.14,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "СНИЛС",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Паспорт",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

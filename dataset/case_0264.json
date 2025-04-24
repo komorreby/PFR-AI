@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Ульяна Федоровна Вишнякова",
+        "birth_date": "21.07.1967",
+        "snils": "060-039-801 22",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Клавдия Ивановна Федорова",
+            "date_changed": "07.02.2022"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2023-06-03",
+        "cert_number": null
+    },
+    "benefits": [],
+    "documents": [
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Военный билет",
+        "Справка МСЭ",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

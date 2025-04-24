@@ -1,0 +1,62 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Волков Януарий Фомич",
+        "birth_date": "27.04.1961",
+        "snils": "327-552-087 86",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Зимин Василий Эдгарович",
+            "date_changed": "06.04.2022"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 38,
+        "records": [
+            {
+                "organization": "Щербакова Инк",
+                "start_date": "24.08.1998",
+                "end_date": "19.01.2018",
+                "position": "Трейдер",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Евсеев Маркова»",
+                "start_date": "12.08.2012",
+                "end_date": "27.12.2024",
+                "position": "Зенитчик",
+                "special_conditions": true
+            },
+            {
+                "organization": "Инвестнефтетрейд",
+                "start_date": "30.08.1998",
+                "end_date": "19.11.2002",
+                "position": "Комендант",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Щукин Зуев»",
+                "start_date": "06.10.1993",
+                "end_date": "12.06.2001",
+                "position": "Сомелье",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 48.19,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка о стаже",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

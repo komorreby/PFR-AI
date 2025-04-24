@@ -1,0 +1,50 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Филатов Егор Марсович",
+        "birth_date": "21.02.1971",
+        "snils": "112-576-875 39",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Гордеева Милица Михайловна",
+            "date_changed": "27.01.2020"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 13,
+        "records": [
+            {
+                "organization": "Курганмашзавод",
+                "start_date": "12.06.1996",
+                "end_date": "04.04.2014",
+                "position": "Библиотековед",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Нестерова, Быкова и Абрамова»",
+                "start_date": "27.07.1990",
+                "end_date": "23.02.2013",
+                "position": "Кабельщик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 9.84,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "СНИЛС",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

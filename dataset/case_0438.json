@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Аксенов Тихон Ермолаевич",
+        "birth_date": "23.03.1960",
+        "snils": "057-193-786 44",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2022-04-05",
+        "cert_number": "0820277753"
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Военный билет",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

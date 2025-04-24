@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Мартынова Фёкла Львовна",
+        "birth_date": "21.04.1960",
+        "snils": "728-868-789 06",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Военный билет",
+        "Паспорт",
+        "СНИЛС",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": true
+}

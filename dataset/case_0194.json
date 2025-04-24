@@ -1,0 +1,60 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Шашкова Александра Сергеевна",
+        "birth_date": "17.10.1964",
+        "snils": "599-928-501 61",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 18,
+        "records": [
+            {
+                "organization": "НПО «Бурова, Никифорова и Никитин»",
+                "start_date": "31.12.2006",
+                "end_date": "08.11.2009",
+                "position": "Портье",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Дементьева»",
+                "start_date": "11.12.1997",
+                "end_date": "14.07.2015",
+                "position": "Биофизик",
+                "special_conditions": false
+            },
+            {
+                "organization": "НПО «Силин Галкина»",
+                "start_date": "25.09.1985",
+                "end_date": "23.03.2011",
+                "position": "Проректор",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Волкова-Баранова»",
+                "start_date": "28.06.2016",
+                "end_date": "11.06.2017",
+                "position": "Актёр",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 23.66,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Военный билет",
+        "Паспорт",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

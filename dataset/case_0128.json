@@ -1,0 +1,69 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Самсон Давидович Афанасьев",
+        "birth_date": "29.08.1968",
+        "snils": "275-108-189 57",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Лукьян Андреевич Пестов",
+            "date_changed": "24.01.2024"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 20,
+        "records": [
+            {
+                "organization": "Мишин Лимитед",
+                "start_date": "23.07.2005",
+                "end_date": "29.06.2023",
+                "position": "Андролог",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Некрасов Исаева»",
+                "start_date": "25.02.1995",
+                "end_date": "12.05.2023",
+                "position": "Продюсер",
+                "special_conditions": false
+            },
+            {
+                "organization": "Никифорова Лтд",
+                "start_date": "09.08.1993",
+                "end_date": "12.09.2002",
+                "position": "Плотник",
+                "special_conditions": true
+            },
+            {
+                "organization": "ООО «Шестаков-Тарасова»",
+                "start_date": "13.02.1990",
+                "end_date": "27.10.2013",
+                "position": "Декан",
+                "special_conditions": false
+            },
+            {
+                "organization": "Сазонов и партнеры",
+                "start_date": "22.04.2000",
+                "end_date": "14.09.2008",
+                "position": "Радиотелефонист",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 36.16,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Паспорт",
+        "СНИЛС",
+        "Справка о стаже",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

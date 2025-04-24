@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Феофан Ааронович Прохоров",
+        "birth_date": "09.04.1975",
+        "snils": "627-120-215 37",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2020-05-24",
+        "cert_number": "7102881341"
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Военный билет",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

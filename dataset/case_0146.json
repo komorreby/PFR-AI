@@ -1,0 +1,41 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Кабанова Валентина Натановна",
+        "birth_date": "15.04.1960",
+        "snils": "848-291-658 90",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Савина Ираида Михайловна",
+            "date_changed": "16.03.2021"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 31,
+        "records": [
+            {
+                "organization": "АО «Владимирова Чернова»",
+                "start_date": "24.04.1992",
+                "end_date": "30.09.2015",
+                "position": "Оператор кино и телевидения",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 24.39,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Военный билет",
+        "Паспорт",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": true
+}

@@ -1,0 +1,61 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "София Геннадиевна Белоусова",
+        "birth_date": "14.01.1970",
+        "snils": "062-470-478 36",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 5,
+        "records": [
+            {
+                "organization": "НПО «Дьячкова Матвеев»",
+                "start_date": "08.11.1989",
+                "end_date": "02.03.2017",
+                "position": "Электрик",
+                "special_conditions": true
+            },
+            {
+                "organization": "АО «Беляков»",
+                "start_date": "10.05.1990",
+                "end_date": "01.12.1993",
+                "position": "Радист",
+                "special_conditions": false
+            },
+            {
+                "organization": "Рожков Инкорпорэйтед",
+                "start_date": "01.12.1990",
+                "end_date": "02.12.2022",
+                "position": "Имиджмейкер",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Рыбаков, Фокин и Чернова»",
+                "start_date": "23.06.1997",
+                "end_date": "22.08.2013",
+                "position": "Предприниматель",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 13.44,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

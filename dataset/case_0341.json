@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Ирина Макаровна Борисова",
+        "birth_date": "04.06.1959",
+        "snils": "972-237-552 52",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2020-08-31",
+        "cert_number": "2894447631"
+    },
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Военный билет",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

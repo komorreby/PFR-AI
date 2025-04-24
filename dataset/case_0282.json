@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Лариса Валентиновна Баранова",
+        "birth_date": "04.09.1974",
+        "snils": "386-962-235 85",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Феоктист Витальевич Зыков",
+            "date_changed": "15.11.2021"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка о стаже",
+        "Военный билет",
+        "СНИЛС",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

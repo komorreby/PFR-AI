@@ -1,0 +1,69 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Романов Анатолий Чеславович",
+        "birth_date": "06.03.1972",
+        "snils": "052-850-933 94",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Воронов Владимир Эдгардович",
+            "date_changed": "17.08.2022"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 26,
+        "records": [
+            {
+                "organization": "Иркутская нефтяная компания",
+                "start_date": "17.10.1999",
+                "end_date": "12.08.2005",
+                "position": "Столяр-краснодеревщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "Автозаправочные комплексы Atan",
+                "start_date": "25.07.1991",
+                "end_date": "17.08.1996",
+                "position": "Моторист",
+                "special_conditions": true
+            },
+            {
+                "organization": "Группа Рольф",
+                "start_date": "15.07.2001",
+                "end_date": "21.12.2013",
+                "position": "Иконописец",
+                "special_conditions": false
+            },
+            {
+                "organization": "Воробьев Инкорпорэйтед",
+                "start_date": "04.12.2003",
+                "end_date": "21.04.2020",
+                "position": "Тестировщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "Виноградов Лтд",
+                "start_date": "31.10.1987",
+                "end_date": "31.03.2007",
+                "position": "Диджей",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 40.57,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Военный билет",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

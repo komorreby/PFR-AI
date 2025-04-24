@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Синклитикия Даниловна Быкова",
+        "birth_date": "22.10.1966",
+        "snils": "331-739-884 46",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Иван Иларионович Самсонов",
+            "date_changed": "05.06.2020"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Паспорт",
+        "Справка о стаже",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

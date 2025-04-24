@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Симонов Платон Германович",
+        "birth_date": "27.03.1976",
+        "snils": "282-452-571 02",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2024-09-05",
+        "cert_number": "4768388544"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Справка о стаже",
+        "СНИЛС",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,59 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Раиса Вячеславовна Дементьева",
+        "birth_date": "19.11.1959",
+        "snils": "057-845-110 80",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 14,
+        "records": [
+            {
+                "organization": "Жуков Лтд",
+                "start_date": "13.04.1989",
+                "end_date": "23.08.2018",
+                "position": "Дирижёр",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Орехов Воробьева»",
+                "start_date": "09.03.1992",
+                "end_date": "20.09.2018",
+                "position": "Оператор вооружения",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Казакова, Гущина и Савин»",
+                "start_date": "26.06.2000",
+                "end_date": "18.05.2011",
+                "position": "Начальник службы",
+                "special_conditions": true
+            },
+            {
+                "organization": "Скания-Русь (Scania)",
+                "start_date": "22.10.1987",
+                "end_date": "16.04.2000",
+                "position": "Технолог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 12.21,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет",
+        "Трудовая книжка",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

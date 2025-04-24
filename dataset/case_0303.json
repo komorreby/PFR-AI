@@ -1,0 +1,37 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Максим Игнатович Мельников",
+        "birth_date": "04.03.1968",
+        "snils": "681-737-598 49",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Милован Филимонович Архипов",
+            "date_changed": "05.01.2020"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2024-03-05",
+        "cert_number": "3873601754"
+    },
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Военный билет",
+        "Паспорт",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": true
+}

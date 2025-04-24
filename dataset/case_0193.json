@@ -1,0 +1,35 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Кулакова Екатерина Евгеньевна",
+        "birth_date": "26.12.1961",
+        "snils": "402-128-651 46",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 34,
+        "records": [
+            {
+                "organization": "Меркушева Лтд",
+                "start_date": "03.08.2002",
+                "end_date": "26.12.2005",
+                "position": "Растениевод",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 37.87,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "СНИЛС",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

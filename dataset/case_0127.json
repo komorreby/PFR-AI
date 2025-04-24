@@ -1,0 +1,50 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Майя Андреевна Устинова",
+        "birth_date": "23.10.1962",
+        "snils": "538-584-423 45",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Козлов Филимон Виленович",
+            "date_changed": "26.03.2020"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 27,
+        "records": [
+            {
+                "organization": "Власова Групп",
+                "start_date": "20.10.1999",
+                "end_date": "18.07.2014",
+                "position": "Организатор свадеб",
+                "special_conditions": true
+            },
+            {
+                "organization": "ОАО «Зимин-Николаева»",
+                "start_date": "05.08.2004",
+                "end_date": "01.02.2017",
+                "position": "Плотник",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 50.21,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

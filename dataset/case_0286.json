@@ -1,0 +1,52 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Епифан Марсович Жданов",
+        "birth_date": "15.11.1976",
+        "snils": "711-157-500 48",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Игнатьева Виктория Альбертовна",
+            "date_changed": "12.08.2022"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 13,
+        "records": [
+            {
+                "organization": "РАО «Соболева»",
+                "start_date": "27.10.2000",
+                "end_date": "06.12.2002",
+                "position": "Кондитер",
+                "special_conditions": true
+            },
+            {
+                "organization": "Миронова Лтд",
+                "start_date": "17.04.1993",
+                "end_date": "10.11.2011",
+                "position": "Писатель",
+                "special_conditions": false
+            },
+            {
+                "organization": "ЗАО «Боброва»",
+                "start_date": "23.03.1988",
+                "end_date": "19.02.1993",
+                "position": "Фотомодель",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 22.76,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Справка МСЭ",
+        "Военный билет",
+        "Паспорт",
+        "Справка о стаже",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

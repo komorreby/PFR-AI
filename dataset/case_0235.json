@@ -1,0 +1,67 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Егорова Лидия Ждановна",
+        "birth_date": "07.10.1964",
+        "snils": "174-013-544 11",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 27,
+        "records": [
+            {
+                "organization": "ЗАО «Савельева»",
+                "start_date": "15.12.1985",
+                "end_date": "26.09.2017",
+                "position": "Фельдшер",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Шилов Аксенова»",
+                "start_date": "05.12.1990",
+                "end_date": "18.01.2016",
+                "position": "Метеоролог",
+                "special_conditions": false
+            },
+            {
+                "organization": "Ларионов Инкорпорэйтед",
+                "start_date": "10.11.1991",
+                "end_date": "22.06.1998",
+                "position": "Распиловщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "НПО «Щербаков, Петухов и Ширяева»",
+                "start_date": "01.03.2002",
+                "end_date": "14.09.2019",
+                "position": "Сурдолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "Макаров Лтд",
+                "start_date": "15.04.2002",
+                "end_date": "10.07.2004",
+                "position": "Диспетчер",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 24.45,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Военный билет",
+        "Справка о стаже",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

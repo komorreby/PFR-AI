@@ -1,0 +1,37 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Шубин Фортунат Глебович",
+        "birth_date": "25.05.1967",
+        "snils": "696-150-532 66",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Евгения Валериевна Козлова",
+            "date_changed": "22.02.2023"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2022-01-08",
+        "cert_number": "9718135896"
+    },
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Военный билет",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": true
+}

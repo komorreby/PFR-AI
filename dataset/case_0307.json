@@ -1,0 +1,46 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Зинаида Тимуровна Доронина",
+        "birth_date": "09.04.1964",
+        "snils": "663-078-035 95",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Варвара Эльдаровна Панфилова",
+            "date_changed": "13.12.2023"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 25,
+        "records": [
+            {
+                "organization": "Почта России",
+                "start_date": "07.06.2000",
+                "end_date": "10.06.2009",
+                "position": "Тыловик",
+                "special_conditions": false
+            },
+            {
+                "organization": "Орлов и партнеры",
+                "start_date": "14.05.1991",
+                "end_date": "03.11.2024",
+                "position": "Системный администратор",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 19.51,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка о стаже",
+        "Военный билет",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

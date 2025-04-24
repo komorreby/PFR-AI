@@ -1,0 +1,33 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Виноградов Прокл Адрианович",
+        "birth_date": "18.03.1960",
+        "snils": "530-338-230 29",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Евпраксия Матвеевна Сергеева",
+            "date_changed": "23.01.2023"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Военный билет",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

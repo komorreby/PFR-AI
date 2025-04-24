@@ -1,0 +1,33 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Мария Максимовна Блохина",
+        "birth_date": "21.05.1971",
+        "snils": "256-809-678 42",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Евдокия Филипповна Максимова",
+            "date_changed": "27.02.2022"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Военный билет",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Паспорт",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

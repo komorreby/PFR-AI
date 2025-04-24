@@ -1,0 +1,31 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Савва Викентьевич Сысоев",
+        "birth_date": "22.05.1973",
+        "snils": "213-205-873 32",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2024-07-08",
+        "cert_number": "8268852238"
+    },
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

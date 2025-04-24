@@ -1,0 +1,53 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Нестерова Людмила Львовна",
+        "birth_date": "28.12.1978",
+        "snils": "809-665-124 55",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Степанов Парамон Августович",
+            "date_changed": "25.02.2022"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 9,
+        "records": [
+            {
+                "organization": "НПО «Лаврентьева-Игнатьев»",
+                "start_date": "03.05.2003",
+                "end_date": "31.03.2018",
+                "position": "Растениевод",
+                "special_conditions": true
+            },
+            {
+                "organization": "АО «Дмитриев-Галкина»",
+                "start_date": "04.12.1991",
+                "end_date": "03.11.2009",
+                "position": "Ботаник",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Шубина, Васильева и Носкова»",
+                "start_date": "07.12.1996",
+                "end_date": "22.01.2012",
+                "position": "Имиджмейкер",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 18.36,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Справка о стаже",
+        "Паспорт",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

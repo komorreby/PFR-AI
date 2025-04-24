@@ -1,0 +1,67 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Вышеслав Тихонович Кузнецов",
+        "birth_date": "29.06.1966",
+        "snils": "347-151-645 66",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 37,
+        "records": [
+            {
+                "organization": "Интер РАО",
+                "start_date": "27.06.1999",
+                "end_date": "03.06.2006",
+                "position": "Скотник",
+                "special_conditions": false
+            },
+            {
+                "organization": "Давыдова Групп",
+                "start_date": "11.03.2015",
+                "end_date": "16.11.2018",
+                "position": "Упаковщик",
+                "special_conditions": true
+            },
+            {
+                "organization": "Гришин и партнеры",
+                "start_date": "22.07.1986",
+                "end_date": "24.01.2017",
+                "position": "Нарколог",
+                "special_conditions": false
+            },
+            {
+                "organization": "НПО «Пестова»",
+                "start_date": "04.10.1991",
+                "end_date": "21.03.1995",
+                "position": "Оператор РЛС",
+                "special_conditions": true
+            },
+            {
+                "organization": "Велесстрой",
+                "start_date": "28.09.2002",
+                "end_date": "25.10.2015",
+                "position": "Начальник штаба",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 30.5,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Паспорт",
+        "Справка о стаже",
+        "Военный билет",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

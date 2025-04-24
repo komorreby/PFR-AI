@@ -1,0 +1,30 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Григорьев Евгений Фокич",
+        "birth_date": "23.05.1973",
+        "snils": "887-170-466 53",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт",
+        "СНИЛС",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

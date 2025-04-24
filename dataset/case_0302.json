@@ -1,0 +1,54 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Олимпиада Андреевна Егорова",
+        "birth_date": "28.08.1973",
+        "snils": "343-910-115 56",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 11,
+        "records": [
+            {
+                "organization": "Некрасов Лимитед",
+                "start_date": "25.12.1995",
+                "end_date": "30.12.2010",
+                "position": "Диетолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "ОАО «Логинова-Блинова»",
+                "start_date": "24.09.1985",
+                "end_date": "18.03.2008",
+                "position": "Телефонист",
+                "special_conditions": false
+            },
+            {
+                "organization": "Новотранс",
+                "start_date": "09.05.1993",
+                "end_date": "21.02.2013",
+                "position": "Уролог",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 15.89,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Военный билет",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Паспорт",
+        "Справка о стаже",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

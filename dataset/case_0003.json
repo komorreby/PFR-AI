@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Аким Владиленович Денисов",
+        "birth_date": "13.11.1959",
+        "snils": "637-583-127 40",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2022-09-22",
+        "cert_number": "2117228627"
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Трудовая книжка",
+        "Военный билет",
+        "СНИЛС",
+        "Справка о стаже",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

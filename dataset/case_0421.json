@@ -1,0 +1,39 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Милица Харитоновна Бирюкова",
+        "birth_date": "12.11.1968",
+        "snils": "528-273-295 53",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Харитон Игнатович Галкин",
+            "date_changed": "01.01.2020"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2021-04-22",
+        "cert_number": "1994127874"
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

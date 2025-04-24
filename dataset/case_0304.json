@@ -1,0 +1,63 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Александр Ефимьевич Суворов",
+        "birth_date": "09.02.1967",
+        "snils": "251-838-417 65",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Мельников Олег Юльевич",
+            "date_changed": "29.07.2021"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 19,
+        "records": [
+            {
+                "organization": "Модум-транс",
+                "start_date": "17.08.2008",
+                "end_date": "01.11.2015",
+                "position": "Египтолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "ООО «Беляев, Ермакова и Орехова»",
+                "start_date": "08.11.1994",
+                "end_date": "06.12.2007",
+                "position": "Топограф",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Зимина, Колобова и Ширяева»",
+                "start_date": "25.11.1997",
+                "end_date": "15.02.2000",
+                "position": "Моторист",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Никонова, Лапина и Мамонтова»",
+                "start_date": "01.11.1985",
+                "end_date": "04.02.2003",
+                "position": "Менеджер",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 14.2,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет",
+        "Паспорт",
+        "Трудовая книжка",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Виноградова Мария Вениаминовна",
+        "birth_date": "21.03.1968",
+        "snils": "064-354-475 36",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2022-11-14",
+        "cert_number": "0903520306"
+    },
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Паспорт",
+        "СНИЛС",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

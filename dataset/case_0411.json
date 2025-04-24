@@ -1,0 +1,53 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Ермил Витальевич Вишняков",
+        "birth_date": "05.08.1962",
+        "snils": "903-334-996 29",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 9,
+        "records": [
+            {
+                "organization": "ИП «Попова Ларионова»",
+                "start_date": "12.01.2003",
+                "end_date": "23.10.2015",
+                "position": "Проходчик",
+                "special_conditions": false
+            },
+            {
+                "organization": "Сергеев Групп",
+                "start_date": "25.05.1994",
+                "end_date": "24.05.2015",
+                "position": "Блоггер",
+                "special_conditions": false
+            },
+            {
+                "organization": "НПО «Колобов, Кабанова и Смирнова»",
+                "start_date": "05.10.1998",
+                "end_date": "21.12.2019",
+                "position": "Телеграфист",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 8.41,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

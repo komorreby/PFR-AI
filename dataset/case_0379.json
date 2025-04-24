@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Мамонтова Анжела Кузьминична",
+        "birth_date": "18.08.1959",
+        "snils": "055-715-893 11",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2022-01-25",
+        "cert_number": "1873696803"
+    },
+    "benefits": [],
+    "documents": [
+        "Паспорт",
+        "Справка о стаже",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": true
+}

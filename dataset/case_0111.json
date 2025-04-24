@@ -1,0 +1,38 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Михайлова Татьяна Ниловна",
+        "birth_date": "13.09.1960",
+        "snils": "749-549-927 18",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Меркушев Чеслав Ильич",
+            "date_changed": "03.05.2022"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2022-06-26",
+        "cert_number": "1943228151"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Военный билет",
+        "Паспорт",
+        "СНИЛС",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

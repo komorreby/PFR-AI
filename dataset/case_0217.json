@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Анастасия Архиповна Гущина",
+        "birth_date": "15.03.1975",
+        "snils": "996-531-120 72",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Ильина Варвара Богдановна",
+            "date_changed": "25.01.2025"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2023-08-01",
+        "cert_number": "7337442134"
+    },
+    "benefits": [],
+    "documents": [
+        "Паспорт",
+        "Справка МСЭ",
+        "СНИЛС",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

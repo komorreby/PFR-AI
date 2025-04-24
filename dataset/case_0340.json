@@ -1,0 +1,49 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Бобров Изяслав Харлампьевич",
+        "birth_date": "26.08.1969",
+        "snils": "434-735-240 53",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Акулина Константиновна Дмитриева",
+            "date_changed": "07.07.2022"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 26,
+        "records": [
+            {
+                "organization": "Мечел",
+                "start_date": "13.10.2018",
+                "end_date": "19.03.2019",
+                "position": "Телохранитель",
+                "special_conditions": false
+            },
+            {
+                "organization": "Макарова Лтд",
+                "start_date": "04.02.1995",
+                "end_date": "12.02.2006",
+                "position": "Дознаватель",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 48.93,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Военный билет",
+        "Паспорт",
+        "СНИЛС",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

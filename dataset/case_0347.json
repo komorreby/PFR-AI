@@ -1,0 +1,46 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Елена Афанасьевна Шашкова",
+        "birth_date": "06.06.1965",
+        "snils": "523-920-096 73",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 17,
+        "records": [
+            {
+                "organization": "Шаров и партнеры",
+                "start_date": "03.09.1990",
+                "end_date": "02.03.2017",
+                "position": "Грейдерист",
+                "special_conditions": false
+            },
+            {
+                "organization": "ИП «Одинцова Хохлова»",
+                "start_date": "27.06.2002",
+                "end_date": "29.12.2013",
+                "position": "Океанолог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 27.15,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет",
+        "СНИЛС",
+        "Паспорт",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,47 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Василиса Васильевна Сидорова",
+        "birth_date": "30.12.1972",
+        "snils": "112-315-004 58",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Виктор Зиновьевич Самсонов",
+            "date_changed": "13.05.2023"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 9,
+        "records": [
+            {
+                "organization": "РАО «Смирнова-Константинова»",
+                "start_date": "27.03.1997",
+                "end_date": "03.07.2009",
+                "position": "Маляр",
+                "special_conditions": false
+            },
+            {
+                "organization": "АвтоГермес",
+                "start_date": "14.09.2005",
+                "end_date": "14.12.2015",
+                "position": "Военный консультант",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 15.93,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Паспорт",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

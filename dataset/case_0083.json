@@ -1,0 +1,33 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Лапин Гурий Афанасьевич",
+        "birth_date": "18.08.1967",
+        "snils": "724-215-663 35",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Виктория Руслановна Морозова",
+            "date_changed": "16.04.2025"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Военный билет",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

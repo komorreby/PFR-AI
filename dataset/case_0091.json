@@ -1,0 +1,59 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Корнилов Аристарх Филатович",
+        "birth_date": "10.03.1969",
+        "snils": "733-655-019 91",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 7,
+        "records": [
+            {
+                "organization": "ИП «Петров»",
+                "start_date": "05.09.2016",
+                "end_date": "01.01.2017",
+                "position": "Энтомолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Соболев, Ларионов и Савина»",
+                "start_date": "22.06.1998",
+                "end_date": "30.11.1998",
+                "position": "Дефектолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Филиппов Авдеева»",
+                "start_date": "09.11.1985",
+                "end_date": "04.02.2000",
+                "position": "Гляциолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "Семенов Групп",
+                "start_date": "30.12.2001",
+                "end_date": "29.06.2013",
+                "position": "Ревматолог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Справка о стаже",
+        "Военный билет",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

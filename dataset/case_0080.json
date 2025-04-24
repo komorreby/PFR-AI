@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Фомичева Эмилия Игоревна",
+        "birth_date": "13.02.1973",
+        "snils": "644-958-018 16",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "СНИЛС",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,53 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Галина Степановна Ершова",
+        "birth_date": "11.03.1965",
+        "snils": "804-140-248 46",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Самойлов Януарий Фадеевич",
+            "date_changed": "31.05.2024"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 17,
+        "records": [
+            {
+                "organization": "РАО «Корнилова, Крылов и Карпова»",
+                "start_date": "24.05.1994",
+                "end_date": "25.07.2016",
+                "position": "Операционист",
+                "special_conditions": false
+            },
+            {
+                "organization": "ООО «Журавлев Волкова»",
+                "start_date": "01.10.1994",
+                "end_date": "06.05.2023",
+                "position": "Теолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Прохорова»",
+                "start_date": "08.03.2010",
+                "end_date": "23.05.2014",
+                "position": "Астрофизик",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 23.07,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Паспорт",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

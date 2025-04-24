@@ -1,0 +1,38 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Соколова Феврония Кирилловна",
+        "birth_date": "03.01.1965",
+        "snils": "071-272-733 87",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 13,
+        "records": [
+            {
+                "organization": "Субботина и партнеры",
+                "start_date": "27.10.1992",
+                "end_date": "28.02.2019",
+                "position": "Редактор",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 16.57,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

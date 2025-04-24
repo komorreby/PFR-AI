@@ -1,0 +1,46 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Егоров Ираклий Власович",
+        "birth_date": "07.08.1974",
+        "snils": "375-448-145 09",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 35,
+        "records": [
+            {
+                "organization": "АО «Беляков-Зимин»",
+                "start_date": "07.11.1987",
+                "end_date": "29.11.2018",
+                "position": "Преподаватель",
+                "special_conditions": true
+            },
+            {
+                "organization": "Афанасьева и партнеры",
+                "start_date": "03.05.1991",
+                "end_date": "06.01.1997",
+                "position": "Специалист по клеточным технологиям",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 40.51,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Военный билет",
+        "Паспорт",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

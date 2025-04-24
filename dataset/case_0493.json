@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Алексеева Анжела Никифоровна",
+        "birth_date": "15.04.1968",
+        "snils": "025-281-722 28",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Дементий Ефремович Стрелков",
+            "date_changed": "06.05.2023"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2023-12-18",
+        "cert_number": "0446395050"
+    },
+    "benefits": [],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Паспорт",
+        "СНИЛС",
+        "Военный билет",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

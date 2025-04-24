@@ -1,0 +1,56 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Суханова Синклитикия Афанасьевна",
+        "birth_date": "09.09.1968",
+        "snils": "329-053-069 49",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 10,
+        "records": [
+            {
+                "organization": "АО «Орлов, Казаков и Филиппова»",
+                "start_date": "25.02.1995",
+                "end_date": "29.11.2000",
+                "position": "Пластический хирург",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Федоров»",
+                "start_date": "11.08.1989",
+                "end_date": "28.01.2015",
+                "position": "Воспитатель",
+                "special_conditions": false
+            },
+            {
+                "organization": "Макарова и партнеры",
+                "start_date": "10.10.2009",
+                "end_date": "04.10.2012",
+                "position": "Инженер-лесотехник",
+                "special_conditions": false
+            },
+            {
+                "organization": "Независимая нефтегазовая компания",
+                "start_date": "17.10.2014",
+                "end_date": "18.01.2015",
+                "position": "Кондуктор",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 12.49,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "Справка о стаже",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

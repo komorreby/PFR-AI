@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Попова Элеонора Даниловна",
+        "birth_date": "04.03.1978",
+        "snils": "091-868-530 65",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Сидорова Евфросиния Егоровна",
+            "date_changed": "05.04.2021"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2022-02-22",
+        "cert_number": "6189662387"
+    },
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Военный билет",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,64 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Август Игнатович Абрамов",
+        "birth_date": "26.04.1961",
+        "snils": "550-555-702 83",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Вероника Андреевна Шарапова",
+            "date_changed": "19.02.2023"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 40,
+        "records": [
+            {
+                "organization": "Михайлова Групп",
+                "start_date": "02.03.2004",
+                "end_date": "23.01.2023",
+                "position": "Кровельщик",
+                "special_conditions": false
+            },
+            {
+                "organization": "Якушева Инкорпорэйтед",
+                "start_date": "31.10.1987",
+                "end_date": "25.03.1996",
+                "position": "Повар",
+                "special_conditions": false
+            },
+            {
+                "organization": "Попов Лтд",
+                "start_date": "14.11.1995",
+                "end_date": "28.02.1998",
+                "position": "Фотограф",
+                "special_conditions": true
+            },
+            {
+                "organization": "Ланит",
+                "start_date": "17.01.2002",
+                "end_date": "01.12.2016",
+                "position": "Тальман",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 43.39,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Паспорт",
+        "Военный билет",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

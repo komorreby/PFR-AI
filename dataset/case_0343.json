@@ -1,0 +1,55 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Клавдия Харитоновна Колесникова",
+        "birth_date": "21.04.1970",
+        "snils": "575-426-747 51",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Лев Авдеевич Елисеев",
+            "date_changed": "08.08.2024"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 12,
+        "records": [
+            {
+                "organization": "ЗАО «Сысоева»",
+                "start_date": "19.11.1999",
+                "end_date": "28.07.2006",
+                "position": "Ихтиолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "ЗАО «Корнилов-Меркушев»",
+                "start_date": "08.07.1987",
+                "end_date": "02.08.2020",
+                "position": "Оператор кино и телевидения",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Крюкова»",
+                "start_date": "01.10.2013",
+                "end_date": "18.09.2016",
+                "position": "Банкир",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 21.64,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Паспорт",
+        "Справка МСЭ",
+        "Военный билет",
+        "СНИЛС",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

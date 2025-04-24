@@ -1,0 +1,71 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Родионова Вера Александровна",
+        "birth_date": "09.03.1966",
+        "snils": "585-895-114 49",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Милица Альбертовна Макарова",
+            "date_changed": "05.05.2023"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 11,
+        "records": [
+            {
+                "organization": "Петухов Инк",
+                "start_date": "07.11.1999",
+                "end_date": "20.07.2011",
+                "position": "Проходчик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ООО «Вишняков Владимиров»",
+                "start_date": "03.10.1989",
+                "end_date": "10.02.2008",
+                "position": "Секретчик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ЗАО «Лебедева-Кулаков»",
+                "start_date": "27.05.2003",
+                "end_date": "22.08.2014",
+                "position": "Филолог",
+                "special_conditions": true
+            },
+            {
+                "organization": "ООО «Сазонова, Попова и Васильева»",
+                "start_date": "20.02.2009",
+                "end_date": "20.01.2016",
+                "position": "Виноградарь",
+                "special_conditions": true
+            },
+            {
+                "organization": "ООО «Филиппова, Крюкова и Павлова»",
+                "start_date": "23.11.2009",
+                "end_date": "20.08.2016",
+                "position": "Особист",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 16.4,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Федоров Филарет Иосифович",
+        "birth_date": "23.06.1975",
+        "snils": "872-744-285 84",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2024-10-02",
+        "cert_number": null
+    },
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Справка о стаже",
+        "Паспорт",
+        "Военный билет",
+        "Справка МСЭ",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": true
+}

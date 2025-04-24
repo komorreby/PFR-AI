@@ -1,0 +1,27 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Антонина Альбертовна Корнилова",
+        "birth_date": "11.12.1960",
+        "snils": "630-906-540 28",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "СНИЛС",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": true
+}

@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Быкова Вероника Васильевна",
+        "birth_date": "28.11.1971",
+        "snils": "928-812-906 80",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2022-07-31",
+        "cert_number": "4199190497"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Паспорт",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Военный билет",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

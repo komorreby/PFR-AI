@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "тов. Яковлева Надежда Ниловна",
+        "birth_date": "22.10.1974",
+        "snils": "486-312-539 53",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2022-12-04",
+        "cert_number": "1835842255"
+    },
+    "benefits": [
+        "Ветеран труда",
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Военный билет",
+        "СНИЛС",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

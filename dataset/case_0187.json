@@ -1,0 +1,40 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Макаров Валерий Жоресович",
+        "birth_date": "17.09.1979",
+        "snils": "632-383-795 13",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 26,
+        "records": [
+            {
+                "organization": "Марвел КТ",
+                "start_date": "31.05.2003",
+                "end_date": "07.02.2025",
+                "position": "Химик-контролер",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 48.9,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Паспорт",
+        "Военный билет",
+        "Справка о стаже",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

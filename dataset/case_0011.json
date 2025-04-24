@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Марина Кузьминична Казакова",
+        "birth_date": "01.08.1968",
+        "snils": "010-855-953 03",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2023-11-11",
+        "cert_number": "4730379598"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": true
+}

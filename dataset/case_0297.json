@@ -1,0 +1,38 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Святополк Васильевич Зуев",
+        "birth_date": "06.10.1961",
+        "snils": "858-032-507 68",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Комиссарова Лора Антоновна",
+            "date_changed": "08.05.2021"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 20,
+        "records": [
+            {
+                "organization": "НПО «Бирюкова, Игнатьева и Попова»",
+                "start_date": "08.12.1986",
+                "end_date": "14.07.2010",
+                "position": "Инженер-лаборант",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 39.96,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

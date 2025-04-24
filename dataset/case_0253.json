@@ -1,0 +1,45 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Иванна Андреевна Овчинникова",
+        "birth_date": "03.01.1962",
+        "snils": "473-592-242 15",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 9,
+        "records": [
+            {
+                "organization": "Горшкова Лимитед",
+                "start_date": "05.02.1992",
+                "end_date": "22.08.2021",
+                "position": "Снабженец",
+                "special_conditions": true
+            },
+            {
+                "organization": "Чернова Инкорпорэйтед",
+                "start_date": "30.07.1987",
+                "end_date": "09.07.2003",
+                "position": "Механик-Водитель",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 9.15,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Военный билет",
+        "Паспорт",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

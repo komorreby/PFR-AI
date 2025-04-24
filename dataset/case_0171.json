@@ -1,0 +1,54 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Суханов Лавр Владленович",
+        "birth_date": "30.07.1965",
+        "snils": "945-417-029 34",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Горшков Григорий Венедиктович",
+            "date_changed": "16.11.2023"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 12,
+        "records": [
+            {
+                "organization": "Гиперглобус (Bruch-Beteiligungs)",
+                "start_date": "27.07.1995",
+                "end_date": "17.06.1996",
+                "position": "Зенитчик",
+                "special_conditions": false
+            },
+            {
+                "organization": "Акрон",
+                "start_date": "10.11.2013",
+                "end_date": "03.04.2018",
+                "position": "Бондарь",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Одинцова, Гаврилов и Рогов»",
+                "start_date": "10.07.1994",
+                "end_date": "24.08.1995",
+                "position": "Няня",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 10.5,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "Паспорт",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

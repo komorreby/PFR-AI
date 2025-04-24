@@ -1,0 +1,43 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Шилова Нинель Григорьевна",
+        "birth_date": "24.12.1971",
+        "snils": "936-950-097 73",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 29,
+        "records": [
+            {
+                "organization": "ООО «Лебедева Ершова»",
+                "start_date": "21.05.1987",
+                "end_date": "27.11.1990",
+                "position": "Продавец",
+                "special_conditions": false
+            },
+            {
+                "organization": "Селиверстова Лимитед",
+                "start_date": "28.07.1996",
+                "end_date": "09.03.2024",
+                "position": "Химик",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 46.92,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "Трудовая книжка",
+        "СНИЛС",
+        "Паспорт",
+        "Справка МСЭ",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

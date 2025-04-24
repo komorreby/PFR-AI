@@ -1,0 +1,69 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Тамара Егоровна Зиновьева",
+        "birth_date": "27.12.1978",
+        "snils": "322-641-411 11",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Дорофеева Ираида Макаровна",
+            "date_changed": "26.03.2025"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 38,
+        "records": [
+            {
+                "organization": "РАО «Сидорова Котов»",
+                "start_date": "14.03.2010",
+                "end_date": "08.10.2013",
+                "position": "Диктор",
+                "special_conditions": false
+            },
+            {
+                "organization": "Ситибанк",
+                "start_date": "10.09.2000",
+                "end_date": "19.10.2019",
+                "position": "Терапевт",
+                "special_conditions": true
+            },
+            {
+                "organization": "ОАО «Николаев, Фомичев и Дементьев»",
+                "start_date": "11.04.1992",
+                "end_date": "13.01.2020",
+                "position": "Телохранитель",
+                "special_conditions": true
+            },
+            {
+                "organization": "Спортмастер",
+                "start_date": "12.03.1997",
+                "end_date": "06.07.2005",
+                "position": "Юрист",
+                "special_conditions": true
+            },
+            {
+                "organization": "РАО «Ларионов»",
+                "start_date": "19.01.1994",
+                "end_date": "06.09.2024",
+                "position": "Дерматолог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 42.95,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

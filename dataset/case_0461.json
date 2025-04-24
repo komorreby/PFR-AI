@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Орлова Дарья Сергеевна",
+        "birth_date": "25.10.1971",
+        "snils": "520-100-665 23",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2023-07-28",
+        "cert_number": "7583699647"
+    },
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "СНИЛС",
+        "Паспорт",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": true
+}

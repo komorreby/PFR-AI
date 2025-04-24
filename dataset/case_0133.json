@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Зуева Варвара Харитоновна",
+        "birth_date": "17.11.1965",
+        "snils": "212-537-487 36",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Лора Федоровна Ширяева",
+            "date_changed": "02.04.2022"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2021-05-29",
+        "cert_number": "5404550228"
+    },
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка о стаже",
+        "СНИЛС",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

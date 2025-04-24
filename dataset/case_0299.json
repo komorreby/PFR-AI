@@ -1,0 +1,41 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Кузнецова Евпраксия Кузьминична",
+        "birth_date": "03.06.1966",
+        "snils": "878-647-133 20",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Наумов Всеслав Жанович",
+            "date_changed": "27.05.2024"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 38,
+        "records": [
+            {
+                "organization": "ЗАО «Якушев Назарова»",
+                "start_date": "21.11.2013",
+                "end_date": "01.06.2022",
+                "position": "Мелиоратор",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 31.83,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": true
+}

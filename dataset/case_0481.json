@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Фомина Акулина Алексеевна",
+        "birth_date": "10.08.1974",
+        "snils": "086-625-776 90",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2024-02-05",
+        "cert_number": null
+    },
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Военный билет",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

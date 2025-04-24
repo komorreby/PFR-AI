@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Вероника Алексеевна Дмитриева",
+        "birth_date": "13.12.1973",
+        "snils": "177-050-583 81",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2022-10-11",
+        "cert_number": "8263517801"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Военный билет",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": true
+}

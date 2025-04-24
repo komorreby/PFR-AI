@@ -1,0 +1,32 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Крюкова Галина Кузьминична",
+        "birth_date": "10.09.1961",
+        "snils": "386-997-879 16",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2022-07-31",
+        "cert_number": null
+    },
+    "benefits": [],
+    "documents": [
+        "Военный билет",
+        "Трудовая книжка",
+        "Паспорт",
+        "СНИЛС",
+        "Справка о стаже",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": true
+}

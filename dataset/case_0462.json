@@ -1,0 +1,38 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Валентина Львовна Борисова",
+        "birth_date": "28.02.1964",
+        "snils": "878-259-284 49",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Лаврентьева Маргарита Григорьевна",
+            "date_changed": "29.12.2021"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2021-01-10",
+        "cert_number": "7103693072"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,48 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Суханов Гремислав Вячеславович",
+        "birth_date": "05.01.1967",
+        "snils": "386-982-221 98",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Щукина Алевтина Афанасьевна",
+            "date_changed": "08.09.2024"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 30,
+        "records": [
+            {
+                "organization": "Московский метрополитен",
+                "start_date": "26.02.1989",
+                "end_date": "26.08.1995",
+                "position": "Переводчик",
+                "special_conditions": true
+            },
+            {
+                "organization": "ИП «Самсонова Жданов»",
+                "start_date": "08.05.2002",
+                "end_date": "19.03.2004",
+                "position": "Профпатолог",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 37.45,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Военный билет",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

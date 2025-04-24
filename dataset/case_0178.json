@@ -1,0 +1,46 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "г-н Зуев Харлампий Фёдорович",
+        "birth_date": "10.03.1980",
+        "snils": "074-349-562 57",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Федорова Людмила Леоновна",
+            "date_changed": "10.12.2024"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 36,
+        "records": [
+            {
+                "organization": "ОАО «Логинов Петухова»",
+                "start_date": "31.07.1987",
+                "end_date": "01.05.2014",
+                "position": "Зоотехник",
+                "special_conditions": false
+            },
+            {
+                "organization": "М Фэшн",
+                "start_date": "28.06.2009",
+                "end_date": "05.09.2024",
+                "position": "Штурман",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 52.81,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "СНИЛС",
+        "Справка о стаже",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

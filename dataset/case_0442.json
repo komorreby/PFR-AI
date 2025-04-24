@@ -1,0 +1,55 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Лихачев Ярополк Владиленович",
+        "birth_date": "20.06.1960",
+        "snils": "410-024-324 44",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Котов Марк Феофанович",
+            "date_changed": "15.10.2020"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 25,
+        "records": [
+            {
+                "organization": "Беляева Инк",
+                "start_date": "04.08.1998",
+                "end_date": "09.09.2000",
+                "position": "Востоковед",
+                "special_conditions": false
+            },
+            {
+                "organization": "ООО «Колесников, Блинов и Самойлов»",
+                "start_date": "31.05.1990",
+                "end_date": "27.02.1996",
+                "position": "Редактор",
+                "special_conditions": false
+            },
+            {
+                "organization": "АО «Королева, Кулагин и Зимина»",
+                "start_date": "02.04.1999",
+                "end_date": "21.06.2023",
+                "position": "Оператор кино и телевидения",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 47.12,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Паспорт",
+        "Военный билет",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

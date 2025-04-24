@@ -1,0 +1,38 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Таисия Филипповна Королева",
+        "birth_date": "01.08.1975",
+        "snils": "876-279-643 32",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 17,
+        "records": [
+            {
+                "organization": "ОАО «Никонова Королева»",
+                "start_date": "03.03.1998",
+                "end_date": "10.05.2000",
+                "position": "Терапевт",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 21.37,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "СНИЛС",
+        "Паспорт",
+        "Справка МСЭ",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

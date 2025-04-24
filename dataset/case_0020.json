@@ -1,0 +1,35 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Раиса Тимуровна Виноградова",
+        "birth_date": "21.03.1965",
+        "snils": "483-907-174 59",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2024-09-06",
+        "cert_number": "5626685609"
+    },
+    "benefits": [
+        "Многодетная мать",
+        "Ветеран труда",
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

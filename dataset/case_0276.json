@@ -1,0 +1,42 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Кудряшов Всеволод Аверьянович",
+        "birth_date": "30.04.1976",
+        "snils": "221-856-883 53",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Агата Мироновна Турова",
+            "date_changed": "21.11.2021"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 14,
+        "records": [
+            {
+                "organization": "ABI Product",
+                "start_date": "14.09.1988",
+                "end_date": "15.05.1992",
+                "position": "Декан",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 14.41,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "СНИЛС",
+        "Паспорт",
+        "Военный билет",
+        "Трудовая книжка",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

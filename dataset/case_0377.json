@@ -1,0 +1,39 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Мартьян Валерьевич Зыков",
+        "birth_date": "03.04.1966",
+        "snils": "054-664-064 49",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Жанна Александровна Галкина",
+            "date_changed": "23.12.2020"
+        },
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "2",
+        "date": "2024-04-25",
+        "cert_number": "2645463603"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Паспорт",
+        "СНИЛС",
+        "Военный билет"
+    ],
+    "has_incorrect_document": false
+}

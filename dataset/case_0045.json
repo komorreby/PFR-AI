@@ -1,0 +1,33 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Раиса Валериевна Пахомова",
+        "birth_date": "08.02.1980",
+        "snils": "319-454-983 00",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {},
+        "dependents": 0
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "child",
+        "date": "2024-10-12",
+        "cert_number": "0106006768"
+    },
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Военный билет",
+        "Трудовая книжка",
+        "Паспорт",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

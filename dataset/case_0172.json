@@ -1,0 +1,69 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Ильин Тихон Феодосьевич",
+        "birth_date": "19.07.1967",
+        "snils": "296-961-434 80",
+        "gender": "male",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Юрий Алексеевич Данилов",
+            "date_changed": "26.10.2022"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 24,
+        "records": [
+            {
+                "organization": "АО «Мясников-Евсеев»",
+                "start_date": "10.07.1999",
+                "end_date": "23.07.2024",
+                "position": "Энтомолог",
+                "special_conditions": true
+            },
+            {
+                "organization": "РАО «Федосеев»",
+                "start_date": "06.01.1991",
+                "end_date": "14.10.2004",
+                "position": "Десантник",
+                "special_conditions": false
+            },
+            {
+                "organization": "Казаньоргсинтез",
+                "start_date": "06.10.1995",
+                "end_date": "28.08.2004",
+                "position": "Переводчик",
+                "special_conditions": false
+            },
+            {
+                "organization": "ВО Промсырьеимпорт",
+                "start_date": "26.01.2004",
+                "end_date": "24.02.2011",
+                "position": "Физик",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Маслов, Макарова и Лапина»",
+                "start_date": "01.10.1997",
+                "end_date": "29.05.2004",
+                "position": "Оперативный работник",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 21.51,
+    "disability": null,
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Военный билет",
+        "Паспорт",
+        "СНИЛС",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Трудовая книжка"
+    ],
+    "has_incorrect_document": false
+}

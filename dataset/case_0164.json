@@ -1,0 +1,49 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Зайцева Фёкла Оскаровна",
+        "birth_date": "26.02.1976",
+        "snils": "270-399-619 04",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 8,
+        "records": [
+            {
+                "organization": "Кузнецов Инкорпорэйтед",
+                "start_date": "04.09.1993",
+                "end_date": "13.10.2002",
+                "position": "Балетмейстер",
+                "special_conditions": false
+            },
+            {
+                "organization": "ЗАО «Петрова-Калашникова»",
+                "start_date": "20.06.2001",
+                "end_date": "10.03.2002",
+                "position": "Агроном-почвовед",
+                "special_conditions": true
+            },
+            {
+                "organization": "АО «Евсеев-Якушев»",
+                "start_date": "14.12.1989",
+                "end_date": "03.05.2016",
+                "position": "Химик-аналитик",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 13.11,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Паспорт",
+        "Военный билет",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": true
+}

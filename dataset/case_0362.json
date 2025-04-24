@@ -1,0 +1,31 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Ермаков Пантелеймон Игнатьевич",
+        "birth_date": "24.09.1976",
+        "snils": "557-425-276 50",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {
+            "old_full_name": "Клавдия Романовна Нестерова",
+            "date_changed": "23.01.2025"
+        },
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Военный билет",
+        "СНИЛС",
+        "Паспорт",
+        "Справка МСЭ"
+    ],
+    "has_incorrect_document": false
+}

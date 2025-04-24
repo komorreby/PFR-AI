@@ -1,0 +1,31 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Измаил Архипович Щукин",
+        "birth_date": "22.04.1960",
+        "snils": "039-784-590 14",
+        "gender": "male",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": null,
+    "benefits": [
+        "Ветеран труда",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

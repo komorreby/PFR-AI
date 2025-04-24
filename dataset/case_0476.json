@@ -1,0 +1,33 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Сила Владиленович Капустин",
+        "birth_date": "25.07.1960",
+        "snils": "012-229-334 98",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2023-12-26",
+        "cert_number": "1100366463"
+    },
+    "benefits": [
+        "Инвалид 2 группы"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Военный билет",
+        "СНИЛС",
+        "Трудовая книжка",
+        "Справка о стаже"
+    ],
+    "has_incorrect_document": false
+}

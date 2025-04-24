@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Спиридон Фокич Лапин",
+        "birth_date": "19.02.1970",
+        "snils": "174-927-461 95",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Дорофеева София Игоревна",
+            "date_changed": "28.02.2023"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2025-03-18",
+        "cert_number": null
+    },
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

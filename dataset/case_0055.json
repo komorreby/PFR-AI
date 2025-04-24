@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Моисеева Наталья Александровна",
+        "birth_date": "23.02.1960",
+        "snils": "903-609-854 71",
+        "gender": "female",
+        "citizenship": "Украина",
+        "name_change_info": {
+            "old_full_name": "Олимпий Аксёнович Орлов",
+            "date_changed": "03.06.2021"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2025-04-06",
+        "cert_number": "0854310334"
+    },
+    "benefits": [
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Трудовая книжка",
+        "Справка МСЭ",
+        "Военный билет",
+        "Справка о стаже",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,40 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Тарасова Евфросиния Викторовна",
+        "birth_date": "16.02.1975",
+        "snils": "883-560-842 40",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 36,
+        "records": [
+            {
+                "organization": "ДСК Автобан",
+                "start_date": "20.11.2014",
+                "end_date": "25.11.2017",
+                "position": "Радист",
+                "special_conditions": false
+            }
+        ]
+    },
+    "pension_points": 51.09,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать",
+        "Инвалид 2 группы",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Трудовая книжка",
+        "Военный билет",
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Паспорт"
+    ],
+    "has_incorrect_document": true
+}

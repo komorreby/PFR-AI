@@ -1,0 +1,61 @@
+{
+    "pension_type": "retirement_standard",
+    "personal_data": {
+        "full_name": "Наум Ярославович Афанасьев",
+        "birth_date": "14.11.1969",
+        "snils": "376-770-113 61",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Суворова Галина Вадимовна",
+            "date_changed": "26.07.2023"
+        },
+        "dependents": 3
+    },
+    "work_experience": {
+        "total_years": 31,
+        "records": [
+            {
+                "organization": "Исаков Лтд",
+                "start_date": "27.05.1987",
+                "end_date": "02.02.2001",
+                "position": "Радиолог",
+                "special_conditions": false
+            },
+            {
+                "organization": "Зуева Инкорпорэйтед",
+                "start_date": "10.02.2014",
+                "end_date": "19.02.2020",
+                "position": "Оператор РЛС",
+                "special_conditions": false
+            },
+            {
+                "organization": "РАО «Журавлев»",
+                "start_date": "15.02.1993",
+                "end_date": "08.06.2002",
+                "position": "Начальник службы",
+                "special_conditions": true
+            },
+            {
+                "organization": "ИП «Куликова-Яковлев»",
+                "start_date": "08.09.2011",
+                "end_date": "18.04.2014",
+                "position": "Телохранитель",
+                "special_conditions": true
+            }
+        ]
+    },
+    "pension_points": 34.21,
+    "disability": null,
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет",
+        "Паспорт",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

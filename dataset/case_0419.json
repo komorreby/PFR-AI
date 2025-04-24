@@ -1,0 +1,34 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Ефрем Демьянович Симонов",
+        "birth_date": "05.05.1962",
+        "snils": "870-279-762 07",
+        "gender": "male",
+        "citizenship": "Беларусь",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "3",
+        "date": "2024-12-06",
+        "cert_number": null
+    },
+    "benefits": [
+        "Многодетная мать"
+    ],
+    "documents": [
+        "СНИЛС",
+        "Справка о стаже",
+        "Военный билет",
+        "Справка МСЭ",
+        "Трудовая книжка",
+        "Паспорт"
+    ],
+    "has_incorrect_document": false
+}

@@ -1,0 +1,36 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Анастасия Ильинична Беспалова",
+        "birth_date": "14.05.1960",
+        "snils": "933-500-155 89",
+        "gender": "female",
+        "citizenship": "Российская Федерация",
+        "name_change_info": {},
+        "dependents": 2
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2021-08-31",
+        "cert_number": "5153989574"
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать",
+        "Ветеран труда"
+    ],
+    "documents": [
+        "Справка МСЭ",
+        "Справка о стаже",
+        "Военный билет",
+        "Трудовая книжка",
+        "Паспорт",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": false
+}

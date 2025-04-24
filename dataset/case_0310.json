@@ -1,0 +1,38 @@
+{
+    "pension_type": "disability_social",
+    "personal_data": {
+        "full_name": "Шарапова Лариса Захаровна",
+        "birth_date": "23.02.1971",
+        "snils": "707-778-411 42",
+        "gender": "female",
+        "citizenship": "Беларусь",
+        "name_change_info": {
+            "old_full_name": "Субботина Агата Ждановна",
+            "date_changed": "15.12.2024"
+        },
+        "dependents": 1
+    },
+    "work_experience": {
+        "total_years": 0,
+        "records": []
+    },
+    "pension_points": 0,
+    "disability": {
+        "group": "1",
+        "date": "2022-06-25",
+        "cert_number": null
+    },
+    "benefits": [
+        "Инвалид 2 группы",
+        "Многодетная мать"
+    ],
+    "documents": [
+        "Справка о стаже",
+        "Справка МСЭ",
+        "Военный билет",
+        "Паспорт",
+        "Трудовая книжка",
+        "СНИЛС"
+    ],
+    "has_incorrect_document": true
+}
