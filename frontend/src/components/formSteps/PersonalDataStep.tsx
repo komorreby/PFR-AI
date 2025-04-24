@@ -24,6 +24,19 @@ import { CaseFormDataType } from '../CaseForm'; // Импортируем осн
 import CustomDateInput from '../formInputs/CustomDateInput'; // Импортируем кастомный инпут
 import { formatDateForInput } from '../../utils'; // <--- Исправляем путь
 
+// <<< Список стран СНГ
+const cisCountries = [
+    "Россия",
+    "Армения",
+    "Азербайджан",
+    "Беларусь",
+    "Казахстан",
+    "Кыргызстан",
+    "Молдова",
+    "Таджикистан",
+    "Узбекистан"
+];
+
 interface PersonalDataStepProps {
     control: Control<CaseFormDataType>;
     register: UseFormRegister<CaseFormDataType>;
@@ -42,11 +55,25 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
         <VStack spacing={4} align="stretch">
             <Heading size="md" mb={4}>Личные данные</Heading>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                {/* ФИО */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.full_name')}>
-                    <FormLabel htmlFor="full_name">ФИО</FormLabel>
-                    <Input id="full_name" {...register("personal_data.full_name", { required: "ФИО обязательно" })} />
-                    <FormErrorMessage>{getErrorMessage('personal_data.full_name')}</FormErrorMessage>
+                {/* Фамилия */}
+                <FormControl isInvalid={!!getErrorMessage('personal_data.last_name')}>
+                    <FormLabel htmlFor="last_name">Фамилия</FormLabel>
+                    <Input id="last_name" {...register("personal_data.last_name", { required: "Фамилия обязательна" })} />
+                    <FormErrorMessage>{getErrorMessage('personal_data.last_name')}</FormErrorMessage>
+                </FormControl>
+
+                {/* Имя */}
+                <FormControl isInvalid={!!getErrorMessage('personal_data.first_name')}>
+                    <FormLabel htmlFor="first_name">Имя</FormLabel>
+                    <Input id="first_name" {...register("personal_data.first_name", { required: "Имя обязательно" })} />
+                    <FormErrorMessage>{getErrorMessage('personal_data.first_name')}</FormErrorMessage>
+                </FormControl>
+
+                {/* Отчество */}
+                <FormControl isInvalid={!!getErrorMessage('personal_data.middle_name')}>
+                    <FormLabel htmlFor="middle_name">Отчество (при наличии)</FormLabel>
+                    <Input id="middle_name" {...register("personal_data.middle_name")} />
+                    <FormErrorMessage>{getErrorMessage('personal_data.middle_name')}</FormErrorMessage>
                 </FormControl>
 
                 {/* Дата рождения */}
@@ -104,7 +131,15 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 {/* Гражданство */}
                 <FormControl isInvalid={!!getErrorMessage('personal_data.citizenship')}>
                     <FormLabel htmlFor="citizenship">Гражданство</FormLabel>
-                    <Input id="citizenship" {...register("personal_data.citizenship", { required: "Гражданство обязательно" })} />
+                    <Select
+                        id="citizenship"
+                        placeholder="Выберите страну"
+                        {...register("personal_data.citizenship", { required: "Гражданство обязательно" })}
+                    >
+                        {cisCountries.map(country => (
+                            <option key={country} value={country}>{country}</option>
+                        ))}
+                    </Select>
                     <FormErrorMessage>{getErrorMessage('personal_data.citizenship')}</FormErrorMessage>
                 </FormControl>
 

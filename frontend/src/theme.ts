@@ -20,6 +20,43 @@ const colors = {
     800: '#1a202c',
     900: '#171923',
   },
+  // Добавляем стандартные цвета Chakra для семантики, если свои не нужны
+  teal: { // Для info
+    50: '#E6FFFA',
+    100: '#B2F5EA',
+    200: '#81E6D9',
+    300: '#4FD1C5',
+    400: '#38B2AC',
+    500: '#319795',
+    600: '#2C7A7B',
+    700: '#285E61',
+    800: '#234E52',
+    900: '#1D4044',
+  },
+  orange: { // Для warning
+    50: '#FFF5E6',
+    100: '#FFEBC6',
+    200: '#FEE0A3',
+    300: '#FDD580',
+    400: '#FCCB5D',
+    500: '#FBC02D', // Chakra orange.500
+    600: '#E9AD00',
+    700: '#D09900',
+    800: '#B78600',
+    900: '#9E7200',
+  },
+  green: { // Для success
+    50: '#F0FFF4',
+    100: '#C6F6D5',
+    200: '#9AE6B4',
+    300: '#68D391',
+    400: '#48BB78',
+    500: '#38A169', // Chakra green.500
+    600: '#2F855A',
+    700: '#276749',
+    800: '#22543D',
+    900: '#1C4532',
+  },
 }
 
 // 2. Определяем семантические токены (если нужно переопределить стандартные цвета Chakra)
@@ -27,10 +64,14 @@ const semanticTokens = {
   colors: {
     primary: 'brand.blue',
     danger: 'brand.red',
-    text: 'gray.800',
-    background: 'gray.50',
-    cardBackground: 'brand.white',
-    border: 'gray.200',
+    success: 'green.500',
+    warning: 'orange.500',
+    info: 'teal.500',
+    text: { default: 'gray.800', _dark: 'gray.100' },
+    textSecondary: { default: 'gray.600', _dark: 'gray.400' },
+    background: { default: 'gray.50', _dark: 'gray.800' },
+    cardBackground: { default: 'brand.white', _dark: 'gray.700' },
+    border: { default: 'gray.200', _dark: 'gray.600' },
   },
 }
 
@@ -60,8 +101,18 @@ const theme = extendTheme({
           }
         }),
          outline: (props: { colorScheme: string }) => ({
-          borderColor: props.colorScheme === 'primary' ? 'primary' : 'border',
-          color: props.colorScheme === 'primary' ? 'primary' : 'text',
+          borderColor: props.colorScheme === 'primary' ? 'primary' :
+                       props.colorScheme === 'danger' ? 'danger' : 'border',
+          color: props.colorScheme === 'primary' ? 'primary' :
+                 props.colorScheme === 'danger' ? 'danger' : 'text',
+          _hover: {
+             bg: props.colorScheme === 'primary' ? 'blue.50' :
+                 props.colorScheme === 'danger' ? 'red.50' : 'gray.100',
+            _dark: {
+                bg: props.colorScheme === 'primary' ? 'rgba(0, 57, 166, 0.1)' :
+                    props.colorScheme === 'danger' ? 'rgba(213, 43, 30, 0.1)' : 'gray.700',
+            }
+          }
         }),
       },
       defaultProps: {
@@ -75,8 +126,20 @@ const theme = extendTheme({
                 borderWidth: '1px',
                 borderColor: 'border',
                 borderRadius: 'md',
-                boxShadow: 'sm'
+                boxShadow: 'sm',
+                transition: 'background-color 0.2s ease-out, border-color 0.2s ease-out'
             }
+        }
+    },
+    Tag: {
+        baseStyle: {
+             borderRadius: 'full',
+        },
+        variants: {
+             solid: (props: { colorScheme: string }) => ({
+                 bg: `${props.colorScheme}.500`,
+                 color: 'white',
+             })
         }
     },
      Alert: { // Стили для уведомлений об ошибках
@@ -94,6 +157,7 @@ const theme = extendTheme({
         color: 'text',
         bg: 'background',
         lineHeight: 'tall',
+        transition: 'background-color 0.2s ease-out, color 0.2s ease-out'
       },
       a: {
         color: 'primary',

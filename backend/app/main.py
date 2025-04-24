@@ -4,7 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 # --- Добавляем импорты для RAG и Lifespan ---
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
-from app.rag_core.query_engine import get_query_engine, query_case
+# --- Изменяем импорт RAG ---
+# from app.rag_core.engine import get_query_engine, query_case
+from app.rag_core.engine import PensionRAG # Импортируем класс
 # -------------------------------------------
 # Добавляем импорты моделей и классификатора
 # Обратите внимание: предполагается, что error_classifier.py находится в папке backend/
@@ -30,19 +32,22 @@ from typing import List # Добавляем List
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.classifier = None # Инициализируем состояние для классификатора
+    app.state.rag_engine = None # Инициализируем состояние для RAG движка
     print("Starting up...")
     # Создаем таблицы БД
     print("Creating DB tables if they don't exist...")
     create_db_and_tables()
     
-    # Инициализируем RAG Query Engine
-    print("Initializing RAG Query Engine...")
+    # --- Инициализируем RAG Engine ---
+    print("Initializing PensionRAG Engine...")
     try:
-        get_query_engine() # Вызываем для загрузки/создания индекса
-        print("RAG Query Engine initialized.")
+        # Создаем экземпляр и сохраняем в состоянии
+        app.state.rag_engine = PensionRAG()
+        print("PensionRAG Engine initialized.")
     except Exception as e:
-        print(f"!!! ERROR initializing RAG Query Engine: {e}")
-        # Можно добавить логику обработки, если RAG критичен
+        print(f"!!! ERROR initializing PensionRAG Engine: {e}")
+        app.state.rag_engine = None # Убедимся, что None, если ошибка
+    # -------------------------------------------
     
     # --- Инициализируем ErrorClassifier ЗДЕСЬ --- 
     print("Initializing Error Classifier...")
@@ -101,11 +106,16 @@ async def read_root():
 
 # --- НОВЫЙ ЭНДПОИНТ ДЛЯ RAG АНАЛИЗА ---
 @app.post("/api/v1/analyze_case", response_model=CaseAnalysisResponse)
-async def analyze_pension_case(request: CaseAnalysisRequest):
+async def analyze_pension_case(request: CaseAnalysisRequest, req: Request):
     print(f"Received case analysis request: {request.case_description[:100]}...")
+    # Получаем RAG движок из состояния
+    rag_engine = req.app.state.rag_engine
+    if rag_engine is None:
+        raise HTTPException(status_code=503, detail="PensionRAG Engine is not available.")
+    
     try:
-        # Вызываем функцию RAG анализа
-        analysis = query_case(request.case_description)
+        # Вызываем метод query экземпляра PensionRAG
+        analysis = rag_engine.query(request.case_description)
         print(f"RAG analysis result (start): {analysis[:100]}...")
         return CaseAnalysisResponse(analysis_result=analysis)
     except Exception as e:
@@ -195,7 +205,7 @@ def analyze_rag_for_compliance(rag_text: str) -> bool:
 async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncConnection = Depends(get_db_connection)):
     classifier = request.app.state.classifier
     if classifier is None:
-        raise HTTPException(status_code=500, detail="Error Classifier not initialized")
+        raise HTTPException(status_code=503, detail="Error Classifier service is not available.")
 
     try:
         # 1. Получаем ошибки от ML классификатора
@@ -213,8 +223,8 @@ async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncCo
         # 3. Выполняем RAG-анализ
         rag_analysis_text = ""
         try:
-            # <<< Передаем pension_type и disability_info в query_case
-            rag_analysis_text = query_case(
+            # <<< Используем rag_engine.query() вместо query_case() >>>
+            rag_analysis_text = request.app.state.rag_engine.query(
                 case_description=case_description_full,
                 pension_type=case_data.pension_type,
                 disability_info=case_data_dict_json_compatible.get("disability")
@@ -223,7 +233,7 @@ async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncCo
             print(rag_analysis_text)
             print("---------------------------")
         except Exception as rag_e:
-            print(f"!!! ERROR during RAG query_case call: {rag_e}")
+            print(f"!!! ERROR during RAG query call: {rag_e}")
             import traceback
             traceback.print_exc()
             rag_analysis_text = f"Ошибка выполнения RAG анализа: {rag_e}" # Записываем ошибку в результат
@@ -235,7 +245,7 @@ async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncCo
         # Добавляем ошибки от ML
         if ml_errors_output:
             has_rejecting_issues = True
-            final_explanation_parts.append("**Выявлены следующие ошибки:**")
+            final_explanation_parts.append("**Выявлены следующие потенциальные несоответствия (ML Классификатор):**")
             for error in ml_errors_output:
                 final_explanation_parts.append(f"- **{error.code}: {error.description}**")
                 final_explanation_parts.append(f"  *Основание:* {error.law}")

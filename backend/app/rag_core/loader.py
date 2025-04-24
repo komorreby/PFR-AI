@@ -10,12 +10,11 @@ try:
 except ImportError:
     markdownify = None # Установим в None, если не установлена
 
-# --- Определяем пути относительно расположения скрипта --- 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BACKEND_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR)) # Поднимаемся на 2 уровня (rag_core -> app -> backend)
-
-DATA_DIR = os.path.join(BACKEND_DIR, "data") # Путь к data относительно backend
-# -------------------------------------------------------
+# --- Убираем определение DATA_DIR здесь --- 
+# SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# BACKEND_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR)) # Поднимаемся на 2 уровня (rag_core -> app -> backend)
+# DATA_DIR = os.path.join(BACKEND_DIR, "data") # Путь к data относительно backend
+# -------------------------------------------
 
 def load_and_preprocess_pdf(pdf_path: str) -> str:
     """Загружает PDF, извлекает текст и структуру с использованием unstructured.partition.pdf (strategy='hi_res')."""
@@ -74,19 +73,26 @@ def load_and_preprocess_pdf(pdf_path: str) -> str:
         return ""
     return full_extracted_text.strip()
 
-def load_documents() -> List[Document]:
-    """Ищет ВСЕ PDF файлы в DATA_DIR, преобразует каждый в отдельный Document LlamaIndex с помощью unstructured."""
-    pdf_files = [f for f in os.listdir(DATA_DIR) if f.lower().endswith(".pdf")]
-    
-    if not pdf_files:
-        print(f"PDF файлы в директории {DATA_DIR} не найдены.")
+# <<< Изменяем сигнатуру функции, добавляя аргумент directory_path >>>
+def load_documents(directory_path: str) -> List[Document]:
+    """Ищет ВСЕ PDF файлы в указанной директории, преобразует каждый в отдельный Document LlamaIndex с помощью unstructured."""
+    if not os.path.isdir(directory_path):
+        print(f"Ошибка: Указанный путь '{directory_path}' не является директорией или не существует.")
         return []
         
-    print(f"Найдено {len(pdf_files)} PDF файлов для обработки: {pdf_files}")
+    # <<< Используем directory_path вместо DATA_DIR >>>
+    pdf_files = [f for f in os.listdir(directory_path) if f.lower().endswith(".pdf")]
+    
+    if not pdf_files:
+        print(f"PDF файлы в директории {directory_path} не найдены.")
+        return []
+        
+    print(f"Найдено {len(pdf_files)} PDF файлов для обработки в '{directory_path}': {pdf_files}")
     
     all_documents = []
     for pdf_file in pdf_files:
-        pdf_path = os.path.join(DATA_DIR, pdf_file)
+        # <<< Используем directory_path для формирования полного пути >>>
+        pdf_path = os.path.join(directory_path, pdf_file)
         print(f"--- Начало обработки файла: {pdf_file} ---")
         cleaned_content = load_and_preprocess_pdf(pdf_path)
         
@@ -101,7 +107,7 @@ def load_documents() -> List[Document]:
         print(f"Создан LlamaIndex Document для файла {pdf_file}.")
         print(f"--- Завершение обработки файла: {pdf_file} ---")
 
-    print(f"\nОбработка завершена. Загружено {len(all_documents)} документов LlamaIndex.")
+    print(f"\nОбработка завершена. Загружено {len(all_documents)} документов LlamaIndex из '{directory_path}'.")
     return all_documents
 
 # В будущем здесь будет логика:
