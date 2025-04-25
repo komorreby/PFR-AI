@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 # --- Добавляем импорты для RAG и Lifespan ---
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 # --- Изменяем импорт RAG ---
 # from app.rag_core.engine import get_query_engine, query_case
 from app.rag_core.engine import PensionRAG # Импортируем класс
@@ -96,6 +96,7 @@ class CaseAnalysisRequest(BaseModel):
 
 class CaseAnalysisResponse(BaseModel):
     analysis_result: str
+    confidence_score: float = Field(ge=0, le=1)
 # ---------------------------------------
 
 # --- API Endpoints --- 
@@ -108,16 +109,16 @@ async def read_root():
 @app.post("/api/v1/analyze_case", response_model=CaseAnalysisResponse)
 async def analyze_pension_case(request: CaseAnalysisRequest, req: Request):
     print(f"Received case analysis request: {request.case_description[:100]}...")
-    # Получаем RAG движок из состояния
     rag_engine = req.app.state.rag_engine
     if rag_engine is None:
         raise HTTPException(status_code=503, detail="PensionRAG Engine is not available.")
     
     try:
-        # Вызываем метод query экземпляра PensionRAG
-        analysis = rag_engine.query(request.case_description)
-        print(f"RAG analysis result (start): {analysis[:100]}...")
-        return CaseAnalysisResponse(analysis_result=analysis)
+        # <<< Получаем текст и скор из rag_engine.query
+        analysis_text, score = rag_engine.query(request.case_description)
+        print(f"RAG analysis result (score: {score:.4f}, start): {analysis_text[:100]}...")
+        # <<< Передаем оба значения в модель ответа
+        return CaseAnalysisResponse(analysis_result=analysis_text, confidence_score=score)
     except Exception as e:
         print(f"!!! ERROR during RAG analysis: {e}")
         import traceback

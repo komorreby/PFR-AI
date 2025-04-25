@@ -4,6 +4,7 @@ import glob
 import json
 import logging
 from typing import List, Optional, Dict, Any, Tuple
+from datetime import datetime
 
 from llama_index.core import (
     VectorStoreIndex,
@@ -410,15 +411,14 @@ class PensionRAG:
         return combined_nodes
 
 
-    def _rerank_nodes(self, query_bundle: QueryBundle, nodes: List[NodeWithScore]) -> List[NodeWithScore]:
-        """Применяет реранкер (если доступен) к узлам-кандидатам."""
-        # TODO: Перенести логику из старого query_case / предыдущей версии engine.py
-        logger.warning("_rerank_nodes method is not fully implemented yet.")
-
+    def _rerank_nodes(self, query_bundle: QueryBundle, nodes: List[NodeWithScore]) -> Tuple[List[NodeWithScore], float]:
+        """Применяет реранкер (если доступен) к узлам-кандидатам.
+        Возвращает кортеж: (список лучших N узлов, скор уверенности, основанный на топ-1 узле).
+        """
         if not self.reranker_model or not nodes:
-            logger.debug("Reranker not available or no nodes to rerank. Returning top N initial nodes.")
-            # Возвращаем top N изначальных узлов, если реранкера нет
-            return nodes[:self.config.RERANKER_TOP_N] 
+            logger.debug("Reranker not available or no nodes to rerank. Returning top N initial nodes with 0.0 score.")
+            initial_top_nodes = nodes[:self.config.RERANKER_TOP_N]
+            return initial_top_nodes, 0.0 # Возвращаем 0.0 как скор
 
         logger.info(f"Reranking {len(nodes)} nodes...")
         query_text = query_bundle.query_str
@@ -436,16 +436,29 @@ class PensionRAG:
             nodes.sort(key=lambda x: x.score, reverse=True)
             reranked_nodes = nodes[:self.config.RERANKER_TOP_N]
             logger.info(f"Reranking complete. Selected top {len(reranked_nodes)} nodes.")
-            top_scores = [f"{n.score:.4f}" for n in reranked_nodes[:3]]
-            logger.debug(f"Top reranked scores: {top_scores}")
-            return reranked_nodes
+            top_scores_log = [f"{n.score:.4f}" for n in reranked_nodes[:3]] # Оставляем для логов
+            logger.debug(f"Top reranked scores: {top_scores_log}")
+            
+            # --- ИЗМЕНЕННАЯ ЛОГИКА СКОРА УВЕРЕННОСТИ ---
+            confidence_score = 0.0
+            if reranked_nodes:
+                # Используем скор самого релевантного (первого) узла
+                confidence_score = float(reranked_nodes[0].score)
+                logger.info(f"Using top-1 reranked score as confidence score: {confidence_score:.4f}")
+            else:
+                 logger.warning("No nodes left after reranking, confidence score is 0.0")
+            # -------------------------------------------
+            
+            # Возвращаем ноды и новый скор уверенности
+            return reranked_nodes, confidence_score 
             
         except Exception as e:
             logger.error(f"Error during reranking: {e}", exc_info=True)
             logger.warning("Reranking failed. Returning top N nodes based on initial retrieval scores.")
             # Сортируем по исходному скору (если сохранили в metadata)
             nodes.sort(key=lambda x: x.metadata.get('retrieval_score', x.score), reverse=True) 
-            return nodes[:self.config.RERANKER_TOP_N]
+            # Возвращаем изначальные ноды и скор 0.0 при ошибке
+            return nodes[:self.config.RERANKER_TOP_N], 0.0 
 
 
     def _build_prompt(self, query_text: str, context_nodes: List[NodeWithScore], pension_type: Optional[str], disability_info: Optional[dict]) -> str:
@@ -463,33 +476,66 @@ class PensionRAG:
             reason = disability_info.get("reason", "не указана")
             disability_str = f"\nДополнительная информация: Инвалидность {group_name}, причина - {reason}."
 
-        prompt = f"""Проанализируй следующую ситуацию, связанную с пенсионным обеспечением в РФ, на основе предоставленных выдержек из законодательства.
+        current_date = datetime.now().strftime("%d.%m.%Y")  # Формат ДД.ММ.ГГГГ
 
-Ситуация: {query_text}{disability_str}
+        prompt = f"""
+            Запрос на правовой анализ пенсионного случая в соответствии с законодательством РФ
+            **Актуальность данных на**: {current_date}
 
-Тип пенсии (если указан): {pension_type or 'не указан'}
+            **Сведения о заявителе:**
+            - Описание ситуации: {query_text}{disability_str}
+            - Категория запрашиваемой пенсии: {pension_type or 'не определена'}
 
-Выдержки из законодательства:
----
-{context_str}
----
+            **Нормативная база:**
+            ---
+            {context_str}
+            ---
 
-Задание: 
-1. Определи, имеет ли человек право на пенсию согласно описанной ситуации и предоставленным статьям.
-2. Укажи ключевые условия для назначения пенсии данного типа (стаж, возраст, баллы ИПК и т.д.), если они упоминаются в тексте.
-3. Если информации в выдержках недостаточно для однозначного ответа, укажи, какие данные требуются дополнительно.
-4. Отвечай только на основе предоставленных выдержек. Не придумывай информацию. Будь кратким и по существу. Отвечай на русском языке.
-"""
+            **Порядок обработки запроса:**
+            1. Установление правовых оснований:
+            • Определить соответствие случая статьям {context_str.split('ФЗ')[1].split()[0]} (с указанием конкретных пунктов)
+            • Выявить наличие/отсутствие обязательных критериев назначения
+
+            2. Анализ условий назначения:
+            • Возрастные требования (указать нормативный возраст)
+            • Страховой стаж (минимальные значения)
+            • Величина ИПК (пороговое значение)
+            • Специальные условия (для льготных категорий)
+
+            3. Требуемые документы:
+            • Установленный перечень по выявленным основаниям
+            • Отсутствующие в описании данные (справки, подтверждения)
+
+            **Требования к ответу:**
+            ✓ Ссылки только на приведенные статьи законов
+            ✓ Отказ от интерпретаций вне предоставленного контекста
+            ✓ Четкое разделение выводов на:
+            - Удовлетворяющие условия (со ссылкой на норму права)
+            - Неудовлетворяющие условия (с указанием причины)
+            - Недостающие сведения (перечень документов/справок)
+
+            **Примечание:** 
+            Ответ подлежит оформлению в соответствии с Приказом Минтруда № 958н от 28.12.2022 
+            "Об утверждении Административного регламента...". Конфиденциальная информация не подлежит разглашению.
+
+            **Важно:**
+            - Отвечай только на основе предоставленного контекста.
+            - Не придумывай информацию.
+            - Будь кратким и по существу.
+            - Отвечай на русском языке.
+            - перепроверяй все факты и цифры. Например, возраст, стаж, ИПК и т.д. Человек не может быть старше 100 лет, иметь стаж работы больше чем его возраст.
+            """
         logger.debug(f"Generated prompt (first 200 chars): {prompt[:200]}...")
         return prompt
 
 
-    def query(self, case_description: str, pension_type: Optional[str] = None, disability_info: Optional[dict] = None) -> str:
+    def query(self, case_description: str, pension_type: Optional[str] = None, disability_info: Optional[dict] = None) -> Tuple[str, float]:
         """
         Основной метод для выполнения запроса к RAG системе.
+        Возвращает кортеж: (текст ответа LLM, скор уверенности).
         """
         # TODO: Перенести логику из старого query_case / предыдущей версии engine.py
-        logger.warning("Query method is not fully implemented yet.")
+        logger.warning("Query method needs review/update for confidence score logic.")
 
         logger.info(f"Processing query: '{case_description[:100]}...', pension_type: {pension_type}")
         query_bundle = QueryBundle(case_description)
@@ -499,12 +545,12 @@ class PensionRAG:
             candidate_nodes = self._retrieve_nodes(query_bundle, pension_type)
             
             # 2. Rerank
-            ranked_nodes = self._rerank_nodes(query_bundle, candidate_nodes)
+            ranked_nodes, confidence_score = self._rerank_nodes(query_bundle, candidate_nodes) 
 
             if not ranked_nodes:
                  logger.warning("No relevant documents found after retrieval and reranking.")
-                 # Возвращаем user-friendly сообщение
-                 return "К сожалению, не удалось найти релевантную информацию в базе знаний для ответа на ваш запрос."
+                 # Возвращаем сообщение и скор 0.0
+                 return "К сожалению, не удалось найти релевантную информацию в базе знаний для ответа на ваш запрос.", 0.0 
 
             # 3. Build Prompt
             final_prompt = self._build_prompt(case_description, ranked_nodes, pension_type, disability_info)
@@ -520,12 +566,13 @@ class PensionRAG:
             
             # TODO: Добавить пост-обработку ответа LLM при необходимости
             
-            return response_text
+            # Возвращаем текст и скор уверенности
+            return response_text, confidence_score 
 
         except Exception as e:
             logger.error(f"Error processing query '{case_description[:50]}...': {e}", exc_info=True)
-            # Возвращаем общее сообщение об ошибке пользователю
-            return f"Произошла внутренняя ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже или обратитесь к администратору. (Ошибка: {e})"
+            # Возвращаем сообщение об ошибке и скор 0.0
+            return f"Произошла внутренняя ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже или обратитесь к администратору. (Ошибка: {e})", 0.0 
 
 
 # --- Пример использования (для локального тестирования) ---
@@ -568,12 +615,14 @@ if __name__ == '__main__':
         for i, case in enumerate(test_cases):
              logger.info(f"--- Running Test Case {i+1} ---")
              print(f"\n--- Query {i+1}: {case['description']} (Type: {case['pension_type']}) ---")
-             result = rag_engine.query(
+             # Получаем и текст, и скор
+             result_text, score = rag_engine.query(
                  case_description=case['description'], 
                  pension_type=case['pension_type'], 
                  disability_info=case['disability_info']
             )
-             print(f"\nРезультат анализа {i+1}:\n{result}")
+             # Печатаем оба
+             print(f"\nРезультат анализа {i+1} (Уверенность: {score:.4f}):\n{result_text}")
              logger.info(f"--- Test Case {i+1} Finished ---")
 
     except Exception as e:

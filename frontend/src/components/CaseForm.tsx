@@ -172,6 +172,8 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  // <<< Добавляем состояние для confidence score
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
   // <<< Используем хук useClipboard для результата RAG
   const { hasCopied, onCopy } = useClipboard(analysisResult || '');
   // ----------------------------------
@@ -239,6 +241,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     onSubmitError('');
     setAnalysisResult(null);
     setAnalysisError(null);
+    setConfidenceScore(null); // <<< Сбрасываем скор при новой отправке
     const dataToSend = JSON.parse(JSON.stringify(data));
     dataToSend.benefits = (data.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
     dataToSend.documents = (data.documents || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -368,34 +371,40 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     }
   };
 
-  // --- НОВЫЙ Обработчик для RAG анализа --- 
-  const handleAnalyzeCase = async () => {
-      console.log("handleAnalyzeCase triggered"); // Оставляем для отладки
-      setIsLoadingAnalysis(true);
-      setAnalysisResult(null);
-      setAnalysisError(null);
-
-      try {
-          // <<< Весь код генерации и вызова API теперь внутри try
-          const formData = getValues();
-          const case_description = createComprehensiveRagDescription(formData);
-          console.log("Sending for RAG analysis (detailed description):", case_description);
-
-          const result = await analyzeCase(case_description);
-          setAnalysisResult(result.analysis_result);
-          console.log("RAG analysis successful:", result.analysis_result);
-
-      } catch (error) {
-          // <<< Любая ошибка здесь теперь устанавливает analysisError
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          console.error("RAG Analysis Error:", errorMessage);
-          setAnalysisError(`Ошибка RAG-анализа: ${errorMessage}`);
-      } finally {
-          // <<< Гарантированно выключаем индикатор загрузки
-          setIsLoadingAnalysis(false);
-      }
+  const handlePrevious = () => {
+    goToPrevious();
   };
-  // ------------------------------------------
+
+  // <<< Функция для запуска RAG анализа
+  const handleAnalyzeCase = async () => {
+    console.log("Analyzing case...");
+    setIsLoadingAnalysis(true);
+    setAnalysisResult(null);
+    setAnalysisError(null);
+    setConfidenceScore(null); // <<< Сбрасываем скор перед запросом
+
+    try {
+      const currentData = getValues();
+      // <<< Исправляем вызов: передаем только данные формы
+      const description = createComprehensiveRagDescription(currentData);
+      console.log("Sending to RAG:", description);
+
+      // <<< Вызываем analyzeCase и получаем объект с результатом и скором
+      const response = await analyzeCase(description);
+      console.log("RAG response:", response);
+
+      setAnalysisResult(response.analysis_result); // <<< Сохраняем текст анализа
+      setConfidenceScore(response.confidence_score); // <<< Сохраняем скор уверенности
+
+    } catch (error: any) {
+      console.error("RAG Analysis error:", error);
+      setAnalysisError(error.message || 'Не удалось выполнить RAG-анализ.');
+      setAnalysisResult(null);
+      setConfidenceScore(null); // <<< Сбрасываем скор при ошибке
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
 
   // --- Отображение текущего шага --- 
   const renderStepContent = () => {
@@ -501,7 +510,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
             <Flex>
                 {/* <<< Добавлена leftIcon для кнопки Назад */}
                 <Button
-                   onClick={goToPrevious}
+                   onClick={handlePrevious}
                    isDisabled={activeStep === 0}
                    variant="outline"
                    leftIcon={<ArrowBackIcon />}
@@ -572,19 +581,26 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
                                      <InfoIcon mr={2} />
                                      Результат RAG-анализа:
                                  </Heading>
-                                 <IconButton
-                                     icon={<CopyIcon />}
-                                     size="sm"
-                                     variant="ghost"
-                                     colorScheme="teal"
-                                     aria-label="Скопировать результат"
-                                     onClick={onCopy}
-                                     title={hasCopied ? 'Скопировано!' : 'Копировать'}
-                                 />
-                              </Flex>
-                              <ReactMarkdown components={markdownComponents}>
-                                  {analysisResult}
-                              </ReactMarkdown>
+                                 <Flex align="center">
+                                     {confidenceScore !== null && (
+                                         <Text fontSize="sm" color="gray.600" mr={2}>
+                                             Уверенность: {(confidenceScore * 100).toFixed(1)}%
+                                         </Text>
+                                     )}
+                                     <IconButton
+                                         aria-label="Copy analysis result"
+                                         icon={<CopyIcon />}
+                                         size="sm"
+                                         variant="ghost"
+                                         colorScheme={hasCopied ? "green" : "gray"}
+                                         onClick={onCopy}
+                                         title={hasCopied ? 'Скопировано!' : 'Копировать'}
+                                     />
+                                 </Flex>
+                             </Flex>
+                             <ReactMarkdown components={markdownComponents}>
+                                 {analysisResult}
+                             </ReactMarkdown>
                           </Box>
                       )}
                  </VStack>

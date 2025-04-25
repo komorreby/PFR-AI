@@ -3,6 +3,12 @@
 import type { CaseFormDataType, ProcessResult, ApiError } from '../components/CaseForm';
 import type { HistoryEntry } from '../components/HistoryList';
 
+// <<< Определяем новый тип для ответа RAG-анализа
+export interface RagAnalysisResponse {
+    analysis_result: string;
+    confidence_score: number;
+}
+
 // <<< Пока оставляем URL здесь как константу
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
@@ -53,15 +59,15 @@ export async function processCase(caseData: CaseFormDataType): Promise<ProcessRe
 /**
  * Отправляет описание дела для RAG-анализа.
  * @param caseDescription Текстовое описание дела
- * @returns Результат RAG-анализа
+ * @returns Результат RAG-анализа с скором уверенности
  */
-export async function analyzeCase(caseDescription: string): Promise<{ analysis_result: string }> {
+export async function analyzeCase(caseDescription: string): Promise<RagAnalysisResponse> {
     const response = await fetch(`${API_BASE_URL}/api/v1/analyze_case`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ case_description: caseDescription }),
     });
-    return handleResponse<{ analysis_result: string }>(response);
+    return handleResponse<RagAnalysisResponse>(response);
 }
 
 /**

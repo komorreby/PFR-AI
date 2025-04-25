@@ -21,9 +21,9 @@ RERANKER_MODEL_NAME = 'DiTy/cross-encoder-russian-msmarco'
 
 # --- Параметры RAG ---
 # Количество изначальных кандидатов для ретривера
-INITIAL_RETRIEVAL_TOP_K = 25
+INITIAL_RETRIEVAL_TOP_K = 40
 # Количество узлов после реранкинга для передачи в LLM
-RERANKER_TOP_N = 8 # Рекомендуется <= INITIAL_RETRIEVAL_TOP_K
+RERANKER_TOP_N = 15 # Рекомендуется <= INITIAL_RETRIEVAL_TOP_K
 # Старое значение, если нужно где-то использовать (но лучше опираться на INITIAL_RETRIEVAL_TOP_K и RERANKER_TOP_N)
 # SIMILARITY_TOP_K = 12 
 
