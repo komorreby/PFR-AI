@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import CaseForm from './components/CaseForm';
-import { ProcessResult, ApiError } from './components/CaseForm'; 
-import ErrorDisplay from './components/ErrorDisplay'; 
+import { ProcessResult } from './components/CaseForm'; 
 import HistoryPage from './pages/HistoryPage';
 import ProcessResultDisplay from './components/ProcessResultDisplay';
 
@@ -13,9 +12,6 @@ import {
   Heading,
   Divider,
   useToast, 
-  Alert,
-  AlertIcon,
-  AlertDescription,
   Link,
   Flex,
   Spacer,
@@ -25,8 +21,6 @@ import {
 
 // Импорт иконок для переключателя
 import { SunIcon, MoonIcon } from '@chakra-ui/icons';
-
-const API_BASE_URL = 'http://127.0.0.1:8000'; 
 
 function App() {
   const [processResult, setProcessResult] = useState<ProcessResult | null>(null);

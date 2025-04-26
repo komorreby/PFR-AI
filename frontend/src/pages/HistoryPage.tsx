@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box,
     Container,
@@ -20,7 +20,7 @@ function HistoryPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const toast = useToast();
 
-    const fetchHistory = async () => {
+    const fetchHistory = useCallback(async () => {
         setHistoryLoading(true);
         try {
             const data = await getHistory();
@@ -36,11 +36,11 @@ function HistoryPage() {
         } finally {
             setHistoryLoading(false);
         }
-    };
+    }, [toast]);
 
     useEffect(() => {
         fetchHistory();
-    }, []);
+    }, [fetchHistory]);
 
     const handleDownload = async (caseId: number, format: 'pdf' | 'docx') => {
         const toastId = toast({ 

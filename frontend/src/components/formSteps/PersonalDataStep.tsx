@@ -47,7 +47,7 @@ interface PersonalDataStepProps {
 }
 
 const PersonalDataStep: React.FC<PersonalDataStepProps> = ({ 
-    control, register, errors, watch, setValue, getErrorMessage 
+    control, register, watch, setValue, getErrorMessage 
 }) => {
     const watchHasNameChangeInfo = watch("personal_data.name_change_info");
 
@@ -112,7 +112,7 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                         control={control}
                         rules={{ required: "СНИЛС обязателен", pattern: { value: /^\d{3}-\d{3}-\d{3} \d{2}$/, message: "Неверный формат СНИЛС (XXX-XXX-XXX YY)" } }}
                         render={({ field }) => (
-                            <Input as={IMaskInput} mask="000-000-000 00" value={field.value || ''} onAccept={(value: any) => field.onChange(value)} placeholder="XXX-XXX-XXX XX" id="snils" bg="white" borderColor="inherit" _hover={{ borderColor: "gray.300" }} _focus={{ zIndex: 1, borderColor: "primary", boxShadow: `0 0 0 1px var(--chakra-colors-primary)` }} />
+                            <Input as={IMaskInput} mask="000-000-000 00" value={field.value || ''} onAccept={(value: string) => field.onChange(value)} placeholder="XXX-XXX-XXX XX" id="snils" bg="white" borderColor="inherit" _hover={{ borderColor: "gray.300" }} _focus={{ zIndex: 1, borderColor: "primary", boxShadow: `0 0 0 1px var(--chakra-colors-primary)` }} />
                         )}
                     />
                     <FormErrorMessage>{getErrorMessage('personal_data.snils')}</FormErrorMessage>

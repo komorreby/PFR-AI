@@ -1,20 +1,13 @@
 import React from 'react';
 import {
   Box,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Heading,
   Text,
-  Divider,
-  Code,
   useColorModeValue,
   VStack,
   Stat,
   StatLabel,
   StatNumber,
-  StatHelpText,
   Accordion,
   AccordionItem,
   AccordionButton,
@@ -23,9 +16,8 @@ import {
   List,
   ListItem,
   ListIcon,
-  Tag
 } from '@chakra-ui/react';
-import { CheckCircleIcon, WarningIcon, InfoIcon } from '@chakra-ui/icons';
+import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
 import { ProcessResult, ApiError } from './CaseForm'; // Импортируем типы
 
 interface ProcessResultDisplayProps {

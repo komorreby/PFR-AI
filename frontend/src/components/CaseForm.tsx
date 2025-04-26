@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useForm, useFieldArray, SubmitHandler, FieldErrors } from 'react-hook-form';
-import { format, isValid, differenceInYears } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
+// import { isValid, differenceInYears } from 'date-fns';
 
 // Импорты Chakra UI (оставляем только нужные для обертки формы и навигации)
 import {
@@ -12,7 +12,7 @@ import {
   // <<< Новые импорты для RAG-результата
   IconButton,
   useClipboard, // Хук для копирования
-  List, ListItem, Text as ChakraText, Heading as ChakraHeading, OrderedList, UnorderedList
+  ListItem, Text as ChakraText, Heading as ChakraHeading, OrderedList, UnorderedList
 } from '@chakra-ui/react';
 
 // <<< Импорт иконок для кнопок навигации и RAG
@@ -39,12 +39,10 @@ type NameChangeInfoType = {
   date_changed: string;
 };
 
-// <<< Изменяем структуру PersonalDataType
 export type PersonalDataType = {
-  // full_name: string; // <<< Убираем
-  last_name: string;  // <<< Добавляем Фамилию
-  first_name: string; // <<< Добавляем Имя
-  middle_name?: string; // <<< Добавляем Отчество (опционально)
+  last_name: string;  // Фамилия
+  first_name: string; // Имя
+  middle_name?: string; // Отчество (опционально)
   birth_date: string;
   snils: string;
   gender: string; // 'male' | 'female' | ''; // Можно использовать Enum
@@ -151,18 +149,18 @@ const getStepsForPensionType = (type: string | null): StepDefinition[] => {
   }
 };
 
-// Функция для вычисления возраста
-const calculateAge = (birthDateString: string): number | string => {
-  try {
-    const birthDate = new Date(birthDateString);
-    if (isValid(birthDate)) {
-      return differenceInYears(new Date(), birthDate);
-    }
-  } catch (e) {
-    // ignore
-  }
-  return 'неизвестно'; // Возвращаем строку, если дата некорректна
-};
+// // Функция для вычисления возраста
+// const calculateAge = (birthDateString: string): number | string => {
+//   try {
+//     const birthDate = new Date(birthDateString);
+//     if (isValid(birthDate)) {
+//       return differenceInYears(new Date(), birthDate);
+//     }
+//   } catch (e) {
+//     // ignore
+//   }
+//   return 'неизвестно'; // Возвращаем строку, если дата некорректна
+// };
 
 function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -210,10 +208,9 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     defaultValues: {
       pension_type: '',
       personal_data: {
-        // full_name: '', // <<< Убираем
-        last_name: '',  // <<< Добавляем
-        first_name: '', // <<< Добавляем
-        middle_name: '', // <<< Добавляем
+        last_name: '',  
+        first_name: '', 
+        middle_name: '',
         birth_date: '',
         snils: '',
         gender: '',
@@ -252,7 +249,6 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
 
     // --- Преобразование данных для эндпоинта /process --- 
     const payloadForProcess = JSON.parse(JSON.stringify(dataToSend)); // Снова глубокая копия
-    // Собираем full_name
     payloadForProcess.personal_data.full_name = [
         payloadForProcess.personal_data.last_name,
         payloadForProcess.personal_data.first_name,
@@ -448,18 +444,18 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
 
   // <<< Добавляем конфигурацию компонентов для ReactMarkdown
   const markdownComponents = {
-    h1: (props: any) => <ChakraHeading as="h1" size="xl" my={4} {...props} />,
-    h2: (props: any) => <ChakraHeading as="h2" size="lg" my={3} {...props} />,
-    h3: (props: any) => <ChakraHeading as="h3" size="md" my={2} {...props} />,
-    h4: (props: any) => <ChakraHeading as="h4" size="sm" my={1} {...props} />,
-    h5: (props: any) => <ChakraHeading as="h5" size="xs" my={1} {...props} />,
-    h6: (props: any) => <ChakraHeading as="h6" size="xs" my={1} {...props} />,
-    p: (props: any) => <ChakraText fontSize="sm" mb={2} {...props} />,
-    ol: (props: any) => <OrderedList spacing={1} ml={6} mb={2} {...props} />,
-    ul: (props: any) => <UnorderedList spacing={1} ml={6} mb={2} {...props} />,
-    li: (props: any) => <ListItem fontSize="sm" {...props} />,
+    h1: (props: React.ComponentProps<'h1'>) => <ChakraHeading as="h1" size="xl" my={4} {...props} />,
+    h2: (props: React.ComponentProps<'h2'>) => <ChakraHeading as="h2" size="lg" my={3} {...props} />,
+    h3: (props: React.ComponentProps<'h3'>) => <ChakraHeading as="h3" size="md" my={2} {...props} />,
+    h4: (props: React.ComponentProps<'h4'>) => <ChakraHeading as="h4" size="sm" my={1} {...props} />,
+    h5: (props: React.ComponentProps<'h5'>) => <ChakraHeading as="h5" size="xs" my={1} {...props} />,
+    h6: (props: React.ComponentProps<'h6'>) => <ChakraHeading as="h6" size="xs" my={1} {...props} />,
+    p: (props: React.ComponentProps<'p'>) => <ChakraText fontSize="sm" mb={2} {...props} />,
+    ol: (props: React.ComponentProps<'ol'>) => <OrderedList spacing={1} ml={6} mb={2} {...props} />,
+    ul: (props: React.ComponentProps<'ul'>) => <UnorderedList spacing={1} ml={6} mb={2} {...props} />,
+    li: (props: React.ComponentProps<'li'>) => <ListItem fontSize="sm" {...props} />,
     // Добавьте другие теги по мере необходимости (например, strong, em, code)
-    strong: (props: any) => <ChakraText as="strong" fontWeight="bold" {...props} />,
+    strong: (props: React.ComponentProps<'strong'>) => <ChakraText as="strong" fontWeight="bold" {...props} />,
     // em: (props: any) => <ChakraText as="em" fontStyle="italic" {...props} />,
     // code: (props: any) => <Code {...props} />
   };
@@ -518,7 +514,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
                    Назад
                 </Button>
                 <Spacer />
-                 {/* Кнопка \"Далее\" теперь корректно работает с динамическим количеством шагов */}
+                 {}
                 {activeStep < currentSteps.length - 1 && (
                     /* <<< Добавлена rightIcon для кнопки Далее */
                     <Button

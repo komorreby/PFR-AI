@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Box,
   Heading,
@@ -6,7 +5,6 @@ import {
   Divider,
   List,
   ListItem,
-  ListIcon,
   Badge,
   SimpleGrid,
   VStack
@@ -52,7 +50,7 @@ function SummaryStep({ formData }: SummaryStepProps) {
       <Box>
         <Heading size="md" mb={3}>Персональные данные</Heading>
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={2}>
-          <Text><strong>ФИО:</strong> {personal_data.full_name}</Text>
+          <Text><strong>ФИО:</strong> {[personal_data.last_name, personal_data.first_name, personal_data.middle_name].filter(Boolean).join(' ')}</Text>
           <Text><strong>Дата рождения:</strong> {personal_data.birth_date}</Text>
           <Text><strong>СНИЛС:</strong> {personal_data.snils}</Text>
           <Text><strong>Пол:</strong> {personal_data.gender === 'male' ? 'Мужской' : personal_data.gender === 'female' ? 'Женский' : 'Не указан'}</Text>

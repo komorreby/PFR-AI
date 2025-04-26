@@ -1,10 +1,15 @@
-import { parse, format, isValid } from 'date-fns';
+import { format, isValid, differenceInYears } from 'date-fns';
 import { CaseFormDataType, WorkRecordType } from './components/CaseForm';
 
 // Вспомогательная функция для форматирования Date в YYYY-MM-DD
 export const formatDateForInput = (date: Date | null | undefined): string => {
   if (!date || !isValid(date)) return '';
   return format(date, 'yyyy-MM-dd');
+};
+
+const calculateAge = (birthDateString: string): number | null => {
+  const birthDate = new Date(birthDateString);
+  return isValid(birthDate) ? differenceInYears(new Date(), birthDate) : null;
 };
 
 /**
@@ -26,6 +31,7 @@ export const createComprehensiveRagDescription = (formData: CaseFormDataType): s
     ].filter(Boolean).join(' ');
     lines.push(`ФИО: ${fullName || 'не указано'}`);
     lines.push(`Дата рождения: ${personal_data.birth_date || 'не указано'}`);
+    lines.push(`Возраст: ${calculateAge(personal_data.birth_date) || 'неизвестно'}`);
     lines.push(`СНИЛС: ${personal_data.snils || 'не указано'}`);
     lines.push(`Пол: ${personal_data.gender === 'male' ? 'Мужской' : personal_data.gender === 'female' ? 'Женский' : 'не указан'}`);
     lines.push(`Гражданство: ${personal_data.citizenship || 'не указано'}`);

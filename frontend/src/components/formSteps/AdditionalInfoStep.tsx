@@ -10,7 +10,6 @@ import {
     NumberInputStepper,
     NumberIncrementStepper,
     NumberDecrementStepper,
-    Textarea,
     Checkbox,
     FormErrorMessage
 } from '@chakra-ui/react';
@@ -25,7 +24,7 @@ interface AdditionalInfoStepProps {
     pensionType: string | null;
 }
 
-const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({ register, control, errors, getErrorMessage, pensionType }) => {
+const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({ register, control, getErrorMessage, pensionType }) => {
     return (
         <VStack spacing={4} align="stretch">
             <Heading size="md" mb={4}>Дополнительная информация</Heading>

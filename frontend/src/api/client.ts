@@ -1,6 +1,6 @@
 // Типы данных, импортированные для ясности. В реальном проекте их лучше вынести
 // в отдельный файл `types.ts` или использовать генерацию типов из OpenAPI схемы бэкенда.
-import type { CaseFormDataType, ProcessResult, ApiError } from '../components/CaseForm';
+import type { CaseFormDataType, ProcessResult } from '../components/CaseForm';
 import type { HistoryEntry } from '../components/HistoryList';
 
 // <<< Определяем новый тип для ответа RAG-анализа

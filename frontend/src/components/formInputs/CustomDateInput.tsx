@@ -31,7 +31,7 @@ const CustomDateInput = React.forwardRef<HTMLInputElement, CustomDateInputProps>
                 _focus={{ zIndex: 1, borderColor: "primary", boxShadow: `0 0 0 1px var(--chakra-colors-primary)` }}
                 width="100%"
                 autoComplete="off"
-                onAccept={(acceptedValue: any) => {
+                onAccept={(acceptedValue: string) => {
                     try {
                         if (acceptedValue && acceptedValue.length === 10 && !String(acceptedValue).includes('_')) {
                              const parsedDate = parse(acceptedValue, 'dd.MM.yyyy', new Date());
