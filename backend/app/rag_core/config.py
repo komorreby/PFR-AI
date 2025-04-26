@@ -22,8 +22,10 @@ RERANKER_MODEL_NAME = 'DiTy/cross-encoder-russian-msmarco'
 # --- Параметры RAG ---
 # Количество изначальных кандидатов для ретривера
 INITIAL_RETRIEVAL_TOP_K = 40
+# <<< Новый параметр: Количество кандидатов для поиска С ФИЛЬТРАМИ >>>
+FILTERED_RETRIEVAL_TOP_K = 15 # Должно быть <= INITIAL_RETRIEVAL_TOP_K
 # Количество узлов после реранкинга для передачи в LLM
-RERANKER_TOP_N = 15 # Рекомендуется <= INITIAL_RETRIEVAL_TOP_K
+RERANKER_TOP_N = 12 # Рекомендуется <= FILTERED_RETRIEVAL_TOP_K (если фильтры используются) или INITIAL_RETRIEVAL_TOP_K
 # Старое значение, если нужно где-то использовать (но лучше опираться на INITIAL_RETRIEVAL_TOP_K и RERANKER_TOP_N)
 # SIMILARITY_TOP_K = 12 
 
@@ -44,7 +46,7 @@ LLM_CONTEXT_WINDOW = 100000 # Размер контекстного окна LLM
 RERANKER_MAX_LENGTH = 512 # Максимальная длина последовательности для реранкера
 
 # --- Общие параметры ---
-LOGGING_LEVEL = "INFO" # Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+LOGGING_LEVEL = "DEBUG" # Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 
 
 # --- Дополнительно: маппинг типов пенсий на фильтры ---
@@ -54,7 +56,7 @@ PENSION_TYPE_FILTERS = {
         'description': 'Страховая по старости (общий случай)',
         'filters': [
             {"key": "article", "value": "Статья 8"},
-            {"key": "file_name", "value": "fz400.pdf"}
+            {"key": "file_name", "value": "ФЗ-400-ФЗ-28_12_2013.pdf"}
         ],
         'condition_keywords': [] # Не применять, если есть эти слова в запросе
     },
@@ -63,7 +65,7 @@ PENSION_TYPE_FILTERS = {
         'filters': [
              # Могут быть другие статьи, например, 30, 31, 32 ФЗ-400
             {"key": "article", "value": "Статья 30"}, # Как пример
-            {"key": "file_name", "value": "fz400.pdf"}
+            {"key": "file_name", "value": "ФЗ-400-ФЗ-28_12_2013.pdf"}
         ],
         'condition_keywords': ['досрочн'] # Применять, только если есть эти слова
     },
@@ -71,12 +73,22 @@ PENSION_TYPE_FILTERS = {
         'description': 'Социальная по инвалидности',
         'filters': [
             {"key": "article", "value": "Статья 11"},
-            {"key": "file_name", "value": "fz166.pdf"}
+            {"key": "file_name", "value": "ФЗ-166-ФЗ-15_12_2001.pdf"}
         ],
         'condition_keywords': []
     },
     # Добавить другие типы пенсий...
 }
+
+# <<< ДОБАВЛЯЕМ СЛОВАРЬ ДЛЯ НАЗВАНИЙ ТИПОВ ПЕНСИЙ >>>
+PENSION_TYPE_MAP = {
+    'retirement_standard': 'Страховая по старости (общий случай)',
+    'disability_social': 'Социальная по инвалидности',
+    'retirement_early': 'Досрочная страховая по старости',
+    # Добавить другие типы пенсий по мере необходимости
+    # 'survivor': 'Пенсия по случаю потери кормильца',
+}
+# <<< КОНЕЦ ДОБАВЛЕНИЯ >>>
 
 # --- Маппинг групп инвалидности для промпта ---
 DISABILITY_GROUP_MAP = {"1": "I", "2": "II", "3": "III", "child": "Ребенок-инвалид"}

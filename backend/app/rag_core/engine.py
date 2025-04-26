@@ -4,7 +4,7 @@ import glob
 import json
 import logging
 from typing import List, Optional, Dict, Any, Tuple
-from datetime import datetime
+from datetime import datetime, date
 
 from llama_index.core import (
     VectorStoreIndex,
@@ -17,7 +17,7 @@ from llama_index.core.schema import NodeWithScore, TextNode
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.ollama import Ollama
-from llama_index.core.vector_stores import MetadataFilter, ExactMatchFilter
+from llama_index.core.vector_stores import MetadataFilter, ExactMatchFilter, MetadataFilters
 from sentence_transformers import CrossEncoder
 import torch
 
@@ -50,12 +50,30 @@ except ImportError as e:
         logger.critical("Не удалось выполнить импорты ни как часть пакета, ни как скрипт. Проверьте структуру проекта и зависимости.")
         raise
 
+# Используем относительный импорт, если engine.py находится внутри app
+try:
+    from ..models import CaseDataInput # Если engine.py в app/rag_core
+except ImportError:
+    # Фоллбэк, если структура иная или для тестов
+    try: 
+        from app.models import CaseDataInput
+    except ImportError:
+         logger.error("Не удалось импортировать CaseDataInput. Проверьте структуру проекта.")
+         # Можно определить заглушку, если необходимо для работы остального кода
+         class CaseDataInput: pass 
+
 # # --- Старое место настройки логгера --- 
 # # Настройка логирования
 # # Настраиваем базовый конфиг, чтобы логгер был доступен сразу
 # logging.basicConfig(level=config.LOGGING_LEVEL, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # logger = logging.getLogger(__name__)
 
+# <<< Вспомогательная функция для расчета возраста >>>
+def calculate_age(birth_date: date) -> int:
+    """Рассчитывает возраст на текущую дату."""
+    today = date.today()
+    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+    return age
 
 class PensionRAG:
     """
@@ -334,8 +352,8 @@ class PensionRAG:
         Определяет фильтры метаданных на основе типа пенсии и текста запроса.
         Возвращает (список фильтров, флаг применения фильтров).
         """
-        # TODO: Перенести логику из старого query_case / предыдущей версии engine.py
-        logger.warning("_apply_filters method is not fully implemented yet.")
+        # <<< Убираем предупреждение >>>
+        # logger.warning("_apply_filters method is not fully implemented yet.")
         
         if not pension_type or pension_type not in self.config.PENSION_TYPE_FILTERS:
             logger.debug("No valid pension type provided or found in config, skipping filters.")
@@ -355,61 +373,69 @@ class PensionRAG:
         # Добавить логику для 'exclude_keywords', если нужно
 
         if apply and filter_config.get('filters'):
-            metadata_filters = [
+            metadata_filter_list = [
                 ExactMatchFilter(key=f['key'], value=f['value']) 
                 for f in filter_config['filters']
             ]
             logger.info(f"Applying metadata filters for pension type '{pension_type}': {filter_config['filters']}")
-            return metadata_filters, True
+            return MetadataFilters(filters=metadata_filter_list), True
         else:
              # Либо не было фильтров в конфиге, либо не выполнилось условие по словам
              return [], False
 
 
     def _retrieve_nodes(self, query_bundle: QueryBundle, pension_type: Optional[str]) -> List[NodeWithScore]:
-        """Выполняет поиск узлов (retrieval) с фильтрами и без, объединяет результаты."""
-        # TODO: Перенести логику из старого query_case / предыдущей версии engine.py
-        logger.warning("_retrieve_nodes method is not fully implemented yet.")
-
+        """Выполняет поиск узлов (retrieval) с фильтрами и без, объединяет результаты, отдавая приоритет фильтрованным."""
+        
         logger.info(f"Retrieving nodes for query: '{query_bundle.query_str[:100]}...'")
         target_filters, filters_applied = self._apply_filters(query_bundle, pension_type)
-
-        # Основной поиск
-        base_retriever = self._get_retriever()
-        base_nodes = base_retriever.retrieve(query_bundle)
-        logger.debug(f"Retrieved {len(base_nodes)} base nodes.")
-        for node in base_nodes: # Сохраняем исходный скор
-             node.metadata['retrieval_score'] = node.score 
-
-        # Поиск с фильтрами
-        filtered_nodes = []
+        
+        # Поиск с фильтрами (если они применимы)
+        filtered_nodes: List[NodeWithScore] = []
         if filters_applied:
             try:
-                filtered_retriever = self._get_retriever(filters=target_filters)
+                # <<< Используем self.config.FILTERED_RETRIEVAL_TOP_K для фильтрованного поиска >>>
+                logger.debug(f"Creating filtered retriever with similarity_top_k={self.config.FILTERED_RETRIEVAL_TOP_K} and filters=yes")
+                filtered_retriever = self.index.as_retriever(
+                    similarity_top_k=self.config.FILTERED_RETRIEVAL_TOP_K, # <-- Новый параметр
+                    filters=target_filters
+                )
                 filtered_nodes = filtered_retriever.retrieve(query_bundle)
-                logger.debug(f"Retrieved {len(filtered_nodes)} nodes with filters.")
-                for node in filtered_nodes: # Сохраняем исходный скор
+                logger.debug(f"Retrieved {len(filtered_nodes)} nodes with filters (asked for {self.config.FILTERED_RETRIEVAL_TOP_K}).")
+                for node in filtered_nodes:
                      node.metadata['retrieval_score'] = node.score
             except Exception as e:
                  logger.error(f"Error retrieving nodes with filters: {e}", exc_info=True)
-                 # Продолжаем без фильтрованных узлов в случае ошибки
-                 filtered_nodes = []
-
-        # Объединение и дедупликация
-        all_nodes_dict: Dict[str, NodeWithScore] = {node.node.node_id: node for node in base_nodes}
-        added_filtered = 0
-        for node in filtered_nodes:
-            if node.node.node_id not in all_nodes_dict:
-                all_nodes_dict[node.node.node_id] = node
-                added_filtered += 1
-            # Можно добавить логику обновления score, если фильтрованный узел уже есть, но имеет лучший score
+                 filtered_nodes = [] # Продолжаем без фильтрованных узлов в случае ошибки
+        else:
+            logger.debug("Filters were not applied for this query.")
         
-        combined_nodes = list(all_nodes_dict.values())
-        combined_nodes.sort(key=lambda x: x.score, reverse=True) # Сортировка по исходному score
+        # Основной поиск (без фильтров)
+        # <<< Используем self.config.INITIAL_RETRIEVAL_TOP_K для базового поиска >>>
+        logger.debug(f"Creating base retriever with similarity_top_k={self.config.INITIAL_RETRIEVAL_TOP_K} and filters=no")
+        base_retriever = self.index.as_retriever(
+            similarity_top_k=self.config.INITIAL_RETRIEVAL_TOP_K, # <-- Старый параметр
+            filters=None # Явно указываем отсутствие фильтров
+        )
+        base_nodes = base_retriever.retrieve(query_bundle)
+        logger.debug(f"Retrieved {len(base_nodes)} base nodes (asked for {self.config.INITIAL_RETRIEVAL_TOP_K}).")
+        for node in base_nodes:
+             node.metadata['retrieval_score'] = node.score 
         
-        logger.info(f"Combined and deduplicated nodes: {len(combined_nodes)} (added {added_filtered} from filtered search)")
+        # Объединение и дедупликация с приоритетом для фильтрованных узлов
+        combined_nodes_dict: Dict[str, NodeWithScore] = {node.node.node_id: node for node in filtered_nodes}
+        added_from_base = 0
+        for node in base_nodes:
+            if node.node.node_id not in combined_nodes_dict:
+                combined_nodes_dict[node.node.node_id] = node
+                added_from_base += 1
+        
+        combined_nodes = list(combined_nodes_dict.values())
+        combined_nodes.sort(key=lambda x: x.metadata.get('retrieval_score', x.score), reverse=True)
+        
+        logger.info(f"Combined nodes: {len(combined_nodes)} (priority given to {len(filtered_nodes)} filtered nodes, added {added_from_base} from base search)")
+        
         return combined_nodes
-
 
     def _rerank_nodes(self, query_bundle: QueryBundle, nodes: List[NodeWithScore]) -> Tuple[List[NodeWithScore], float]:
         """Применяет реранкер (если доступен) к узлам-кандидатам.
@@ -436,8 +462,27 @@ class PensionRAG:
             nodes.sort(key=lambda x: x.score, reverse=True)
             reranked_nodes = nodes[:self.config.RERANKER_TOP_N]
             logger.info(f"Reranking complete. Selected top {len(reranked_nodes)} nodes.")
+            
+            # <<< ДОБАВЛЯЕМ ЛОГИРОВАНИЕ МЕТАДАННЫХ ВЫБРАННЫХ УЗЛОВ >>>
+            logger.info("--- Top nodes selected for LLM context: ---")
+            for i, node in enumerate(reranked_nodes):
+                metadata = node.metadata
+                # Формируем строку с основной информацией
+                log_entry = (
+                    f"  {i+1}. Score: {node.score:.4f}, "
+                    f"File: {metadata.get('file_name', '?')}, "
+                    f"Article: {metadata.get('article', '?')}, "
+                    f"Header: {metadata.get('header', '?')} "
+                    f"(Node ID: {node.node.node_id})"
+                )
+                logger.info(log_entry)
+                # Дополнительно логируем начало текста узла на уровне DEBUG, если нужно
+                # logger.debug(f"      Text: {node.get_content()[:100]}...")
+            logger.info("-----------------------------------------")
+            # <<< КОНЕЦ ЛОГИРОВАНИЯ >>>
+
             top_scores_log = [f"{n.score:.4f}" for n in reranked_nodes[:3]] # Оставляем для логов
-            logger.debug(f"Top reranked scores: {top_scores_log}")
+            # logger.debug(f"Top reranked scores: {top_scores_log}") # Можно закомментировать, т.к. лог выше информативнее
             
             # --- ИЗМЕНЕННАЯ ЛОГИКА СКОРА УВЕРЕННОСТИ ---
             confidence_score = 0.0
@@ -449,7 +494,6 @@ class PensionRAG:
                  logger.warning("No nodes left after reranking, confidence score is 0.0")
             # -------------------------------------------
             
-            # Возвращаем ноды и новый скор уверенности
             return reranked_nodes, confidence_score 
             
         except Exception as e:
@@ -461,14 +505,36 @@ class PensionRAG:
             return nodes[:self.config.RERANKER_TOP_N], 0.0 
 
 
-    def _build_prompt(self, query_text: str, context_nodes: List[NodeWithScore], pension_type: Optional[str], disability_info: Optional[dict]) -> str:
-        """Формирует финальный промпт для LLM."""
-        # TODO: Перенести логику из старого query_case / предыдущей версии engine.py
-        logger.warning("_build_prompt method is not fully implemented yet.")
-
+    def _build_prompt(self, query_text: str, context_nodes: List[NodeWithScore], case_data: CaseDataInput, disability_info: Optional[dict]) -> str:
+        """Формирует финальный промпт для LLM, используя метаданные и структурированные данные."""
         logger.debug("Building final prompt for LLM...")
-        context_str = "\n\n---\n\n".join([node.get_content() for node in context_nodes])
         
+        # Собираем контекст и информацию об источниках из метаданных
+        context_parts = []
+        sources_summary = set() # Используем set для уникальных источников
+        for i, node in enumerate(context_nodes):
+            content = node.get_content()
+            metadata = node.metadata
+            # Формируем описание источника на основе доступных метаданных
+            source_desc = f"Источник {i+1}: {metadata.get('file_name', 'Неизвестный файл')}"
+            if metadata.get('article'):
+                source_desc += f", Статья {metadata.get('article')}"
+            if metadata.get('paragraph'):
+                source_desc += f", Пункт {metadata.get('paragraph')}"
+            if metadata.get('subparagraph'):
+                 source_desc += f", Подпункт {metadata.get('subparagraph')}"
+            
+            context_parts.append(f"{source_desc}\n{content}")
+            # Добавляем краткое имя файла и статью в общий список источников (если есть)
+            if metadata.get('file_name') and metadata.get('article'):
+                 sources_summary.add(f"{metadata.get('file_name')} (Статья {metadata.get('article')})")
+            elif metadata.get('file_name'):
+                 sources_summary.add(metadata.get('file_name'))
+
+        context_str = "\n\n---\n\n".join(context_parts)
+        sources_str = ", ".join(sorted(list(sources_summary))) or "Не указаны"
+
+        # Формируем строку информации об инвалидности
         disability_str = ""
         if disability_info:
             group_code = disability_info.get("group")
@@ -476,43 +542,58 @@ class PensionRAG:
             reason = disability_info.get("reason", "не указана")
             disability_str = f"\nДополнительная информация: Инвалидность {group_name}, причина - {reason}."
 
-        current_date = datetime.now().strftime("%d.%m.%Y")  # Формат ДД.ММ.ГГГГ
+        current_date_str = datetime.now().strftime("%d.%m.%Y")  # Формат ДД.ММ.ГГГГ
+        
+        # <<< Извлекаем и форматируем ключевые параметры >>>
+        pd = case_data.personal_data
+        we = case_data.work_experience
+        calculated_age_val = calculate_age(pd.birth_date)
+        pension_type_str = self.config.PENSION_TYPE_MAP.get(case_data.pension_type, case_data.pension_type) # Используем маппинг из конфига
+        # <<< Получаем ИПК из case_data, чтобы явно использовать в промпте ниже >>>
+        applicant_ipk_value = case_data.pension_points 
+        # -----------------------------------------------
 
         prompt = f"""
             Запрос на правовой анализ пенсионного случая в соответствии с законодательством РФ
-            **Актуальность данных на**: {current_date}
+            **Актуальность данных на**: {current_date_str}
 
             **Сведения о заявителе:**
             - Описание ситуации: {query_text}{disability_str}
-            - Категория запрашиваемой пенсии: {pension_type or 'не определена'}
-
-            **Нормативная база:**
-            ---
+            
+            **Ключевые параметры заявителя (для анализа):**
+            - Возраст на {current_date_str}: {calculated_age_val}
+            - Общий стаж (указанный): {we.total_years}
+            - ИПК (указанный): {applicant_ipk_value} 
+            - Категория запрашиваемой пенсии: {pension_type_str}
+            
+            **Нормативная база (основные источники контекста):** {sources_str}
+            --- Контекст из базы знаний --- 
             {context_str}
-            ---
+            --- Конец контекста ---
 
             **Порядок обработки запроса:**
             1. Установление правовых оснований:
-            • Определить соответствие случая статьям {context_str.split('ФЗ')[1].split()[0]} (с указанием конкретных пунктов)
+            • Определить соответствие случая статьям законодательства из предоставленного контекста (с указанием конкретных пунктов)
             • Выявить наличие/отсутствие обязательных критериев назначения
 
             2. Анализ условий назначения:
-            • Возрастные требования (указать нормативный возраст)
-            • Страховой стаж (минимальные значения)
-            • Величина ИПК (пороговое значение)
-            • Специальные условия (для льготных категорий)
+            • Возрастные требования: Сравни возраст заявителя (из 'Ключевые параметры заявителя') с нормативным возрастом (из контекста) на {current_date_str}.
+            • Страховой стаж: Сравни общий стаж заявителя (из 'Ключевые параметры заявителя') с минимальным требуемым стажем (из контекста) на {current_date_str}.
+            • Величина ИПК: **ОБЯЗАТЕЛЬНО** используй значение ИПК заявителя из раздела 'Ключевые параметры заявителя' ({applicant_ipk_value}). Сравни это значение с пороговым значением ИПК из контекста (обычно 30 для Статьи 8 ФЗ-400). Четко укажи **оба** значения (заявителя и требуемое) при сравнении и сделай вывод о соответствии.
+            • Специальные условия (для льготных категорий): Проверь, применимы ли льготы на основе описания и контекста.
 
             3. Требуемые документы:
             • Установленный перечень по выявленным основаниям
             • Отсутствующие в описании данные (справки, подтверждения)
 
             **Требования к ответу:**
-            ✓ Ссылки только на приведенные статьи законов
+            ✓ Ссылки только на предоставленный контекст (например, "Согласно {{источник}}, Статья X..."). Не ссылайся на статьи или законы, которых нет в контексте.
             ✓ Отказ от интерпретаций вне предоставленного контекста
             ✓ Четкое разделение выводов на:
-            - Удовлетворяющие условия (со ссылкой на норму права)
+            - Удовлетворяющие условия (со ссылкой на норму права из контекста)
             - Неудовлетворяющие условия (с указанием причины)
             - Недостающие сведения (перечень документов/справок)
+            ✓ Добавь в самый конец ответа **обязательную** фразу в одной из формулировок: "ИТОГ: СООТВЕТСТВУЕТ" или "ИТОГ: НЕ СООТВЕТСТВУЕТ".
 
             **Примечание:** 
             Ответ подлежит оформлению в соответствии с Приказом Минтруда № 958н от 28.12.2022 
@@ -523,18 +604,17 @@ class PensionRAG:
             - Не придумывай информацию.
             - Будь кратким и по существу.
             - Отвечай на русском языке.
-            - перепроверяй все факты и цифры. Например, возраст, стаж, ИПК и т.д. Человек не может быть старше 100 лет, иметь стаж работы больше чем его возраст.
+            - Перепроверяй все факты и цифры. Например, возраст, стаж, ИПК ({applicant_ipk_value}) и т.д. Человек не может быть старше 100 лет, иметь стаж работы больше чем его возраст.
             """
         logger.debug(f"Generated prompt (first 200 chars): {prompt[:200]}...")
         return prompt
 
 
-    def query(self, case_description: str, pension_type: Optional[str] = None, disability_info: Optional[dict] = None) -> Tuple[str, float]:
+    def query(self, case_data: CaseDataInput, case_description: str, pension_type: Optional[str] = None, disability_info: Optional[dict] = None) -> Tuple[str, float]:
         """
         Основной метод для выполнения запроса к RAG системе.
         Возвращает кортеж: (текст ответа LLM, скор уверенности).
         """
-        # TODO: Перенести логику из старого query_case / предыдущей версии engine.py
         logger.warning("Query method needs review/update for confidence score logic.")
 
         logger.info(f"Processing query: '{case_description[:100]}...', pension_type: {pension_type}")
@@ -549,39 +629,39 @@ class PensionRAG:
 
             if not ranked_nodes:
                  logger.warning("No relevant documents found after retrieval and reranking.")
-                 # Возвращаем сообщение и скор 0.0
                  return "К сожалению, не удалось найти релевантную информацию в базе знаний для ответа на ваш запрос.", 0.0 
 
             # 3. Build Prompt
-            final_prompt = self._build_prompt(case_description, ranked_nodes, pension_type, disability_info)
+            final_prompt = self._build_prompt(case_description, ranked_nodes, case_data, disability_info)
+            
+            # <<< ДОБАВЛЯЕМ ЛОГИРОВАНИЕ ПОЛНОГО ПРОМПТА >>>
+            logger.debug(f"Final prompt being sent to LLM:\n------ START PROMPT ------\n{final_prompt}\n------ END PROMPT ------")
+            # <<< КОНЕЦ ЛОГИРОВАНИЯ >>>
             
             # 4. Generate Response using LLM
             logger.info("Sending request to LLM...")
-            # Используем прямой вызов LLM
             response = self.llm.complete(final_prompt)
             response_text = str(response)
             
             logger.info(f"LLM response received (length: {len(response_text)}).")
             logger.debug(f"LLM Response (first 100 chars): {response_text[:100]}...")
             
-            # TODO: Добавить пост-обработку ответа LLM при необходимости
-            
-            # Возвращаем текст и скор уверенности
-            return response_text, confidence_score 
+            return response_text, confidence_score
 
         except Exception as e:
             logger.error(f"Error processing query '{case_description[:50]}...': {e}", exc_info=True)
-            # Возвращаем сообщение об ошибке и скор 0.0
-            return f"Произошла внутренняя ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже или обратитесь к администратору. (Ошибка: {e})", 0.0 
+            return f"Произошла внутренняя ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже или обратитесь к администратору. (Ошибка: {e})", 0.0
 
 
 # --- Пример использования (для локального тестирования) ---
 if __name__ == '__main__':
-    # Устанавливаем уровень логирования DEBUG для подробной информации при запуске скрипта
+    # <<< Устанавливаем уровень DEBUG, чтобы видеть лог промпта >>>
     # logger.setLevel(logging.DEBUG) # Устанавливаем уровень для корневого логгера
     # for handler in logging.getLogger().handlers: # Устанавливаем уровень для всех хендлеров
     #      handler.setLevel(logging.DEBUG)
-    logging.getLogger(__name__).setLevel(logging.DEBUG) # Устанавливаем DEBUG только для этого модуля
+    # logging.getLogger(__name__).setLevel(logging.DEBUG) # Устанавливаем DEBUG только для этого модуля
+    # <<< Раскомментируем установку DEBUG для этого модуля >>>
+    logging.getLogger(__name__).setLevel(logging.DEBUG)
          
     logger.info("="*20 + " Starting PensionRAG engine test " + "="*20)
     try:
@@ -617,6 +697,12 @@ if __name__ == '__main__':
              print(f"\n--- Query {i+1}: {case['description']} (Type: {case['pension_type']}) ---")
              # Получаем и текст, и скор
              result_text, score = rag_engine.query(
+                 case_data=CaseDataInput(
+                     personal_data=CaseDataInput.PersonalData(birth_date=date(1956, 1, 1)),
+                     work_experience=CaseDataInput.WorkExperience(total_years=12),
+                     pension_points=20,
+                     pension_type=case['pension_type']
+                 ),
                  case_description=case['description'], 
                  pension_type=case['pension_type'], 
                  disability_info=case['disability_info']

@@ -34,7 +34,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
         try {
             const errorData = await response.json();
             errorDetail = errorData.detail || JSON.stringify(errorData);
-        } catch (jsonError) { /* ignore */ }
+        } catch (_jsonError) { /* ignore */ }
         console.error("API Error:", errorDetail);
         throw new Error(errorDetail); // Бросаем ошибку с деталями
     }
@@ -57,15 +57,15 @@ export async function processCase(caseData: CaseFormDataType): Promise<ProcessRe
 }
 
 /**
- * Отправляет описание дела для RAG-анализа.
- * @param caseDescription Текстовое описание дела
+ * Отправляет полное описание дела для RAG-анализа.
+ * @param caseData Полные данные формы
  * @returns Результат RAG-анализа с скором уверенности
  */
-export async function analyzeCase(caseDescription: string): Promise<RagAnalysisResponse> {
+export async function analyzeCase(caseData: CaseFormDataType): Promise<RagAnalysisResponse> {
     const response = await fetch(`${API_BASE_URL}/api/v1/analyze_case`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ case_description: caseDescription }),
+        body: JSON.stringify(caseData),
     });
     return handleResponse<RagAnalysisResponse>(response);
 }
@@ -105,7 +105,7 @@ export async function downloadDocument(caseId: number, format: 'pdf' | 'docx'): 
         try {
             const errorData = await response.json();
             errorDetail = errorData.detail || JSON.stringify(errorData);
-        } catch (jsonError) { /* ignore */ }
+        } catch (_jsonError) { /* ignore */ }
         console.error("API Download Error:", errorDetail);
         throw new Error(errorDetail);
     }

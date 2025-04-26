@@ -377,26 +377,56 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     setIsLoadingAnalysis(true);
     setAnalysisResult(null);
     setAnalysisError(null);
-    setConfidenceScore(null); // <<< Сбрасываем скор перед запросом
+    setConfidenceScore(null); 
 
     try {
       const currentData = getValues();
-      // <<< Исправляем вызов: передаем только данные формы
-      const description = createComprehensiveRagDescription(currentData);
-      console.log("Sending to RAG:", description);
+      
+      // <<< Применяем ту же логику подготовки данных, что и в onSubmit >>>
+      const dataToSend = JSON.parse(JSON.stringify(currentData)); // Глубокая копия
+      // Преобразуем строки в массивы (если они не пустые)
+      dataToSend.benefits = (currentData.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
+      dataToSend.documents = (currentData.documents || '').split(',').map(s => s.trim()).filter(Boolean);
+      // Убедимся, что тип пенсии установлен (хотя он должен быть в currentData, но для надежности)
+      dataToSend.pension_type = selectedPensionType || currentData.pension_type || ''; 
+      // Обрабатываем пустой объект смены ФИО
+      if (dataToSend.personal_data.name_change_info && !dataToSend.personal_data.name_change_info.old_full_name && !dataToSend.personal_data.name_change_info.date_changed) {
+          dataToSend.personal_data.name_change_info = null;
+      }
+      // <<< КОНЕЦ логики подготовки данных >>>
 
-      // <<< Вызываем analyzeCase и получаем объект с результатом и скором
-      const response = await analyzeCase(description);
+      console.log("Sending prepared data to /api/v1/analyze_case:", dataToSend);
+
+      // <<< Вызываем analyzeCase, передавая подготовленный объект dataToSend >>>
+      const response = await analyzeCase(dataToSend); 
       console.log("RAG response:", response);
 
-      setAnalysisResult(response.analysis_result); // <<< Сохраняем текст анализа
-      setConfidenceScore(response.confidence_score); // <<< Сохраняем скор уверенности
+      setAnalysisResult(response.analysis_result); 
+      setConfidenceScore(response.confidence_score); 
 
     } catch (error: any) {
-      console.error("RAG Analysis error:", error);
-      setAnalysisError(error.message || 'Не удалось выполнить RAG-анализ.');
+      // <<< Логируем исходную ошибку для диагностики >>>
+      console.error("RAG Analysis error (raw):", error);
+      // Формируем сообщение об ошибке
+      let errorMessage = 'Не удалось выполнить RAG-анализ.';
+      if (error instanceof Error) {
+          errorMessage = error.message;
+      } else if (typeof error === 'string') {
+          errorMessage = error;
+      }
+      // Пытаемся извлечь детали из 422 ошибки, если они есть
+      if (error?.response?.data?.detail) {
+          try {
+              const details = JSON.stringify(error.response.data.detail);
+              errorMessage += `: ${details}`;
+          } catch (_) { /* ignore stringify error */ }
+      } else if (error?.message) {
+           // Уже содержит сообщение из handleResponse
+      }
+      console.error("RAG Analysis error (processed message):", errorMessage);
+      setAnalysisError(errorMessage); 
       setAnalysisResult(null);
-      setConfidenceScore(null); // <<< Сбрасываем скор при ошибке
+      setConfidenceScore(null); 
     } finally {
       setIsLoadingAnalysis(false);
     }
