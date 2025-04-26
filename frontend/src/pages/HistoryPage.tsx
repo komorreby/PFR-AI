@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box,
     Container,
@@ -12,8 +12,7 @@ import {
 import { SearchIcon } from '@chakra-ui/icons';
 import HistoryList from '../components/HistoryList';
 import { HistoryEntry } from '../components/HistoryList';
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { getHistory, downloadDocument } from '../api/client';
 
 function HistoryPage() {
     const [historyData, setHistoryData] = useState<HistoryEntry[]>([]);
@@ -21,26 +20,15 @@ function HistoryPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const toast = useToast();
 
-    const fetchHistory = async () => {
+    const fetchHistory = useCallback(async () => {
         setHistoryLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/history?limit=50`);
-            if (response.ok) {
-                const data: HistoryEntry[] = await response.json();
-                setHistoryData(data);
-            } else {
-                toast({ 
-                    title: "Ошибка загрузки истории",
-                    description: `${response.status} ${response.statusText}`,
-                    status: "error",
-                    duration: 5000,
-                    isClosable: true,
-                });
-            }
+            const data = await getHistory();
+            setHistoryData(data);
         } catch (error) {
             toast({ 
-                title: "Сетевая ошибка",
-                description: `Не удалось загрузить историю: ${error instanceof Error ? error.message : String(error)}`,
+                title: "Ошибка загрузки истории",
+                description: `${error instanceof Error ? error.message : String(error)}`,
                 status: "error",
                 duration: 5000,
                 isClosable: true,
@@ -48,11 +36,11 @@ function HistoryPage() {
         } finally {
             setHistoryLoading(false);
         }
-    };
+    }, [toast]);
 
     useEffect(() => {
         fetchHistory();
-    }, []);
+    }, [fetchHistory]);
 
     const handleDownload = async (caseId: number, format: 'pdf' | 'docx') => {
         const toastId = toast({ 
@@ -64,7 +52,7 @@ function HistoryPage() {
         });
         console.log(`Requesting download for case ${caseId}, format: ${format}`);
         try {
-            const response = await fetch(`${API_BASE_URL}/download_document/${caseId}?format=${format}`);
+            const response = await downloadDocument(caseId, format);
 
             if (response.ok) {
                 const disposition = response.headers.get('content-disposition');
@@ -111,8 +99,8 @@ function HistoryPage() {
         } catch (error) {
             if (toastId) {
                 toast.update(toastId, { 
-                    title: "Сетевая ошибка", 
-                    description: `Ошибка при скачивании файла: ${error instanceof Error ? error.message : String(error)}`, 
+                    title: "Ошибка скачивания", 
+                    description: `Не удалось скачать файл: ${error instanceof Error ? error.message : String(error)}`, 
                     status: "error", 
                     duration: 5000, 
                     isClosable: true 
@@ -146,7 +134,7 @@ function HistoryPage() {
                     placeholder="Поиск по ID или ФИО..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    bg="white"
+                    bg="cardBackground"
                 />
             </InputGroup>
             {historyLoading && (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FieldErrors, UseFormRegister } from 'react-hook-form';
+import { FieldErrors, UseFormRegister, Control, Controller } from 'react-hook-form';
 import {
     VStack,
     Heading,
@@ -10,20 +10,21 @@ import {
     NumberInputStepper,
     NumberIncrementStepper,
     NumberDecrementStepper,
-    Textarea,
     Checkbox,
     FormErrorMessage
 } from '@chakra-ui/react';
 import { CaseFormDataType } from '../CaseForm';
+import TagInput from '../formInputs/TagInput';
 
 interface AdditionalInfoStepProps {
     register: UseFormRegister<CaseFormDataType>;
+    control: Control<CaseFormDataType>;
     errors: FieldErrors<CaseFormDataType>;
     getErrorMessage: (name: string) => string | undefined;
     pensionType: string | null;
 }
 
-const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({ register, errors, getErrorMessage, pensionType }) => {
+const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({ register, control, getErrorMessage, pensionType }) => {
     return (
         <VStack spacing={4} align="stretch">
             <Heading size="md" mb={4}>Дополнительная информация</Heading>
@@ -47,14 +48,36 @@ const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({ register, error
             {pensionType !== 'disability_social' && (
                 <FormControl isInvalid={!!getErrorMessage('benefits')}>
                     <FormLabel htmlFor="benefits">Льготы</FormLabel>
-                    <Textarea id="benefits" placeholder="Перечислите льготы через запятую" {...register("benefits")} />
+                    <Controller
+                        name="benefits"
+                        control={control}
+                        render={({ field }) => (
+                            <TagInput
+                                id={field.name}
+                                value={field.value}
+                                fieldOnChange={field.onChange}
+                                placeholder="Добавьте льготу и нажмите Enter"
+                            />
+                        )}
+                    />
                     <FormErrorMessage>{getErrorMessage('benefits')}</FormErrorMessage>
                 </FormControl>
             )}
             {/* Документы */}
             <FormControl isInvalid={!!getErrorMessage('documents')}>
                 <FormLabel htmlFor="documents">Представленные документы</FormLabel>
-                <Textarea id="documents" placeholder="Перечислите документы через запятую" {...register("documents")} />
+                <Controller
+                    name="documents"
+                    control={control}
+                    render={({ field }) => (
+                        <TagInput
+                            id={field.name}
+                            value={field.value}
+                            fieldOnChange={field.onChange}
+                            placeholder="Добавьте документ и нажмите Enter"
+                        />
+                    )}
+                />
                 <FormErrorMessage>{getErrorMessage('documents')}</FormErrorMessage>
             </FormControl>
             {/* Некорректные документы */}

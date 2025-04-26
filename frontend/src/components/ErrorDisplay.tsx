@@ -1,4 +1,3 @@
-import React from 'react';
 import { ApiError } from './CaseForm'; // Тип для ошибки
 
 import { 

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useForm, useFieldArray, SubmitHandler, FieldErrors } from 'react-hook-form';
-import { format, isValid, differenceInYears } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
+// import { isValid, differenceInYears } from 'date-fns';
 
 // Импорты Chakra UI (оставляем только нужные для обертки формы и навигации)
 import {
@@ -8,8 +8,21 @@ import {
   StepIcon, StepNumber, StepTitle, StepDescription, StepSeparator,
   Flex, Spacer, useSteps,
   // Добавляем нужные компоненты для вывода результата
-  Alert, AlertIcon, AlertTitle, AlertDescription, CircularProgress, Text, VStack
+  Alert, AlertIcon, AlertTitle, AlertDescription, CircularProgress, Text, VStack,
+  // <<< Новые импорты для RAG-результата
+  IconButton,
+  useClipboard, // Хук для копирования
+  ListItem, Text as ChakraText, Heading as ChakraHeading, OrderedList, UnorderedList
 } from '@chakra-ui/react';
+
+// <<< Импорт иконок для кнопок навигации и RAG
+import { ArrowBackIcon, ArrowForwardIcon, CopyIcon, InfoIcon } from '@chakra-ui/icons';
+// <<< Импорт функций API клиента
+import { processCase, analyzeCase } from '../api/client';
+// <<< Импорт новой утилиты
+import { createComprehensiveRagDescription } from '../utils';
+// <<< Импорт ReactMarkdown
+import ReactMarkdown from 'react-markdown';
 
 // Импортируем типы и компоненты шагов
 import PersonalDataStep from './formSteps/PersonalDataStep';
@@ -26,8 +39,10 @@ type NameChangeInfoType = {
   date_changed: string;
 };
 
-type PersonalDataType = {
-  full_name: string;
+export type PersonalDataType = {
+  last_name: string;  // Фамилия
+  first_name: string; // Имя
+  middle_name?: string; // Отчество (опционально)
   birth_date: string;
   snils: string;
   gender: string; // 'male' | 'female' | ''; // Можно использовать Enum
@@ -36,7 +51,8 @@ type PersonalDataType = {
   dependents: number;
 };
 
-type WorkRecordType = {
+// <<< Добавляем export
+export type WorkRecordType = {
   organization: string;
   start_date: string;
   end_date: string;
@@ -133,18 +149,18 @@ const getStepsForPensionType = (type: string | null): StepDefinition[] => {
   }
 };
 
-// Функция для вычисления возраста
-const calculateAge = (birthDateString: string): number | string => {
-  try {
-    const birthDate = new Date(birthDateString);
-    if (isValid(birthDate)) {
-      return differenceInYears(new Date(), birthDate);
-    }
-  } catch (e) {
-    // ignore
-  }
-  return 'неизвестно'; // Возвращаем строку, если дата некорректна
-};
+// // Функция для вычисления возраста
+// const calculateAge = (birthDateString: string): number | string => {
+//   try {
+//     const birthDate = new Date(birthDateString);
+//     if (isValid(birthDate)) {
+//       return differenceInYears(new Date(), birthDate);
+//     }
+//   } catch (e) {
+//     // ignore
+//   }
+//   return 'неизвестно'; // Возвращаем строку, если дата некорректна
+// };
 
 function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -154,6 +170,10 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  // <<< Добавляем состояние для confidence score
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
+  // <<< Используем хук useClipboard для результата RAG
+  const { hasCopied, onCopy } = useClipboard(analysisResult || '');
   // ----------------------------------
 
   // <<< Состояние для текущей последовательности шагов
@@ -188,7 +208,9 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     defaultValues: {
       pension_type: '',
       personal_data: {
-        full_name: '',
+        last_name: '',  
+        first_name: '', 
+        middle_name: '',
         birth_date: '',
         snils: '',
         gender: '',
@@ -211,10 +233,12 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   const fieldArray = useFieldArray({ control, name: "work_experience.records" });
 
   const onSubmit: SubmitHandler<CaseFormDataType> = async (data) => {
+    console.log("onSubmit triggered"); // <<< Добавляем лог
     setIsSubmitting(true);
     onSubmitError('');
     setAnalysisResult(null);
     setAnalysisError(null);
+    setConfidenceScore(null); // <<< Сбрасываем скор при новой отправке
     const dataToSend = JSON.parse(JSON.stringify(data));
     dataToSend.benefits = (data.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
     dataToSend.documents = (data.documents || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -222,28 +246,30 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     if (dataToSend.personal_data.name_change_info && !dataToSend.personal_data.name_change_info.old_full_name && !dataToSend.personal_data.name_change_info.date_changed) {
         dataToSend.personal_data.name_change_info = null;
     }
+
+    // --- Преобразование данных для эндпоинта /process --- 
+    const payloadForProcess = JSON.parse(JSON.stringify(dataToSend)); // Снова глубокая копия
+    payloadForProcess.personal_data.full_name = [
+        payloadForProcess.personal_data.last_name,
+        payloadForProcess.personal_data.first_name,
+        payloadForProcess.personal_data.middle_name
+    ].filter(Boolean).join(' ');
+    // Удаляем раздельные поля
+    delete payloadForProcess.personal_data.last_name;
+    delete payloadForProcess.personal_data.first_name;
+    delete payloadForProcess.personal_data.middle_name;
+    // ----------------------------------------------------
+
     try {
-      const response = await fetch('http://127.0.0.1:8000/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(dataToSend),
-      });
-      if (response.ok) {
-        const result: ProcessResult = await response.json(); // <<< Ожидаем ProcessResult
-        onSubmitSuccess(result); // <<< Передаем весь результат
-        setActiveStep(0); // Сбрасываем на первый шаг после успешной отправки
-        setSelectedPensionType(null); // Сбрасываем тип пенсии
-        // TODO: Возможно, нужно сбросить и сами данные формы?
-      } else {
-        let errorDetail = `Ошибка ${response.status}: ${response.statusText}`;
-        try {
-            const errorData = await response.json();
-            errorDetail = errorData.detail || JSON.stringify(errorData);
-        } catch (jsonError) { /* ignore */ }
-        onSubmitError(`Ошибка отправки данных: ${errorDetail}`);
-      }
+      // <<< Отправляем преобразованный payloadForProcess
+      const result = await processCase(payloadForProcess); 
+      onSubmitSuccess(result); // <<< Передаем весь результат
+      setActiveStep(0); // Сбрасываем на первый шаг после успешной отправки
+      setSelectedPensionType(null); // Сбрасываем тип пенсии
+      // TODO: Возможно, нужно сбросить и сами данные формы?
     } catch (error) {
-      onSubmitError(`Сетевая ошибка или другая проблема: ${error instanceof Error ? error.message : String(error)}`);
+       // <<< Ошибка теперь приходит из handleResponse
+      onSubmitError(`Ошибка отправки данных: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -291,7 +317,8 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
         }
     } else if (currentStepDefinition.id === 'personalData') {
         fieldsToValidate = [
-            'personal_data.full_name', 'personal_data.birth_date', 'personal_data.snils',
+            'personal_data.last_name', 'personal_data.first_name', 
+            'personal_data.birth_date', 'personal_data.snils',
             'personal_data.gender', 'personal_data.citizenship', 'personal_data.dependents'
         ];
         // Валидация полей смены ФИО, если они есть
@@ -340,63 +367,70 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     }
   };
 
-  // --- НОВЫЙ Обработчик для RAG анализа --- 
-  const handleAnalyzeCase = async () => {
-      setIsLoadingAnalysis(true);
-      setAnalysisResult(null);
-      setAnalysisError(null);
-      onSubmitError(''); // Сброс основной ошибки
-
-      try {
-          const formData = getValues();
-          // Формируем описание дела (упрощенный вариант)
-          const genderText = formData.personal_data.gender === 'male' ? 'Мужчина' : formData.personal_data.gender === 'female' ? 'Женщина' : 'Пол не указан';
-          const age = calculateAge(formData.personal_data.birth_date);
-          const incorrectDocsText = formData.has_incorrect_document ? 'Есть некорректные документы' : 'Документы в порядке';
-          // TODO: Добавить тип пенсии, если будет такое поле
-          const pensionTypeText = selectedPensionType === 'retirement_standard' ? 'страховая по старости' :
-                                selectedPensionType === 'disability_social' ? 'социальная по инвалидности' :
-                                'тип не указан';
-          const case_description = [
-              `${genderText}, ${age} лет`,
-              `${pensionTypeText}`,
-              `стаж ${formData.work_experience.total_years} лет`,
-              `ИПК ${formData.pension_points}`,
-              `${incorrectDocsText}`,
-              `Гражданство: ${formData.personal_data.citizenship || 'не указано'}`,
-              `Иждивенцы: ${formData.personal_data.dependents}`,
-          ].join(', ');
-
-          console.log("Sending for RAG analysis:", case_description);
-
-          const response = await fetch('http://127.0.0.1:8000/api/v1/analyze_case', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify({ case_description }), // Отправляем объект
-          });
-
-          if (response.ok) {
-              const result: { analysis_result: string } = await response.json();
-              setAnalysisResult(result.analysis_result);
-              console.log("RAG analysis successful:", result.analysis_result);
-          } else {
-              let errorDetail = `Ошибка ${response.status}: ${response.statusText}`;
-              try {
-                  const errorData = await response.json();
-                  errorDetail = errorData.detail || JSON.stringify(errorData);
-              } catch (jsonError) { /* ignore */ }
-              console.error("RAG Analysis Error:", errorDetail);
-              setAnalysisError(`Ошибка RAG-анализа: ${errorDetail}`);
-          }
-      } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          console.error("Network/Fetch Error during RAG analysis:", errorMessage);
-          setAnalysisError(`Сетевая ошибка или другая проблема при RAG-анализе: ${errorMessage}`);
-      } finally {
-          setIsLoadingAnalysis(false);
-      }
+  const handlePrevious = () => {
+    goToPrevious();
   };
-  // ------------------------------------------
+
+  // <<< Функция для запуска RAG анализа
+  const handleAnalyzeCase = async () => {
+    console.log("Analyzing case...");
+    setIsLoadingAnalysis(true);
+    setAnalysisResult(null);
+    setAnalysisError(null);
+    setConfidenceScore(null); 
+
+    try {
+      const currentData = getValues();
+      
+      // <<< Применяем ту же логику подготовки данных, что и в onSubmit >>>
+      const dataToSend = JSON.parse(JSON.stringify(currentData)); // Глубокая копия
+      // Преобразуем строки в массивы (если они не пустые)
+      dataToSend.benefits = (currentData.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
+      dataToSend.documents = (currentData.documents || '').split(',').map(s => s.trim()).filter(Boolean);
+      // Убедимся, что тип пенсии установлен (хотя он должен быть в currentData, но для надежности)
+      dataToSend.pension_type = selectedPensionType || currentData.pension_type || ''; 
+      // Обрабатываем пустой объект смены ФИО
+      if (dataToSend.personal_data.name_change_info && !dataToSend.personal_data.name_change_info.old_full_name && !dataToSend.personal_data.name_change_info.date_changed) {
+          dataToSend.personal_data.name_change_info = null;
+      }
+      // <<< КОНЕЦ логики подготовки данных >>>
+
+      console.log("Sending prepared data to /api/v1/analyze_case:", dataToSend);
+
+      // <<< Вызываем analyzeCase, передавая подготовленный объект dataToSend >>>
+      const response = await analyzeCase(dataToSend); 
+      console.log("RAG response:", response);
+
+      setAnalysisResult(response.analysis_result); 
+      setConfidenceScore(response.confidence_score); 
+
+    } catch (error: any) {
+      // <<< Логируем исходную ошибку для диагностики >>>
+      console.error("RAG Analysis error (raw):", error);
+      // Формируем сообщение об ошибке
+      let errorMessage = 'Не удалось выполнить RAG-анализ.';
+      if (error instanceof Error) {
+          errorMessage = error.message;
+      } else if (typeof error === 'string') {
+          errorMessage = error;
+      }
+      // Пытаемся извлечь детали из 422 ошибки, если они есть
+      if (error?.response?.data?.detail) {
+          try {
+              const details = JSON.stringify(error.response.data.detail);
+              errorMessage += `: ${details}`;
+          } catch (_) { /* ignore stringify error */ }
+      } else if (error?.message) {
+           // Уже содержит сообщение из handleResponse
+      }
+      console.error("RAG Analysis error (processed message):", errorMessage);
+      setAnalysisError(errorMessage); 
+      setAnalysisResult(null);
+      setConfidenceScore(null); 
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
 
   // --- Отображение текущего шага --- 
   const renderStepContent = () => {
@@ -438,8 +472,26 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   };
   // ------------------------------------
 
+  // <<< Добавляем конфигурацию компонентов для ReactMarkdown
+  const markdownComponents = {
+    h1: (props: React.ComponentProps<'h1'>) => <ChakraHeading as="h1" size="xl" my={4} {...props} />,
+    h2: (props: React.ComponentProps<'h2'>) => <ChakraHeading as="h2" size="lg" my={3} {...props} />,
+    h3: (props: React.ComponentProps<'h3'>) => <ChakraHeading as="h3" size="md" my={2} {...props} />,
+    h4: (props: React.ComponentProps<'h4'>) => <ChakraHeading as="h4" size="sm" my={1} {...props} />,
+    h5: (props: React.ComponentProps<'h5'>) => <ChakraHeading as="h5" size="xs" my={1} {...props} />,
+    h6: (props: React.ComponentProps<'h6'>) => <ChakraHeading as="h6" size="xs" my={1} {...props} />,
+    p: (props: React.ComponentProps<'p'>) => <ChakraText fontSize="sm" mb={2} {...props} />,
+    ol: (props: React.ComponentProps<'ol'>) => <OrderedList spacing={1} ml={6} mb={2} {...props} />,
+    ul: (props: React.ComponentProps<'ul'>) => <UnorderedList spacing={1} ml={6} mb={2} {...props} />,
+    li: (props: React.ComponentProps<'li'>) => <ListItem fontSize="sm" {...props} />,
+    // Добавьте другие теги по мере необходимости (например, strong, em, code)
+    strong: (props: React.ComponentProps<'strong'>) => <ChakraText as="strong" fontWeight="bold" {...props} />,
+    // em: (props: any) => <ChakraText as="em" fontStyle="italic" {...props} />,
+    // code: (props: any) => <Code {...props} />
+  };
+
   return (
-    <Box as="form" onSubmit={handleSubmit(onSubmit)} p={5} borderWidth="1px" borderRadius="lg" boxShadow="md" bg="white">
+    <Box as="form" onSubmit={handleSubmit(onSubmit)} p={5} borderWidth="1px" borderRadius="lg" boxShadow="md" bg="cardBackground">
        <Heading as="h2" size="lg" textAlign="center" mb={6} color="primary">
          Ввод данных пенсионного дела
        </Heading>
@@ -457,8 +509,8 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
                     }}
                     cursor={index <= activeStep ? "pointer" : "default"}
                     // <<< Добавляем стиль для неактивных будущих шагов
-                    opacity={index > activeStep ? 0.5 : 1} 
-                    _hover={index <= activeStep ? { bg: 'gray.100', borderRadius: 'md' } : {}} // Эффект при наведении только для активных
+                    opacity={index > activeStep ? 0.5 : 1}
+                    _hover={index <= activeStep ? { bg: 'gray.100', borderRadius: 'md', _dark: { bg: 'gray.700' } } : {}} // Эффект при наведении только для активных + темная тема
                  >
                     <StepIndicator>
                         <StepStatus
@@ -482,67 +534,105 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
 
         <VStack spacing={4} align="stretch">
             <Flex>
-                <Button onClick={goToPrevious} isDisabled={activeStep === 0} variant="outline">Назад</Button>
+                {/* <<< Добавлена leftIcon для кнопки Назад */}
+                <Button
+                   onClick={handlePrevious}
+                   isDisabled={activeStep === 0}
+                   variant="outline"
+                   leftIcon={<ArrowBackIcon />}
+                >
+                   Назад
+                </Button>
                 <Spacer />
-                 {/* Кнопка "Далее" теперь корректно работает с динамическим количеством шагов */}
+                 {}
                 {activeStep < currentSteps.length - 1 && (
-                    <Button onClick={handleNext} colorScheme="blue">Далее</Button>
+                    /* <<< Добавлена rightIcon для кнопки Далее */
+                    <Button
+                       onClick={handleNext}
+                       colorScheme="blue" // Используем стандартный синий
+                       rightIcon={<ArrowForwardIcon />}
+                    >
+                       Далее
+                    </Button>
                 )}
-                 {/* Кнопка "Отправить" показывается на последнем шаге */} 
+                 {/* Кнопки и результаты на последнем шаге */}
                 {activeStep === currentSteps.length - 1 && (
-                    <VStack spacing={4} align="stretch" mt={4}>
-                        <Flex>
-                            <Button
-                                onClick={handleAnalyzeCase}
-                                isLoading={isLoadingAnalysis}
-                                isDisabled={isLoadingAnalysis || isSubmitting}
-                                colorScheme="teal"
-                                variant="outline"
-                                mr={3}
-                            >
-                                Провести RAG-анализ
-                            </Button>
-                            <Button 
-                                type="submit" 
-                                isLoading={isSubmitting} 
-                                isDisabled={!isDirty || isSubmitting || isLoadingAnalysis}
-                                colorScheme="primary"
-                            >
-                                Отправить на проверку
-                            </Button>
-                        </Flex>
-                    {/* Переносим отображение статуса/результата RAG внутрь этого блока */}
-                    {isLoadingAnalysis && (
-                        <Flex justify="center" align="center" direction="column" p={4}>
-                            <CircularProgress isIndeterminate color="teal.300" />
-                            <Text mt={2} color="gray.500">Выполняется RAG-анализ...</Text>
-                        </Flex>
-                    )}
-                    {analysisError && (
-                        <Alert status="error" mt={4}>
-                            <AlertIcon />
-                            <Box>
-                               <AlertTitle>Ошибка RAG-анализа!</AlertTitle>
-                               <AlertDescription>{analysisError}</AlertDescription>
-                            </Box>
-                        </Alert>
-                    )}
-                    {analysisResult && !isLoadingAnalysis && (
-                        <Alert status="info" mt={4} variant="subtle">
-                            <AlertIcon />
-                            <Box>
-                                <AlertTitle>Результат RAG-анализа:</AlertTitle>
-                                <AlertDescription whiteSpace="pre-wrap">
-                                    {analysisResult}
-                                </AlertDescription>
-                            </Box>
-                        </Alert>
-                    )}
-                   </VStack>
+                    // Используем Flex вместо VStack для горизонтального расположения кнопок
+                    <Flex direction="row" justify="flex-end"> {/* Выравниваем кнопки по правому краю */}
+                         <Button
+                             type="button"
+                             onClick={handleAnalyzeCase}
+                             isLoading={isLoadingAnalysis}
+                             isDisabled={isLoadingAnalysis || isSubmitting}
+                             colorScheme="teal" // Оставляем бирюзовый для RAG
+                             variant="outline"
+                             mr={3} // Отступ справа
+                         >
+                             Провести RAG-анализ
+                         </Button>
+                         <Button
+                             type="submit"
+                             isLoading={isSubmitting}
+                             isDisabled={!isDirty || isSubmitting || isLoadingAnalysis}
+                             colorScheme="primary" // Используем основной синий цвет
+                         >
+                             Отправить на проверку
+                         </Button>
+                    </Flex>
                 )}
-            </Flex>
-        </VStack>
-    </Box>
+            </Flex> {/* Закрываем Flex для кнопок Назад/Далее/Отправить */}
+
+             {/* Отображение статуса/результата RAG (теперь под кнопками) */}
+             {activeStep === currentSteps.length - 1 && ( // Показываем только на последнем шаге
+                 <VStack spacing={4} align="stretch" mt={4}> {/* Отступ сверху */}
+                      {isLoadingAnalysis && (
+                          <Flex justify="center" align="center" direction="column" p={4}>
+                              <CircularProgress isIndeterminate color="teal.300" />
+                              <Text mt={2} color="gray.500" _dark={{ color: "gray.400" }}>Выполняется RAG-анализ...</Text>
+                          </Flex>
+                      )}
+                      {analysisError && (
+                          <Alert status="error">
+                              <AlertIcon />
+                              <Box>
+                                 <AlertTitle>Ошибка RAG-анализа!</AlertTitle>
+                                 <AlertDescription>{analysisError}</AlertDescription>
+                              </Box>
+                          </Alert>
+                      )}
+                      {analysisResult && !isLoadingAnalysis && (
+                          <Box position="relative" p={4} borderWidth="1px" borderRadius="md" borderColor="teal.200" bg="teal.50" _dark={{ borderColor: "teal.600", bg: "teal.900" }}>
+                             <Flex justify="space-between" align="flex-start" mb={2}>
+                                 <Heading size="sm" display="flex" alignItems="center" color="teal.700" _dark={{ color: "teal.200" }}>
+                                     <InfoIcon mr={2} />
+                                     Результат RAG-анализа:
+                                 </Heading>
+                                 <Flex align="center">
+                                     {confidenceScore !== null && (
+                                         <Text fontSize="sm" color="gray.600" mr={2}>
+                                             Уверенность: {(confidenceScore * 100).toFixed(1)}%
+                                         </Text>
+                                     )}
+                                     <IconButton
+                                         aria-label="Copy analysis result"
+                                         icon={<CopyIcon />}
+                                         size="sm"
+                                         variant="ghost"
+                                         colorScheme={hasCopied ? "green" : "gray"}
+                                         onClick={onCopy}
+                                         title={hasCopied ? 'Скопировано!' : 'Копировать'}
+                                     />
+                                 </Flex>
+                             </Flex>
+                             <ReactMarkdown components={markdownComponents}>
+                                 {analysisResult}
+                             </ReactMarkdown>
+                          </Box>
+                      )}
+                 </VStack>
+             )}
+        </VStack> {/* Закрываем основной VStack */}
+    </Box> /* Закрываем Box формы */
   );
 }
 

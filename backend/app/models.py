@@ -26,7 +26,9 @@ class NameChangeInfo(BaseModel):
     date_changed: Optional[date] = None
 
 class PersonalData(BaseModel):
-    full_name: str
+    last_name: str
+    first_name: str
+    middle_name: Optional[str] = None # Отчество опционально
     birth_date: date
     snils: str # TODO: Add validation for SNILS format
     gender: str # TODO: Use Enum? (e.g., 'male', 'female')

@@ -1,5 +1,5 @@
-import React from 'react';
-import { useFormContext, Controller, FieldErrors, UseFormRegister, Control } from 'react-hook-form';
+import { FieldErrors, UseFormRegister, Control } from 'react-hook-form';
+import { CaseFormDataType } from '../CaseForm'; // Импортируем основной тип
 import {
   FormControl,
   FormLabel,
@@ -20,13 +20,13 @@ type DisabilityInfoType = {
 
 // Примерный интерфейс для пропсов, может потребоваться доработка
 interface DisabilityInfoStepProps {
-  register: UseFormRegister<any>; // Можно уточнить, если известен полный тип формы
+  register: UseFormRegister<CaseFormDataType>;
   errors: FieldErrors<DisabilityInfoType>; // <<< Используем FieldErrors<DisabilityInfoType>
-  control: Control<any>; // Можно уточнить
+  control: Control<CaseFormDataType>;
   getErrorMessage: (fieldName: string) => string | undefined;
 }
 
-function DisabilityInfoStep({ register, errors, control, getErrorMessage }: DisabilityInfoStepProps) {
+function DisabilityInfoStep({ register, errors}: DisabilityInfoStepProps) {
   return (
     <VStack spacing={4} align="stretch">
         <Heading size="md" mb={2}>Сведения об инвалидности</Heading>

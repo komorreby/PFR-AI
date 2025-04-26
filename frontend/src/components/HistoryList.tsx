@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ApiError } from './CaseForm'; // Используем тип ошибки
 import {
-    Box, // <--- Возвращаем Box
+    Box, 
     Heading, 
     Text, 
     Button, 

@@ -37,7 +37,7 @@ interface WorkExperienceStepProps {
 }
 
 const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({ 
-    control, register, errors, fieldArray, getErrorMessage, getValues
+    control, register, fieldArray, getErrorMessage, getValues
 }) => {
     const { fields, append, remove } = fieldArray;
 

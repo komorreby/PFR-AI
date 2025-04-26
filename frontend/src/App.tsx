@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import CaseForm from './components/CaseForm';
-import { ProcessResult, ApiError } from './components/CaseForm'; 
-import ErrorDisplay from './components/ErrorDisplay'; 
+import { ProcessResult } from './components/CaseForm'; 
 import HistoryPage from './pages/HistoryPage';
 import ProcessResultDisplay from './components/ProcessResultDisplay';
 
@@ -13,20 +12,21 @@ import {
   Heading,
   Divider,
   useToast, 
-  Alert,
-  AlertIcon,
-  AlertDescription,
   Link,
   Flex,
-  Spacer
+  Spacer,
+  useColorMode,
+  IconButton
 } from '@chakra-ui/react';
 
-const API_BASE_URL = 'http://127.0.0.1:8000'; 
+// Импорт иконок для переключателя
+import { SunIcon, MoonIcon } from '@chakra-ui/icons';
 
 function App() {
   const [processResult, setProcessResult] = useState<ProcessResult | null>(null);
 
   const toast = useToast();
+  const { colorMode, toggleColorMode } = useColorMode();
 
   const handleFormSubmitSuccess = (result: ProcessResult) => {
     console.log("Received result from backend:", result);
@@ -65,13 +65,21 @@ function App() {
         <Link as={RouterLink} to="/history" fontWeight="bold" _hover={{ textDecoration: 'underline' }}>
             История
         </Link>
+        <IconButton
+          ml={4}
+          onClick={toggleColorMode}
+          icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+          aria-label={`Переключить на ${colorMode === 'light' ? 'темную' : 'светлую'} тему`}
+          variant="ghost"
+          size="sm"
+        />
       </Flex>
       <Divider mb={6}/>
 
       <Routes>
         <Route path="/" element={
           <Box>
-            <Box bg="white" p={6} borderRadius="md" shadow="md"> 
+            <Box bg="cardBackground" p={6} borderRadius="md" shadow="md"> 
               <CaseForm 
                 onSubmitSuccess={handleFormSubmitSuccess}
                 onSubmitError={handleFormSubmitError}
