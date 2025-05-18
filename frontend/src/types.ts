@@ -87,7 +87,7 @@ export interface RagAnalysisResponse {
 export interface ApiErrorDetail {
   message: string;
   status?: number;
-  details?: any; // Дополнительные детали из ответа бэкенда
+  details?: unknown; // Дополнительные детали из ответа бэкенда
 }
 
 // Пример структуры ApiError для поля errors в ProcessOutput (если понадобится)

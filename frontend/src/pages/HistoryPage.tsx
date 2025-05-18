@@ -93,7 +93,7 @@ function HistoryPage() {
                     const errorResponse = await response.json();
                     if (errorResponse && errorResponse.detail) {
                          errorDetail = Array.isArray(errorResponse.detail) 
-                            ? errorResponse.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ') 
+                            ? errorResponse.detail.map((d: unknown) => (typeof d === 'object' && d && 'msg' in d ? (d as {msg: string}).msg : JSON.stringify(d))).join(', ') 
                             : String(errorResponse.detail);
                     } else if (errorResponse && errorResponse.message) {
                         errorDetail = errorResponse.message;

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Request, File, UploadFile, Form
+from fastapi import FastAPI, HTTPException, Depends, Request, File, UploadFile, Form, Query
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -6,8 +6,9 @@ from pydantic import BaseModel, Field
 from app.rag_core.engine import PensionRAG
 from .models import CaseDataInput, ProcessOutput, CaseHistoryEntry, DocumentFormat, DisabilityInfo, PersonalData, PassportData, SnilsData, DocumentTypeToExtract, OtherDocumentData
 
-from .database import create_db_and_tables, get_db_connection, async_engine
-from sqlalchemy.ext.asyncio import AsyncConnection
+from .database import create_db_and_tables, get_db_connection, async_engine, cases_table
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession
+from sqlalchemy.sql import select, insert, text # Добавляем text для сырых запросов, если нужно
 from . import crud
 from . import services
 from typing import List, Optional, Tuple, Dict, Any, Union, Set
@@ -15,6 +16,7 @@ import traceback
 import json
 from . import vision_services
 import logging # Добавляем импорт
+from datetime import datetime # Убираем date, так как CaseHistoryEntry будет использовать datetime
 
 logger = logging.getLogger(__name__) # Инициализируем логгер
 
@@ -70,6 +72,14 @@ app.add_middleware(
 class CaseAnalysisResponse(BaseModel):
     analysis_result: str
     confidence_score: float = Field(ge=0, le=1)
+
+# Новая модель для представления записи в истории
+# class CaseHistoryEntry(BaseModel):
+#     id: int
+#     created_at: datetime # <--- Изменено на datetime
+#     pension_type: str
+#     final_status: str
+#     final_explanation: Optional[str] = None 
 
 def format_case_description_for_rag(case_data: CaseDataInput) -> str:
     parts = []
@@ -261,47 +271,57 @@ async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncCo
 
 @app.get("/history", response_model=List[CaseHistoryEntry])
 async def get_history(
-    skip: int = 0, 
-    limit: int = 100, 
-    conn: AsyncConnection = Depends(get_db_connection)
+    skip: int = Query(0, ge=0), 
+    limit: int = Query(10, ge=0, le=100), 
+    db_conn: AsyncConnection = Depends(get_db_connection) # Используем AsyncConnection, как и было
 ):
+    query = select(
+        cases_table.c.id,
+        cases_table.c.created_at, 
+        cases_table.c.pension_type,
+        cases_table.c.final_status,
+        cases_table.c.final_explanation,
+        cases_table.c.rag_confidence,
+        cases_table.c.personal_data 
+    ).select_from(cases_table).offset(skip).limit(limit).order_by(cases_table.c.created_at.desc()) # Сортировка по дате создания
+    
+    logger.info(f"Executing query for history: {query}")
     try:
-        cases = await crud.get_cases(conn, skip=skip, limit=limit)
-        # Преобразуем данные к модели CaseHistoryEntry, если нужно
+        result = await db_conn.execute(query)
+        history_records = result.fetchall()
         history_entries = []
-        for case_row in cases:
-            # Предполагаем, что case_row - это объект с атрибутами или словарь
-            # и что crud.get_cases возвращает строки, которые можно преобразовать
-            entry_data = {
-                "id": case_row.id,
-                "created_at": case_row.created_at,
-                "pension_type": case_row.pension_type,
-                "final_status": case_row.final_status,
-                "final_explanation": case_row.final_explanation,
-                "rag_confidence": case_row.rag_confidence
-                # personal_data обрабатывается ниже
-            }
-            # Дополнительно преобразуем personal_data, если это JSON строка в БД
-            if isinstance(case_row.personal_data, str):
-                try:
-                    entry_data["personal_data"] = PersonalData.model_validate_json(case_row.personal_data)
-                except Exception as e:
-                    print(f"Error parsing personal_data for case {case_row.id}: {e}") # Используем print вместо logger, если logger не настроен глобально
-                    entry_data["personal_data"] = None 
-            elif isinstance(case_row.personal_data, dict):
-                 entry_data["personal_data"] = PersonalData.model_validate(case_row.personal_data)
-            else:
-                entry_data["personal_data"] = None
+        for record in history_records:
+            entry_data_map = dict(record._mapping) # Преобразуем Row в dict
             
-            # Обработка остальных полей, которые могут быть JSON в БД (хотя crud.py вроде их парсит)
-            # На данный момент, другие поля как disability, work_experience и т.д. не являются частью CaseHistoryEntry
-            # Если они понадобятся, их нужно будет добавить в модель и обработать здесь.
+            # Парсим JSON строку personal_data
+            personal_data_json = entry_data_map.get("personal_data")
+            if personal_data_json:
+                try:
+                    # Заменяем строку JSON на объект PersonalData
+                    entry_data_map["personal_data"] = PersonalData(**json.loads(personal_data_json))
+                except json.JSONDecodeError as e:
+                    logger.error(f"Error decoding personal_data JSON for case {entry_data_map.get('id')}: {e}")
+                    entry_data_map["personal_data"] = None 
+                except Exception as e_val:
+                    logger.error(f"Error validating PersonalData for case {entry_data_map.get('id')}: {e_val}")
+                    entry_data_map["personal_data"] = None
+            else:
+                entry_data_map["personal_data"] = None
+            
+            # Убедимся, что created_at это datetime, если оно извлекается как строка (хотя aiosqlite обычно типизирует)
+            if isinstance(entry_data_map.get("created_at"), str):
+                try:
+                    entry_data_map["created_at"] = datetime.fromisoformat(entry_data_map["created_at"])
+                except ValueError:
+                     logger.error(f"Could not parse created_at string for case {entry_data_map.get('id')}: {entry_data_map.get('created_at')}")
+                     # Можно установить в None или пробросить ошибку, если это критично
+                     # Пока что, если парсинг не удался, Pydantic сам вызовет ошибку, что нам и нужно для отладки
 
-            history_entries.append(CaseHistoryEntry(**entry_data))
+            history_entries.append(CaseHistoryEntry(**entry_data_map))
         return history_entries
     except Exception as e:
-        print(f"Error fetching history: {e}")
-        raise HTTPException(status_code=500, detail="Ошибка получения истории дел")
+        logger.error(f"Error fetching history endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error while fetching history: {str(e)}")
 
 @app.get("/download_document/{case_id}")
 async def download_document(
@@ -352,7 +372,7 @@ async def download_document(
         file_buffer, filename, mimetype = services.generate_document(
             personal_data=personal_data_for_doc, 
             pension_type=case_data["pension_type"],
-            status=case_data["final_status"], 
+            final_status=case_data["final_status"],
             explanation=case_data["final_explanation"],
             case_id=case_id,
             document_format=format.value, # format это Enum, его значение это строка "pdf" или "docx"

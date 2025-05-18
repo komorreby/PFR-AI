@@ -17,7 +17,7 @@ import {
 } from '@chakra-ui/react';
 
 // Импортируем типы из центрального файла
-import type { HistoryEntry, PersonalData } from '../../types'; // Убедитесь, что путь правильный
+import type { HistoryEntry } from '../types'; // Убедитесь, что путь правильный
 
 // Локальные типы HistoryPersonalDataType и HistoryEntry УДАЛЕНЫ
 // type HistoryPersonalDataType = { ... };

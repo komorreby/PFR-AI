@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator # Изменяем импорт
 from typing import List, Optional, Dict, Any
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 import logging
 
@@ -110,7 +110,7 @@ class OtherDocumentData(BaseModel):
 # Новая модель для представления записи в истории
 class CaseHistoryEntry(BaseModel):
     id: int
-    created_at: date # Или datetime, если время тоже важно. Пока оставим date.
+    created_at: datetime
     pension_type: str
     final_status: str
     final_explanation: Optional[str] = None 

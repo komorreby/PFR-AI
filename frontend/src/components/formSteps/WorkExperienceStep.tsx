@@ -1,5 +1,5 @@
 import React from 'react';
-import { Control, Controller, FieldErrors, UseFormRegister, UseFormGetValues, UseFieldArrayAppend, UseFieldArrayRemove, UseFieldArrayUpdate, FieldArrayWithId } from 'react-hook-form';
+import { Control, Controller, FieldErrors, UseFormRegister, UseFormGetValues, UseFieldArrayAppend, UseFieldArrayRemove, FieldArrayWithId } from 'react-hook-form';
 import DatePicker from "react-datepicker";
 import { parse } from 'date-fns';
 import {

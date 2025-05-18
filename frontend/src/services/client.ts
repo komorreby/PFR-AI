@@ -29,12 +29,12 @@ async function handleJsonResponse<T>(response: Response): Promise<T> {
     }
   } else {
     let errorDetailMessage = `Ошибка ${response.status}: ${response.statusText}`;
-    let errorDetailsFromServer: any = null;
+    let errorDetailsFromServer: unknown = null;
     try {
       const errorData = await response.json();
       if (errorData.detail) {
         if (Array.isArray(errorData.detail)) {
-            errorDetailMessage = errorData.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+            errorDetailMessage = errorData.detail.map((d: unknown) => (typeof d === 'object' && d && 'msg' in d ? (d as {msg: string}).msg : JSON.stringify(d))).join(', ');
         } else if (typeof errorData.detail === 'string') {
             errorDetailMessage = errorData.detail;
         } else {
@@ -91,12 +91,12 @@ export async function downloadDocument(caseId: number, format: 'pdf' | 'docx'): 
   const response = await fetch(`${API_BASE_URL}/download_document/${caseId}?format=${format}`);
   if (!response.ok) {
     let errorDetailMessage = `Ошибка ${response.status}: ${response.statusText}`;
-    let errorDetailsFromServer: any = null;
+    let errorDetailsFromServer: unknown = null;
     try {
         const errorData = await response.json();
         if (errorData.detail) {
             if (Array.isArray(errorData.detail)) {
-                errorDetailMessage = errorData.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+                errorDetailMessage = errorData.detail.map((d: unknown) => (typeof d === 'object' && d && 'msg' in d ? (d as {msg: string}).msg : JSON.stringify(d))).join(', ');
             } else if (typeof errorData.detail === 'string') {
                 errorDetailMessage = errorData.detail;
             } else {

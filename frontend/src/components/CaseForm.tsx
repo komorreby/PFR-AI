@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, useFieldArray, SubmitHandler, FieldPath, FieldValues } from 'react-hook-form';
+import { useForm, useFieldArray, SubmitHandler, FieldPath, FieldValues, UseFormRegister, FieldErrors, Control, UseFormGetValues, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import {
   Box, Button, Heading, Stepper, Step, StepIndicator, StepStatus,
   StepIcon, StepNumber, StepTitle, StepDescription, StepSeparator,
@@ -35,9 +35,7 @@ import {
   CaseFormData, 
   ProcessOutput as BackendProcessOutput,
   ApiErrorDetail,
-  WorkRecord, // Добавлен для forEach, если понадобится тип записи
-  DisabilityInfo, // Добавлен для DisabilityInfoStep
-  PersonalData // Добавлен для PersonalDataStep
+  WorkRecord
 } from '../types';
 
 // Определяем типы для данных формы, основываясь на Pydantic моделях
@@ -102,12 +100,25 @@ interface CaseFormProps {
   onSubmitError: (errorMessage: string) => void;
 }
 
+// Общий интерфейс для пропсов, передаваемых в компоненты шагов
+interface StepComponentProps {
+  register: UseFormRegister<CaseFormDataTypeForRHF>;
+  errors: FieldErrors<CaseFormDataTypeForRHF>; // TODO: Сделать более строгим для каждого шага
+  control: Control<CaseFormDataTypeForRHF>;
+  getValues: UseFormGetValues<CaseFormDataTypeForRHF>;
+  setValue: UseFormSetValue<CaseFormDataTypeForRHF>;
+  getErrorMessage: (name: string) => string | undefined; // TODO: Можно сузить тип name
+  watch: UseFormWatch<CaseFormDataTypeForRHF>;
+  // Дополнительные пропсы для конкретных шагов могут быть добавлены через пересечение типов
+  // Например: selectedValue?: string; onChange?: (value: string) => void; fieldArray?: any; pensionType?: string | null; formData?: CaseFormDataTypeForRHF
+}
+
 // Определяем интерфейс для описания шага с типизированными полями для валидации
 interface StepDefinition<TFieldValues extends FieldValues = CaseFormDataTypeForRHF> {
   id: string;
   title: string;
   description: string;
-  component: React.FC<any>; // TODO: Можно сделать более строгим, если передавать нужные пропсы
+  component: React.FC<StepComponentProps & any>; // Возвращаем any для дополнительных пропсов
   fieldsToValidate?: FieldPath<TFieldValues>[]; 
 }
 
@@ -238,7 +249,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   });
 
   // Указываем тип для useFieldArray более конкретно, если возможно
-  const { fields, append, remove, update } = useFieldArray<CaseFormDataTypeForRHF, "work_experience.records", "id">({ 
+  const { fields, append, remove } = useFieldArray<CaseFormDataTypeForRHF, "work_experience.records", "id">({
     control, 
     name: "work_experience.records"
   });
@@ -288,13 +299,24 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
 
   const getErrorMessage = (fieldName: string): string | undefined => {
     const keys = fieldName.split('.');
-    let errorRef = errors as any;
+    let currentError: unknown = errors; // Используем unknown вместо any
+
     for (const key of keys) {
-      if (!errorRef || !errorRef[key]) return undefined;
-      errorRef = errorRef[key];
+      // Проверяем, что currentError это объект и содержит ключ
+      if (typeof currentError === 'object' && currentError !== null && key in currentError) {
+        currentError = (currentError as Record<string, unknown>)[key];
+      } else {
+        // Если ключ не найден или currentError не объект, ошибки нет на этом уровне
+        return undefined;
+      }
     }
-    // @ts-ignore
-    return errorRef?.message;
+
+    // После цикла, проверяем, имеет ли currentError свойство message
+    if (typeof currentError === 'object' && currentError !== null && 'message' in currentError && typeof (currentError as { message?: string }).message === 'string') {
+      return (currentError as { message: string }).message;
+    }
+
+    return undefined;
   };
 
   const handlePensionTypeChange = (value: string) => {
@@ -331,7 +353,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
         }
     }
     
-    let fieldsForRHFValidation: FieldPath<CaseFormDataTypeForRHF>[] = 
+    const fieldsForRHFValidation: FieldPath<CaseFormDataTypeForRHF>[] =
         currentStepDefinition.fieldsToValidate 
             ? [...currentStepDefinition.fieldsToValidate] 
             : [];
@@ -344,7 +366,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     }
     
     if (currentStepDefinition.id === 'workExperience') {
-        currentValues.work_experience.records.forEach((record: Partial<WorkRecord>, index: number) => {
+        currentValues.work_experience.records.forEach((_record: Partial<WorkRecord>, index: number) => {
             fieldsForRHFValidation.push(`work_experience.records.${index}.organization` as FieldPath<CaseFormDataTypeForRHF>);
             fieldsForRHFValidation.push(`work_experience.records.${index}.start_date` as FieldPath<CaseFormDataTypeForRHF>);
             fieldsForRHFValidation.push(`work_experience.records.${index}.end_date` as FieldPath<CaseFormDataTypeForRHF>);
@@ -425,11 +447,12 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     const CurrentComponent = currentSteps[activeStep].component;
     const stepId = currentSteps[activeStep].id;
 
-    const commonProps: any = { register, errors, control, getValues, setValue, getErrorMessage, watch }; // any временно
+    const commonProps: StepComponentProps = { register, errors: errors as FieldErrors<CaseFormDataTypeForRHF>, control, getValues, setValue, getErrorMessage, watch };
 
     if (stepId === 'pensionType') {
         return (
             <CurrentComponent
+                {...commonProps}
                 selectedValue={selectedPensionType}
                 onChange={handlePensionTypeChange}
                 errorMessage={pensionTypeError || undefined}
@@ -450,7 +473,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     } else if (stepId === 'additionalInfo') {
         return <CurrentComponent {...commonProps} pensionType={selectedPensionType} />;
     } else if (stepId === 'summary') {
-        return <CurrentComponent formData={getValues()} />;
+        return <CurrentComponent {...commonProps} formData={getValues()} />;
     }
 
     return <Text>Компонент для шага "{currentSteps[activeStep].title}" не найден.</Text>;

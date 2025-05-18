@@ -10,7 +10,9 @@ from sqlalchemy import (
     Text,
     create_engine, # Need sync engine for initial table creation if using Core directly without alembic etc.
     Float, # Добавлено
-    Boolean # Добавлено
+    Boolean, # Добавлено
+    DateTime, # <--- Добавлено
+    func # <--- Добавлено
 )
 
 # Определяем путь к файлу БД относительно текущего файла (database.py)
@@ -44,7 +46,8 @@ cases_table = Table(
     Column("has_incorrect_document", Boolean, nullable=True), # Новое поле
     Column("final_status", String(50), nullable=True),   # Статус рассмотрения дела (approved/rejected)
     Column("final_explanation", Text, nullable=True),    # Итоговое объяснение от RAG + ML
-    Column("rag_confidence", Float, nullable=True) # Новое поле
+    Column("rag_confidence", Float, nullable=True), # Новое поле
+    Column("created_at", DateTime, server_default=func.now(), nullable=False) # <--- Добавлена колонка
 )
 
 # --- Функция для создания таблицы при старте (если не существует) ---

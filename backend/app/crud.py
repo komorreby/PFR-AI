@@ -51,6 +51,7 @@ async def get_cases(conn: AsyncConnection, skip: int = 0, limit: int = 100) -> L
     for row in rows:
         # Используем _mapping для доступа к данным по имени колонки
         case_data = row._mapping
+        created_at_value = case_data.get("created_at") # Используем .get для безопасности
         cases.append({
             "id": case_data["id"],
             "personal_data": json.loads(case_data["personal_data"]),
@@ -64,7 +65,8 @@ async def get_cases(conn: AsyncConnection, skip: int = 0, limit: int = 100) -> L
             "has_incorrect_document": case_data["has_incorrect_document"],
             "final_status": case_data["final_status"],
             "final_explanation": case_data["final_explanation"],
-            "rag_confidence": case_data["rag_confidence"]
+            "rag_confidence": case_data["rag_confidence"],
+            "created_at": created_at_value
         })
     return cases
 
