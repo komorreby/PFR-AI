@@ -17,12 +17,14 @@ import json
 from . import vision_services
 import logging # Добавляем импорт
 from datetime import datetime # Убираем date, так как CaseHistoryEntry будет использовать datetime
+from app.agents.qwen_pension_agent import QwenPensionAgent
 
 logger = logging.getLogger(__name__) # Инициализируем логгер
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.rag_engine = None
+    app.state.pension_agent = None
     print("Starting up...")
     print("Creating DB tables if they don't exist...")
     create_db_and_tables()
@@ -31,9 +33,15 @@ async def lifespan(app: FastAPI):
     try:
         app.state.rag_engine = PensionRAG()
         print("PensionRAG Engine initialized.")
+        app.state.pension_agent = QwenPensionAgent(pension_rag_engine=app.state.rag_engine)
+        print("QwenPensionAgent initialized.")
+
     except Exception as e:
-        print(f"!!! ERROR initializing PensionRAG Engine: {e}")
-        app.state.rag_engine = None
+        logger.error(f"!!! ERROR during RAG or Agent initialization: {e}", exc_info=True)
+        if app.state.rag_engine is None:
+             print("!!! PensionRAG Engine FAILED to initialize.")
+        if app.state.pension_agent is None and app.state.rag_engine: # Если RAG есть, а агент нет
+             print("!!! QwenPensionAgent FAILED to initialize.")
     print("Startup complete.")
     yield # Приложение работает здесь
     print("Shutting down...")
@@ -423,3 +431,95 @@ async def extract_document_data_endpoint(
     except Exception as e:
         logger.error(f"Ошибка в эндпоинте /api/v1/extract_document_data ({document_type.value}): {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера при обработке документа ({document_type.value}).") 
+
+@app.post("/process_agent", response_model=ProcessOutput)
+async def process_case_with_agent(
+    request: Request, 
+    case_data: CaseDataInput, 
+    conn: AsyncConnection = Depends(get_db_connection)
+):
+    logger.info(f"Received request for /process_agent for SNILS: {case_data.personal_data.snils}")
+    if request.app.state.pension_agent is None:
+        logger.error("QwenPensionAgent is not available in /process_agent.")
+        raise HTTPException(status_code=503, detail="Агент анализа пенсионных дел временно недоступен.")
+
+    try:
+        agent: QwenPensionAgent = request.app.state.pension_agent
+        
+        logger.debug(f"Calling agent.run_pension_case_analysis with case_data: {case_data.model_dump_json(indent=2)}")
+        # В run_pension_case_analysis уже есть логирование
+        agent_result = agent.run_pension_case_analysis(case_input_data=case_data)
+        logger.info(f"Agent result received: {agent_result}")
+
+        analysis_text = agent_result.get("analysis_text", "Анализ не предоставлен агентом.")
+        final_status_from_agent = agent_result.get("status", "UNKNOWN")
+        agent_confidence = agent_result.get("confidence", 0.0) 
+        agent_summary = agent_result.get("summary", "")
+        agent_missing_info = agent_result.get("missing_info")
+        # agent_confidence_reasoning = agent_result.get("confidence_reasoning", "")
+        # raw_agent_json_response = agent_result.get("raw_agent_json_response", {})
+
+
+        final_status_to_save = final_status_from_agent
+        if final_status_from_agent not in ["СООТВЕТСТВУЕТ", "НЕ СООТВЕТСТВУЕТ", "ТРЕБУЕТСЯ_УТОЧНЕНИЕ"]:
+            logger.warning(f"Agent returned status '{final_status_from_agent}'. Falling back to text-based compliance check.")
+            # Fallback на старую логику, если агент не дал один из ожидаемых статусов
+            is_compliant_fallback = analyze_rag_for_compliance(analysis_text) 
+            final_status_to_save = "СООТВЕТСТВУЕТ" if is_compliant_fallback else "НЕ СООТВЕТСТВУЕТ"
+            logger.info(f"Fallback compliance check resulted in: {final_status_to_save}")
+        
+        # Подготовка данных для сохранения в БД
+        personal_data_dict = case_data.personal_data.model_dump(mode='json')
+        disability_dict = case_data.disability.model_dump(mode='json') if case_data.disability else None
+        work_experience_dict = case_data.work_experience.model_dump(mode='json')
+
+        errors_to_save_from_agent = [] 
+        if agent_result.get("error_message"):
+             errors_to_save_from_agent.append({
+                 "code": "AGENT_ERROR",
+                 "description": agent_result.get("error_message"),
+                 "law": "N/A",
+                 "recommendation": "Проверить логи агента."
+             })
+        if agent_missing_info and isinstance(agent_missing_info, list):
+            for info in agent_missing_info:
+                errors_to_save_from_agent.append({
+                    "code": "MISSING_INFO_AGENT",
+                    "description": f"Агент указал на недостающую информацию: {info}",
+                    "law": "N/A", # Можно дополнить, если агент сможет это возвращать
+                    "recommendation": "Предоставить указанную информацию."
+                })
+        
+        final_explanation_to_save = f"Резюме от агента: {agent_summary}\n\nДетальный анализ от агента:\n{analysis_text}"
+
+        logger.info(f"Attempting to save case from agent. Final status: {final_status_to_save}, Confidence: {agent_confidence}")
+        saved_case_id = await crud.create_case(
+            conn=conn,
+            personal_data=personal_data_dict,
+            errors=errors_to_save_from_agent, 
+            pension_type=case_data.pension_type,
+            disability=disability_dict,
+            work_experience=work_experience_dict,
+            pension_points=case_data.pension_points,
+            benefits=case_data.benefits,
+            documents=case_data.documents,
+            has_incorrect_document=case_data.has_incorrect_document,
+            final_status=final_status_to_save,
+            final_explanation=final_explanation_to_save, 
+            rag_confidence=agent_confidence 
+        )
+        logger.info(f"Case saved with ID: {saved_case_id} from agent processing.")
+
+        return ProcessOutput(
+            case_id=saved_case_id,
+            final_status=final_status_to_save,
+            explanation=final_explanation_to_save,
+            confidence_score=agent_confidence
+        )
+
+    except HTTPException as he:
+        logger.error(f"HTTPException in /process_agent: {he.detail}", exc_info=True)
+        raise he
+    except Exception as e:
+        logger.error(f"Unhandled error in /process_agent endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера при обработке агентом: {str(e)}") 

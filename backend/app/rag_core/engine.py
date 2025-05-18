@@ -860,6 +860,66 @@ class PensionRAG:
             # if graph_builder: # Удаляем закрытие локального graph_builder
             # ...
 
+    # >>> НОВЫЕ ПУБЛИЧНЫЕ МЕТОДЫ ДЛЯ ИНСТРУМЕНТА АГЕНТА
+
+    def retrieve_and_rerank_nodes(
+        self,
+        query_text: str,
+        pension_type: Optional[str],
+        effective_config: Dict
+    ) -> List[NodeWithScore]:
+        """
+        Публичный метод для извлечения и реранжирования узлов.
+        Инкапсулирует логику _retrieve_nodes и _rerank_nodes.
+        """
+        logger.debug(f"Public method retrieve_and_rerank_nodes called with query: '{query_text}', pension_type: '{pension_type}'")
+        query_bundle = QueryBundle(query_text)
+
+        retrieved_nodes: List[NodeWithScore] = self._retrieve_nodes(
+            query_bundle,
+            pension_type,
+            effective_config=effective_config
+        )
+
+        if not retrieved_nodes:
+            logger.info(f"No nodes retrieved for query: '{query_text}'")
+            return []
+
+        ranked_nodes_final: List[NodeWithScore]
+        if self.reranker:
+            logger.debug(f"Reranking {len(retrieved_nodes)} retrieved nodes.")
+            ranked_nodes_from_reranker, _ = self._rerank_nodes( # Игнорируем общий максимальный скор реранкера на данном этапе
+                query_bundle,
+                retrieved_nodes,
+                effective_config=effective_config
+            )
+            ranked_nodes_final = ranked_nodes_from_reranker
+            logger.info(f"Reranked nodes, {len(ranked_nodes_final)} nodes remaining.")
+        else:
+            logger.info("No reranker configured. Using top_n from retrieved nodes based on RERANKER_TOP_N.")
+            top_n_count = effective_config.get('RERANKER_TOP_N', 5)
+            # Сортируем, так как _retrieve_nodes мог вернуть их не отсортированными по similarity_top_k, если фильтры применялись после
+            retrieved_nodes.sort(key=lambda x: x.score or 0.0, reverse=True)
+            ranked_nodes_final = retrieved_nodes[:top_n_count]
+            logger.info(f"Took top {len(ranked_nodes_final)} nodes after initial retrieval.")
+        
+        return ranked_nodes_final
+
+    def enrich_nodes_from_graph(self, nodes: List[NodeWithScore]) -> List[NodeWithScore]:
+         """Публичный метод для обогащения узлов данными из графа."""
+         logger.debug(f"Public method enrich_nodes_from_graph called for {len(nodes)} nodes.")
+         if self.graph_builder and nodes: # Проверяем наличие graph_builder и что список нод не пуст
+             enriched_nodes = self._enrich_nodes_with_graph_data(nodes)
+             logger.info(f"Enriched {len(nodes)} nodes using graph data.")
+             return enriched_nodes
+         elif not self.graph_builder:
+             logger.warning("Graph builder not available, skipping enrichment.")
+         elif not nodes:
+             logger.debug("Node list is empty, skipping enrichment.")
+         return nodes # Возвращаем как есть, если графа нет или список нод пуст
+
+    # <<< КОНЕЦ НОВЫХ ПУБЛИЧНЫХ МЕТОДОВ
+
 # --- Пример использования (для локального тестирования) ---
 if __name__ == '__main__':
     logging.getLogger(__name__).setLevel(logging.DEBUG)
