@@ -16,22 +16,16 @@ import {
     Flex,       // <--- Для кнопок пагинации
 } from '@chakra-ui/react';
 
-// Тип для персональных данных (упрощенный, берем только нужное для отображения)
-type HistoryPersonalDataType = {
-    full_name?: string;
-    snils?: string;
-    // Можно добавить другие поля при необходимости
-};
+// Импортируем типы из центрального файла
+import type { HistoryEntry, PersonalData } from '../../types'; // Убедитесь, что путь правильный
 
-// Тип для одной записи в истории
-export type HistoryEntry = {
-    id: number;
-    personal_data: HistoryPersonalDataType; // Используем упрощенный тип
-};
+// Локальные типы HistoryPersonalDataType и HistoryEntry УДАЛЕНЫ
+// type HistoryPersonalDataType = { ... };
+// export type HistoryEntry = { ... };
 
 // Пропсы компонента
 interface HistoryListProps {
-    history: HistoryEntry[];
+    history: HistoryEntry[]; // Используем импортированный HistoryEntry
     onDownload: (caseId: number, format: 'pdf' | 'docx') => void; // Колбэк для скачивания
 }
 
@@ -69,54 +63,80 @@ function HistoryList({ history, onDownload }: HistoryListProps) {
     return (
         <Box> {/* Общий контейнер Box нужен */}
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}> 
-                {currentItems.map((entry) => (
-                    // Карточка остается почти без изменений
-                    <Card key={entry.id} variant="outline" size="sm" display="flex" flexDirection="column" justifyContent="space-between"> 
-                         <Box> {/* Контейнер для хедера и боди */} 
-                            <CardHeader pb={2}> 
-                                <Heading size='xs' color="primary"> 
-                                   Дело ID: {entry.id}
-                                </Heading>
-                            </CardHeader>
-                            <CardBody py={2}> 
-                                <VStack align="start" spacing={1}>
-                                    <Text fontSize="sm" noOfLines={1}><strong>ФИО:</strong> {entry.personal_data?.full_name || 'N/A'}</Text> {/* Ограничим одной строкой */} 
-                                    <Text fontSize="xs" color="textSecondary"><strong>СНИЛС:</strong> {maskSnils(entry.personal_data?.snils)}</Text>
-                                </VStack>
-                            </CardBody>
-                         </Box>
-                         <Box> {/* Контейнер для футера */} 
-                             <Divider color="border" mt="auto" /> {/* Разделитель внизу */} 
-                             <CardFooter pt={2} display="flex" justifyContent="space-between" alignItems="center"> 
-                                 <Tag 
-                                   size="sm" 
-                                   colorScheme={'green'}
-                                   variant="solid"
-                                 >
-                                    Статус: Ок
-                                 </Tag>
-                                 <HStack spacing={2}> 
-                                    <Button 
-                                      colorScheme="danger" 
-                                      variant="outline" 
-                                      size="xs" 
-                                      onClick={() => onDownload(entry.id, 'pdf')}
-                                    >
-                                        PDF
-                                    </Button>
-                                    <Button 
-                                      colorScheme="primary" 
-                                      variant="outline"
-                                      size="xs"
-                                      onClick={() => onDownload(entry.id, 'docx')}
-                                    >
-                                        DOCX
-                                    </Button>
-                                 </HStack>
-                            </CardFooter>
-                         </Box>
-                    </Card>
-                ))}
+                {currentItems.map((entry) => {
+                    // Собираем ФИО из отдельных полей
+                    const fullName = [
+                        entry.personal_data?.last_name, 
+                        entry.personal_data?.first_name, 
+                        entry.personal_data?.middle_name
+                    ].filter(Boolean).join(' ');
+
+                    return (
+                        <Card key={entry.id} variant="outline" size="sm" display="flex" flexDirection="column" justifyContent="space-between"> 
+                             <Box> {/* Контейнер для хедера и боди */} 
+                                <CardHeader pb={2}> 
+                                    <Flex justify="space-between" align="center">
+                                        <Heading size='xs' color="primary"> 
+                                           Дело ID: {entry.id}
+                                        </Heading>
+                                        {entry.final_status && (
+                                            <Tag
+                                                size="sm"
+                                                // Примерная логика цвета в зависимости от статуса
+                                                colorScheme={entry.final_status.toLowerCase().includes('соответствует') ? 'green' : 
+                                                             entry.final_status.toLowerCase().includes('не соответствует') ? 'red' : 'gray'}
+                                                variant="solid"
+                                            >
+                                                {entry.final_status}
+                                            </Tag>
+                                        )}
+                                    </Flex>
+                                </CardHeader>
+                                <CardBody py={2}> 
+                                    <VStack align="start" spacing={1}>
+                                        <Text fontSize="sm" noOfLines={1}><strong>ФИО:</strong> {fullName || 'N/A'}</Text> 
+                                        <Text fontSize="xs" color="textSecondary"><strong>СНИЛС:</strong> {maskSnils(entry.personal_data?.snils)}</Text>
+                                        <Text fontSize="xs" color="textSecondary"><strong>Тип пенсии:</strong> {entry.pension_type || 'N/A'}</Text>
+                                        {entry.final_explanation && (
+                                            <Text fontSize="xs" color="textSecondary" noOfLines={2} title={entry.final_explanation}>
+                                                <strong>Пояснение:</strong> {entry.final_explanation}
+                                            </Text>
+                                        )}
+                                        {entry.rag_confidence !== undefined && entry.rag_confidence !== null && (
+                                            <Text fontSize="xs" color="textSecondary">
+                                                <strong>Уверенность RAG:</strong> {(entry.rag_confidence * 100).toFixed(1)}%
+                                            </Text>
+                                        )}
+                                    </VStack>
+                                </CardBody>
+                             </Box>
+                             <Box> {/* Контейнер для футера */} 
+                                 <Divider color="border" mt="auto" /> {/* Разделитель внизу */} 
+                                 <CardFooter pt={2} display="flex" justifyContent="flex-end" alignItems="center"> 
+                                     {/* Старый тег статуса удален, так как статус теперь в CardHeader */}
+                                     <HStack spacing={2}> 
+                                        <Button 
+                                          colorScheme="danger" 
+                                          variant="outline" 
+                                          size="xs" 
+                                          onClick={() => onDownload(entry.id, 'pdf')}
+                                        >
+                                            PDF
+                                        </Button>
+                                        <Button 
+                                          colorScheme="primary" 
+                                          variant="outline"
+                                          size="xs"
+                                          onClick={() => onDownload(entry.id, 'docx')}
+                                        >
+                                            DOCX
+                                        </Button>
+                                     </HStack>
+                                </CardFooter>
+                             </Box>
+                        </Card>
+                    );
+                })}
             </SimpleGrid>
 
              {/* Элементы управления пагинацией */} 

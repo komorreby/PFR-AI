@@ -20,9 +20,9 @@ import {
     Divider,
     Checkbox
 } from '@chakra-ui/react';
-import { CaseFormDataType } from '../CaseForm'; // Импортируем основной тип
-import CustomDateInput from '../formInputs/CustomDateInput'; // Импортируем кастомный инпут
-import { formatDateForInput } from '../../utils'; // <--- Исправляем путь
+import { CaseFormDataTypeForRHF, PersonalData, NameChangeInfo } from '../../types'; // Новый импорт
+import CustomDateInput from '../formInputs/CustomDateInput';
+import { formatDateForInput } from '../../utils';
 
 // <<< Список стран СНГ
 const cisCountries = [
@@ -37,47 +37,46 @@ const cisCountries = [
     "Узбекистан"
 ];
 
+// Уточняем тип для getErrorMessage для полей PersonalData
+type PersonalDataFieldName = `personal_data.${keyof PersonalData}` | `personal_data.name_change_info.${keyof NameChangeInfo}`;
+
 interface PersonalDataStepProps {
-    control: Control<CaseFormDataType>;
-    register: UseFormRegister<CaseFormDataType>;
-    errors: FieldErrors<CaseFormDataType>;
-    watch: UseFormWatch<CaseFormDataType>;
-    setValue: UseFormSetValue<CaseFormDataType>;
-    getErrorMessage: (name: string) => string | undefined;
+    control: Control<CaseFormDataTypeForRHF>;
+    register: UseFormRegister<CaseFormDataTypeForRHF>;
+    errors: FieldErrors<PersonalData>;
+    watch: UseFormWatch<CaseFormDataTypeForRHF>;
+    setValue: UseFormSetValue<CaseFormDataTypeForRHF>;
+    getErrorMessage: (name: PersonalDataFieldName) => string | undefined;
 }
 
 const PersonalDataStep: React.FC<PersonalDataStepProps> = ({ 
-    control, register, watch, setValue, getErrorMessage 
+    control, register, errors, watch, setValue, getErrorMessage 
 }) => {
-    const watchHasNameChangeInfo = watch("personal_data.name_change_info");
+    const watchHasNameChangeInfo = !!watch("personal_data.name_change_info");
 
     return (
         <VStack spacing={4} align="stretch">
             <Heading size="md" mb={4}>Личные данные</Heading>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                {/* Фамилия */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.last_name')}>
+                <FormControl isInvalid={!!getErrorMessage('personal_data.last_name') || !!errors.last_name}>
                     <FormLabel htmlFor="last_name">Фамилия</FormLabel>
                     <Input id="last_name" {...register("personal_data.last_name", { required: "Фамилия обязательна" })} />
-                    <FormErrorMessage>{getErrorMessage('personal_data.last_name')}</FormErrorMessage>
+                    <FormErrorMessage>{getErrorMessage('personal_data.last_name') || errors.last_name?.message}</FormErrorMessage>
                 </FormControl>
 
-                {/* Имя */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.first_name')}>
+                <FormControl isInvalid={!!getErrorMessage('personal_data.first_name') || !!errors.first_name}>
                     <FormLabel htmlFor="first_name">Имя</FormLabel>
                     <Input id="first_name" {...register("personal_data.first_name", { required: "Имя обязательно" })} />
-                    <FormErrorMessage>{getErrorMessage('personal_data.first_name')}</FormErrorMessage>
+                    <FormErrorMessage>{getErrorMessage('personal_data.first_name') || errors.first_name?.message}</FormErrorMessage>
                 </FormControl>
 
-                {/* Отчество */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.middle_name')}>
+                <FormControl isInvalid={!!getErrorMessage('personal_data.middle_name') || !!errors.middle_name}>
                     <FormLabel htmlFor="middle_name">Отчество (при наличии)</FormLabel>
                     <Input id="middle_name" {...register("personal_data.middle_name")} />
-                    <FormErrorMessage>{getErrorMessage('personal_data.middle_name')}</FormErrorMessage>
+                    <FormErrorMessage>{getErrorMessage('personal_data.middle_name') || errors.middle_name?.message}</FormErrorMessage>
                 </FormControl>
 
-                {/* Дата рождения */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.birth_date')}>
+                <FormControl isInvalid={!!getErrorMessage('personal_data.birth_date') || !!errors.birth_date}>
                     <FormLabel htmlFor="birth_date">Дата рождения</FormLabel>
                     <Controller
                         name="personal_data.birth_date"
@@ -101,11 +100,10 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                             />
                         )}
                     />
-                    <FormErrorMessage>{getErrorMessage('personal_data.birth_date')}</FormErrorMessage>
+                    <FormErrorMessage>{getErrorMessage('personal_data.birth_date') || errors.birth_date?.message}</FormErrorMessage>
                 </FormControl>
 
-                {/* СНИЛС */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.snils')}>
+                <FormControl isInvalid={!!getErrorMessage('personal_data.snils') || !!errors.snils}>
                     <FormLabel htmlFor="snils">СНИЛС</FormLabel>
                     <Controller
                         name="personal_data.snils"
@@ -115,21 +113,19 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                             <Input as={IMaskInput} mask="000-000-000 00" value={field.value || ''} onAccept={(value: string) => field.onChange(value)} placeholder="XXX-XXX-XXX XX" id="snils" bg="white" borderColor="inherit" _hover={{ borderColor: "gray.300" }} _focus={{ zIndex: 1, borderColor: "primary", boxShadow: `0 0 0 1px var(--chakra-colors-primary)` }} />
                         )}
                     />
-                    <FormErrorMessage>{getErrorMessage('personal_data.snils')}</FormErrorMessage>
+                    <FormErrorMessage>{getErrorMessage('personal_data.snils') || errors.snils?.message}</FormErrorMessage>
                 </FormControl>
 
-                {/* Пол */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.gender')}>
+                <FormControl isInvalid={!!getErrorMessage('personal_data.gender') || !!errors.gender}>
                     <FormLabel htmlFor="gender">Пол</FormLabel>
                     <Select id="gender" placeholder="Выберите пол" {...register("personal_data.gender", { required: "Пол обязателен" })}>
                         <option value="male">Мужской</option>
                         <option value="female">Женский</option>
                     </Select>
-                    <FormErrorMessage>{getErrorMessage('personal_data.gender')}</FormErrorMessage>
+                    <FormErrorMessage>{getErrorMessage('personal_data.gender') || errors.gender?.message}</FormErrorMessage>
                 </FormControl>
 
-                {/* Гражданство */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.citizenship')}>
+                <FormControl isInvalid={!!getErrorMessage('personal_data.citizenship') || !!errors.citizenship}>
                     <FormLabel htmlFor="citizenship">Гражданство</FormLabel>
                     <Select
                         id="citizenship"
@@ -140,25 +136,37 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                             <option key={country} value={country}>{country}</option>
                         ))}
                     </Select>
-                    <FormErrorMessage>{getErrorMessage('personal_data.citizenship')}</FormErrorMessage>
+                    <FormErrorMessage>{getErrorMessage('personal_data.citizenship') || errors.citizenship?.message}</FormErrorMessage>
                 </FormControl>
 
-                {/* Иждивенцы */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.dependents')}>
+                <FormControl isInvalid={!!getErrorMessage('personal_data.dependents') || !!errors.dependents}>
                     <FormLabel htmlFor="dependents">Количество иждивенцев</FormLabel>
-                    <NumberInput id="dependents" min={0} defaultValue={0}>
-                        <NumberInputField {...register("personal_data.dependents", { valueAsNumber: true, min: { value: 0, message: "Должно быть не меньше 0"} })} />
-                        <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
-                    </NumberInput>
-                    <FormErrorMessage>{getErrorMessage('personal_data.dependents')}</FormErrorMessage>
+                    <Controller
+                        name="personal_data.dependents"
+                        control={control}
+                        rules={{ min: { value: 0, message: "Должно быть не меньше 0"} }}
+                        render={({ field }) => (
+                            <NumberInput 
+                                id="dependents" 
+                                min={0} 
+                                defaultValue={0} 
+                                value={field.value === undefined || field.value === null ? '' : String(field.value)}
+                                onChange={(_valueAsString, valueAsNumber) => field.onChange(valueAsNumber)}
+                                onBlur={field.onBlur}
+                            >
+                                <NumberInputField ref={field.ref} />
+                                <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
+                            </NumberInput>
+                        )}
+                     />
+                    <FormErrorMessage>{getErrorMessage('personal_data.dependents') || errors.dependents?.message}</FormErrorMessage>
                 </FormControl>
             </SimpleGrid>
 
             <Divider my={4} />
 
-            {/* Чекбокс смены ФИО */}
             <Checkbox
-                isChecked={!!watchHasNameChangeInfo}
+                isChecked={watchHasNameChangeInfo}
                 onChange={(e) => {
                     setValue('personal_data.name_change_info', e.target.checked ? { old_full_name: '', date_changed: '' } : null, { shouldValidate: false });
                 }}
@@ -166,16 +174,15 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 Была смена ФИО?
             </Checkbox>
 
-            {/* Поля смены ФИО */}
             {watchHasNameChangeInfo && (
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
-                    <FormControl isInvalid={!!getErrorMessage('personal_data.name_change_info.old_full_name')}>
+                    <FormControl isInvalid={!!getErrorMessage('personal_data.name_change_info.old_full_name') || !!errors.name_change_info?.old_full_name}>
                         <FormLabel htmlFor="old_full_name">Предыдущее ФИО</FormLabel>
                         <Input id="old_full_name" {...register("personal_data.name_change_info.old_full_name", { required: watchHasNameChangeInfo ? "Предыдущее ФИО обязательно" : false })} />
-                        <FormErrorMessage>{getErrorMessage('personal_data.name_change_info.old_full_name')}</FormErrorMessage>
+                        <FormErrorMessage>{getErrorMessage('personal_data.name_change_info.old_full_name') || errors.name_change_info?.old_full_name?.message}</FormErrorMessage>
                     </FormControl>
 
-                    <FormControl isInvalid={!!getErrorMessage('personal_data.name_change_info.date_changed')}>
+                    <FormControl isInvalid={!!getErrorMessage('personal_data.name_change_info.date_changed') || !!errors.name_change_info?.date_changed}>
                         <FormLabel htmlFor="date_changed">Дата смены ФИО</FormLabel>
                         <Controller
                             name="personal_data.name_change_info.date_changed"
@@ -199,7 +206,7 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                                 />
                             )}
                         />
-                        <FormErrorMessage>{getErrorMessage('personal_data.name_change_info.date_changed')}</FormErrorMessage>
+                        <FormErrorMessage>{getErrorMessage('personal_data.name_change_info.date_changed') || errors.name_change_info?.date_changed?.message}</FormErrorMessage>
                     </FormControl>
                 </SimpleGrid>
             )}

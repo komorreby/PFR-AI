@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
+import { useForm, useFieldArray, SubmitHandler, FieldPath, FieldValues } from 'react-hook-form';
 import {
   Box, Button, Heading, Stepper, Step, StepIndicator, StepStatus,
   StepIcon, StepNumber, StepTitle, StepDescription, StepSeparator,
@@ -15,9 +15,9 @@ import {
 // <<< Импорт иконок для кнопок навигации и RAG
 import { ArrowBackIcon, ArrowForwardIcon, CopyIcon, InfoIcon } from '@chakra-ui/icons';
 // <<< Импорт функций API клиента
-import { processCase, analyzeCase } from '../api/client';
+import { processCase, analyzeCase } from '../services/client';
 // <<< Импорт новой утилиты
-import { createComprehensiveRagDescription } from '../utils';
+import { prepareDataForApi } from '../utils';
 // <<< Импорт ReactMarkdown
 import ReactMarkdown from 'react-markdown';
 
@@ -28,6 +28,17 @@ import AdditionalInfoStep from './formSteps/AdditionalInfoStep';
 import PensionTypeStep from './formSteps/PensionTypeStep';
 import DisabilityInfoStep from './formSteps/DisabilityInfoStep';
 import SummaryStep from './formSteps/SummaryStep';
+
+// Импорт типов из types.ts
+import { 
+  CaseFormDataTypeForRHF, 
+  CaseFormData, 
+  ProcessOutput as BackendProcessOutput,
+  ApiErrorDetail,
+  WorkRecord, // Добавлен для forEach, если понадобится тип записи
+  DisabilityInfo, // Добавлен для DisabilityInfoStep
+  PersonalData // Добавлен для PersonalDataStep
+} from '../types';
 
 // Определяем типы для данных формы, основываясь на Pydantic моделях
 type NameChangeInfoType = {
@@ -87,31 +98,55 @@ export type ProcessResult = {
 
 // Пропсы компонента: добавляем колбэки
 interface CaseFormProps {
-  onSubmitSuccess: (result: ProcessResult) => void; // <<< Используем новый тип ProcessResult
+  onSubmitSuccess: (result: BackendProcessOutput) => void; 
   onSubmitError: (errorMessage: string) => void;
 }
 
-// <<< Определяем интерфейс для описания шага
-interface StepDefinition {
-  id: string; // Уникальный идентификатор шага
+// Определяем интерфейс для описания шага с типизированными полями для валидации
+interface StepDefinition<TFieldValues extends FieldValues = CaseFormDataTypeForRHF> {
+  id: string;
   title: string;
   description: string;
-  component: React.FC<any>; // Компонент для рендера
-  fieldsToValidate?: (keyof CaseFormDataType | string)[]; // Поля для валидации на этом шаге (может быть сложнее)
+  component: React.FC<any>; // TODO: Можно сделать более строгим, если передавать нужные пропсы
+  fieldsToValidate?: FieldPath<TFieldValues>[]; 
 }
 
 // <<< Определяем полные последовательности шагов
-const stepDefinitions: { [key: string]: StepDefinition } = {
-  pensionType: { id: 'pensionType', title: 'Шаг 1', description: 'Тип пенсии', component: PensionTypeStep },
-  personalData: { id: 'personalData', title: 'Шаг 2', description: 'Личные данные', component: PersonalDataStep },
-  workExperience: { id: 'workExperience', title: 'Шаг 3', description: 'Трудовой стаж', component: WorkExperienceStep },
-  disabilityInfo: { id: 'disabilityInfo', title: 'Шаг 3', description: 'Инвалидность', component: DisabilityInfoStep },
-  additionalInfo: { id: 'additionalInfo', title: 'Шаг 4', description: 'Доп. инфо', component: AdditionalInfoStep },
-  summary: { id: 'summary', title: 'Шаг 5', description: 'Сводка', component: SummaryStep },
+const stepDefinitions: { [key: string]: StepDefinition<CaseFormDataTypeForRHF> } = {
+  pensionType: { 
+    id: 'pensionType', title: 'Шаг 1', description: 'Тип пенсии', component: PensionTypeStep, 
+    fieldsToValidate: ['pension_type'] 
+  },
+  personalData: { 
+    id: 'personalData', title: 'Шаг 2', description: 'Личные данные', component: PersonalDataStep,
+    fieldsToValidate: [
+      'personal_data.last_name', 'personal_data.first_name', 
+      'personal_data.birth_date', 'personal_data.snils',
+      'personal_data.gender', 'personal_data.citizenship', 'personal_data.dependents'
+      // Валидация name_change_info будет динамической
+    ]
+  },
+  workExperience: { 
+    id: 'workExperience', title: 'Шаг 3', description: 'Трудовой стаж', component: WorkExperienceStep,
+    fieldsToValidate: ['work_experience.total_years'] 
+    // Валидация work_experience.records.* будет динамической
+  },
+  disabilityInfo: { 
+    id: 'disabilityInfo', title: 'Шаг 3', description: 'Инвалидность', component: DisabilityInfoStep,
+    fieldsToValidate: ['disability.group', 'disability.date'] // Убедимся, что disability определен перед валидацией этих полей
+  },
+  additionalInfo: { 
+    id: 'additionalInfo', title: 'Шаг 4', description: 'Доп. инфо', component: AdditionalInfoStep,
+    fieldsToValidate: ['pension_points'] // benefits/documents через TagInput, их валидация не через RHF напрямую
+  },
+  summary: { 
+    id: 'summary', title: 'Шаг 5', description: 'Сводка', component: SummaryStep, 
+    fieldsToValidate: [] // Нет полей для валидации на шаге сводки
+  },
 };
 
 // Функция для получения последовательности шагов по типу пенсии
-const getStepsForPensionType = (type: string | null): StepDefinition[] => {
+const getStepsForPensionType = (type: string | null): StepDefinition<CaseFormDataTypeForRHF>[] => {
   const baseSequence = [stepDefinitions.pensionType, stepDefinitions.personalData];
   if (!type) {
     return [stepDefinitions.pensionType];
@@ -151,7 +186,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   // ----------------------------------
 
   // <<< Состояние для текущей последовательности шагов
-  const [currentSteps, setCurrentSteps] = useState<StepDefinition[]>(() => getStepsForPensionType(null));
+  const [currentSteps, setCurrentSteps] = useState<StepDefinition<CaseFormDataTypeForRHF>[]>(() => getStepsForPensionType(null));
 
   // <<< Обновляем useSteps при изменении currentSteps
   const { activeStep, goToNext, goToPrevious, setActiveStep } = useSteps({
@@ -160,12 +195,9 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   });
 
   useEffect(() => {
-    // Если шаги изменились, а активный шаг выходит за пределы, сбрасываем на последний
-    if (activeStep >= currentSteps.length) {
+    if (activeStep >= currentSteps.length && currentSteps.length > 0) {
         setActiveStep(currentSteps.length - 1);
     }
-    // Примечание: Простое изменение count в useSteps не работает, хук нужно пересоздавать
-    // или использовать setActiveStep для коррекции. Оставляем так для простоты.
   }, [currentSteps, activeStep, setActiveStep]);
 
   const {
@@ -176,8 +208,9 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     watch,
     trigger,
     getValues,
-    setValue
-  } = useForm<CaseFormDataType>({
+    setValue,
+    reset
+  } = useForm<CaseFormDataTypeForRHF>({
     mode: 'onBlur',
     defaultValues: {
       pension_type: '',
@@ -200,37 +233,54 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
       benefits: '',
       documents: '',
       has_incorrect_document: false,
-      disability: undefined, // <<< Начальное значение для инвалидности
+      disability: undefined,
     },
   });
 
-  const fieldArray = useFieldArray({ control, name: "work_experience.records" });
+  // Указываем тип для useFieldArray более конкретно, если возможно
+  const { fields, append, remove, update } = useFieldArray<CaseFormDataTypeForRHF, "work_experience.records", "id">({ 
+    control, 
+    name: "work_experience.records"
+  });
+  // Переименовал fieldArray в стандартные имена из RHF для ясности: fields, append, remove, update
+  // Это изменение потребует обновить использование fieldArray.fields, fieldArray.append и т.д. в WorkExperienceStep.tsx
 
-  const onSubmit: SubmitHandler<CaseFormDataType> = async (data) => {
-    console.log("onSubmit triggered"); // <<< Добавляем лог
+  const onSubmit: SubmitHandler<CaseFormDataTypeForRHF> = async (data) => {
     setIsSubmitting(true);
     onSubmitError('');
     setAnalysisResult(null);
     setAnalysisError(null);
-    setConfidenceScore(null); // <<< Сбрасываем скор при новой отправке
-    const dataToSend = JSON.parse(JSON.stringify(data));
-    dataToSend.benefits = (data.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
-    dataToSend.documents = (data.documents || '').split(',').map(s => s.trim()).filter(Boolean);
-    dataToSend.pension_type = selectedPensionType || '';
-    if (dataToSend.personal_data.name_change_info && !dataToSend.personal_data.name_change_info.old_full_name && !dataToSend.personal_data.name_change_info.date_changed) {
-        dataToSend.personal_data.name_change_info = null;
+    setConfidenceScore(null);
+
+    const pensionTypeToUse = selectedPensionType || data.pension_type;
+    if (!pensionTypeToUse) {
+        onSubmitError("Тип пенсии не выбран. Пожалуйста, вернитесь на первый шаг.");
+        setIsSubmitting(false);
+        return;
     }
 
+    const dataToSend: CaseFormData = prepareDataForApi({ 
+        ...data, 
+        pension_type: pensionTypeToUse 
+    });
+
     try {
-      // <<< Отправляем НЕ преобразованный dataToSend (который соответствует CaseDataInput) 
-      const result = await processCase(dataToSend); 
-      onSubmitSuccess(result); // <<< Передаем весь результат
-      setActiveStep(0); // Сбрасываем на первый шаг после успешной отправки
-      setSelectedPensionType(null); // Сбрасываем тип пенсии
-      // TODO: Возможно, нужно сбросить и сами данные формы?
+      const result: BackendProcessOutput = await processCase(dataToSend); 
+      onSubmitSuccess(result);
+      
+      reset();
+      setSelectedPensionType(null);
+      setCurrentSteps(getStepsForPensionType(null));
+      setActiveStep(0);
+      setAnalysisResult(null);
+      setConfidenceScore(null);
+      setAnalysisError(null);
+
     } catch (error) {
-       // <<< Ошибка теперь приходит из handleResponse
-      onSubmitError(`Ошибка отправки данных: ${error instanceof Error ? error.message : String(error)}`);
+      const err = error as Error & Partial<ApiErrorDetail>;
+      const errorMessage = err.message || "Неизвестная ошибка отправки";
+      console.error("Submit Error Details:", err.details, "Status:", err.status);
+      onSubmitError(`Ошибка отправки данных: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -238,93 +288,84 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
 
   const getErrorMessage = (fieldName: string): string | undefined => {
     const keys = fieldName.split('.');
-    let error = errors as any;
+    let errorRef = errors as any;
     for (const key of keys) {
-      if (!error || !error[key]) return undefined;
-      error = error[key];
+      if (!errorRef || !errorRef[key]) return undefined;
+      errorRef = errorRef[key];
     }
-    return error?.message;
+    // @ts-ignore
+    return errorRef?.message;
   };
 
-  // <<< Обработчик изменения типа пенсии: обновляет шаги
   const handlePensionTypeChange = (value: string) => {
     setSelectedPensionType(value);
-    setPensionTypeError(null);
+    setValue('pension_type', value, { shouldValidate: true, shouldDirty: true });
     const newSteps = getStepsForPensionType(value);
     setCurrentSteps(newSteps);
-    setValue('pension_type', value);
-    // Сбрасываем на первый шаг ПОСЛЕ выбора типа (т.е. на Личные данные)
-    // Но только если мы были на шаге выбора типа
-    if (activeStep === 0) {
-        setActiveStep(1); // Переходим ко второму шагу в новой последовательности
+    setPensionTypeError(null);
+    if (activeStep === 0 && value) {
+      if (newSteps.length > 1) {
+          setActiveStep(1);
+      }
+    } else if (!value) {
+        setActiveStep(0);
     }
   };
 
   const handleNext = async () => {
     let isValidStep = true;
-    setPensionTypeError(null);
+    setPensionTypeError(null); 
 
     const currentStepDefinition = currentSteps[activeStep];
-    const currentValues = getValues(); // Получаем текущие значения для динамической валидации
-    let fieldsToValidate: (keyof CaseFormDataType | string)[] = []; // Массив полей для trigger
+    const currentValues = getValues();
 
-    // <<< Логика валидации на основе ID шага
     if (currentStepDefinition.id === 'pensionType') {
         if (!selectedPensionType) {
-            isValidStep = false;
             setPensionTypeError('Пожалуйста, выберите тип пенсии');
-        } else {
-             // Действий не требуется, тип установлен
+            return;
         }
-    } else if (currentStepDefinition.id === 'personalData') {
-        fieldsToValidate = [
-            'personal_data.last_name', 'personal_data.first_name', 
-            'personal_data.birth_date', 'personal_data.snils',
-            'personal_data.gender', 'personal_data.citizenship', 'personal_data.dependents'
-        ];
-        // Валидация полей смены ФИО, если они есть
-        if (currentValues.personal_data.name_change_info) {
-             fieldsToValidate.push(
-                 'personal_data.name_change_info.old_full_name',
-                 'personal_data.name_change_info.date_changed'
-             );
+        if (!currentValues.pension_type) {
+             setValue('pension_type', selectedPensionType, { shouldValidate: true });
+             const isValidPensionType = await trigger('pension_type');
+             if (!isValidPensionType) return;
         }
-    } else if (currentStepDefinition.id === 'workExperience') {
-       fieldsToValidate = ['work_experience.total_years'];
-       // Динамическая валидация записей о стаже
-       currentValues.work_experience.records.forEach((_, index) => {
-           fieldsToValidate.push(
-               `work_experience.records.${index}.organization`,
-               `work_experience.records.${index}.start_date`,
-               `work_experience.records.${index}.end_date`,
-               `work_experience.records.${index}.position`
-               // `work_experience.records.${index}.special_conditions` - обычно boolean, валидация не так критична
-           );
-       });
-    } else if (currentStepDefinition.id === 'disabilityInfo') {
-        fieldsToValidate = ['disability.group', 'disability.date'];
-        // 'disability.cert_number' - опциональное, не валидируем
-    } else if (currentStepDefinition.id === 'additionalInfo') {
-       fieldsToValidate = ['pension_points', 'benefits', 'documents'];
-       // 'has_incorrect_document' - boolean
     }
-    // Шаг сводки валидации не требует, поэтому здесь нет блока для summary
+    
+    let fieldsForRHFValidation: FieldPath<CaseFormDataTypeForRHF>[] = 
+        currentStepDefinition.fieldsToValidate 
+            ? [...currentStepDefinition.fieldsToValidate] 
+            : [];
 
-    // <<< Выполняем trigger, если есть поля для валидации
-    if (fieldsToValidate.length > 0) {
-        try {
-            isValidStep = await trigger(fieldsToValidate as any);
-            console.log(`Validation for step ${currentStepDefinition.id}: ${isValidStep}`, fieldsToValidate);
-        } catch (e) {
-            console.error("Validation error:", e);
-            isValidStep = false; // Считаем невалидным при ошибке trigger
-        }
+    if (currentStepDefinition.id === 'personalData') {
+      if (currentValues.personal_data?.name_change_info?.old_full_name || currentValues.personal_data?.name_change_info?.date_changed) {
+          fieldsForRHFValidation.push('personal_data.name_change_info.old_full_name');
+          fieldsForRHFValidation.push('personal_data.name_change_info.date_changed');
+      }
+    }
+    
+    if (currentStepDefinition.id === 'workExperience') {
+        currentValues.work_experience.records.forEach((record: Partial<WorkRecord>, index: number) => {
+            fieldsForRHFValidation.push(`work_experience.records.${index}.organization` as FieldPath<CaseFormDataTypeForRHF>);
+            fieldsForRHFValidation.push(`work_experience.records.${index}.start_date` as FieldPath<CaseFormDataTypeForRHF>);
+            fieldsForRHFValidation.push(`work_experience.records.${index}.end_date` as FieldPath<CaseFormDataTypeForRHF>);
+            fieldsForRHFValidation.push(`work_experience.records.${index}.position` as FieldPath<CaseFormDataTypeForRHF>);
+        });
+    }
+    if (currentStepDefinition.id === 'disabilityInfo' && selectedPensionType === 'disability_social') {
+        // Поля 'disability.group' и 'disability.date' уже должны быть в fieldsToValidate из StepDefinition
+        // Можно добавить 'disability.cert_number' если он обязателен при определенных условиях
+    }
+
+    if (fieldsForRHFValidation.length > 0) {
+        const uniqueFields = Array.from(new Set(fieldsForRHFValidation));
+        isValidStep = await trigger(uniqueFields);
+        console.log(`Validation for step ${currentStepDefinition.id}: ${isValidStep}`, uniqueFields);
     }
 
     if (isValidStep) {
-      if (activeStep < currentSteps.length - 1) {
-          goToNext();
-      }
+        if (activeStep < currentSteps.length - 1) {
+            goToNext();
+        }
     }
   };
 
@@ -332,62 +373,43 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     goToPrevious();
   };
 
-  // <<< Функция для запуска RAG анализа
   const handleAnalyzeCase = async () => {
-    console.log("Analyzing case...");
     setIsLoadingAnalysis(true);
     setAnalysisResult(null);
     setAnalysisError(null);
-    setConfidenceScore(null); 
+    setConfidenceScore(null);
+
+    const currentData = getValues();
+    const pensionTypeToUse = selectedPensionType || currentData.pension_type;
+
+    if (!pensionTypeToUse) {
+        setAnalysisError("Тип пенсии не выбран. RAG-анализ не может быть выполнен.");
+        setIsLoadingAnalysis(false);
+        return;
+    }
+
+    const dataToSend: CaseFormData = prepareDataForApi({ 
+        ...currentData, 
+        pension_type: pensionTypeToUse 
+    });
+    
+    console.log("Sending prepared data to /api/v1/analyze_case:", dataToSend);
 
     try {
-      const currentData = getValues();
-      
-      // <<< Применяем ту же логику подготовки данных, что и в onSubmit >>>
-      const dataToSend = JSON.parse(JSON.stringify(currentData)); // Глубокая копия
-      // Преобразуем строки в массивы (если они не пустые)
-      dataToSend.benefits = (currentData.benefits || '').split(',').map(s => s.trim()).filter(Boolean);
-      dataToSend.documents = (currentData.documents || '').split(',').map(s => s.trim()).filter(Boolean);
-      // Убедимся, что тип пенсии установлен (хотя он должен быть в currentData, но для надежности)
-      dataToSend.pension_type = selectedPensionType || currentData.pension_type || ''; 
-      // Обрабатываем пустой объект смены ФИО
-      if (dataToSend.personal_data.name_change_info && !dataToSend.personal_data.name_change_info.old_full_name && !dataToSend.personal_data.name_change_info.date_changed) {
-          dataToSend.personal_data.name_change_info = null;
+      const response = await analyzeCase(dataToSend);
+      setAnalysisResult(response.analysis_result);
+      setConfidenceScore(response.confidence_score);
+      if (response.analysis_result) {
+        onCopy();
       }
-      // <<< КОНЕЦ логики подготовки данных >>>
-
-      console.log("Sending prepared data to /api/v1/analyze_case:", dataToSend);
-
-      // <<< Вызываем analyzeCase, передавая подготовленный объект dataToSend >>>
-      const response = await analyzeCase(dataToSend); 
-      console.log("RAG response:", response);
-
-      setAnalysisResult(response.analysis_result); 
-      setConfidenceScore(response.confidence_score); 
-
-    } catch (error: any) {
-      // <<< Логируем исходную ошибку для диагностики >>>
-      console.error("RAG Analysis error (raw):", error);
-      // Формируем сообщение об ошибке
+    } catch (error) {
+      const err = error as Error & Partial<ApiErrorDetail>;
       let errorMessage = 'Не удалось выполнить RAG-анализ.';
-      if (error instanceof Error) {
-          errorMessage = error.message;
-      } else if (typeof error === 'string') {
-          errorMessage = error;
+      if (err.message) {
+        errorMessage = err.message;
       }
-      // Пытаемся извлечь детали из 422 ошибки, если они есть
-      if (error?.response?.data?.detail) {
-          try {
-              const details = JSON.stringify(error.response.data.detail);
-              errorMessage += `: ${details}`;
-          } catch (_) { /* ignore stringify error */ }
-      } else if (error?.message) {
-           // Уже содержит сообщение из handleResponse
-      }
-      console.error("RAG Analysis error (processed message):", errorMessage);
-      setAnalysisError(errorMessage); 
-      setAnalysisResult(null);
-      setConfidenceScore(null); 
+      console.error("RAG Analysis Error Details:", err.details, "Status:", err.status);
+      setAnalysisError(errorMessage);
     } finally {
       setIsLoadingAnalysis(false);
     }
@@ -396,7 +418,6 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   // --- Отображение текущего шага --- 
   const renderStepContent = () => {
     if (activeStep >= currentSteps.length || activeStep < 0) {
-        // Обработка случая, когда activeStep некорректен
         console.warn("Invalid active step index:", activeStep, "for steps count:", currentSteps.length);
         return <Text color="red.500">Ошибка отображения шага.</Text>;
     }
@@ -404,22 +425,26 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     const CurrentComponent = currentSteps[activeStep].component;
     const stepId = currentSteps[activeStep].id;
 
-    // <<< Передаем пропсы в зависимости от компонента
-    // TODO: Сделать более строго типизированным
-    const commonProps = { register, errors, control, getValues, setValue, getErrorMessage, watch };
+    const commonProps: any = { register, errors, control, getValues, setValue, getErrorMessage, watch }; // any временно
 
     if (stepId === 'pensionType') {
         return (
             <CurrentComponent
                 selectedValue={selectedPensionType}
-                onChange={handlePensionTypeChange} // <<< Передаем новый обработчик
+                onChange={handlePensionTypeChange}
                 errorMessage={pensionTypeError || undefined}
             />
         );
     } else if (stepId === 'personalData') {
         return <CurrentComponent {...commonProps} errors={errors.personal_data || {}} />;
     } else if (stepId === 'workExperience') {
-        return <CurrentComponent {...commonProps} errors={errors.work_experience || {}} fieldArray={fieldArray} />;
+        return <CurrentComponent 
+                    {...commonProps} 
+                    errors={errors.work_experience || {}} 
+                    fields={fields} 
+                    append={append} 
+                    remove={remove} 
+                />;
     } else if (stepId === 'disabilityInfo') {
         return <CurrentComponent {...commonProps} errors={errors.disability || {}} />;
     } else if (stepId === 'additionalInfo') {
@@ -445,10 +470,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     ol: (props: React.ComponentProps<'ol'>) => <OrderedList spacing={1} ml={6} mb={2} {...props} />,
     ul: (props: React.ComponentProps<'ul'>) => <UnorderedList spacing={1} ml={6} mb={2} {...props} />,
     li: (props: React.ComponentProps<'li'>) => <ListItem fontSize="sm" {...props} />,
-    // Добавьте другие теги по мере необходимости (например, strong, em, code)
     strong: (props: React.ComponentProps<'strong'>) => <ChakraText as="strong" fontWeight="bold" {...props} />,
-    // em: (props: any) => <ChakraText as="em" fontStyle="italic" {...props} />,
-    // code: (props: any) => <Code {...props} />
   };
 
   return (
@@ -458,20 +480,17 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
        </Heading>
 
         <Stepper index={activeStep} mb={8} colorScheme="blue">
-            {/* <<< Рендерим шаги из currentSteps */}
             {currentSteps.map((step, index) => (
                 <Step
                     key={step.id}
                     onClick={() => {
-                        // Разрешаем переход только к пройденным или текущему шагу
                         if (index <= activeStep) {
                             setActiveStep(index);
                         }
                     }}
                     cursor={index <= activeStep ? "pointer" : "default"}
-                    // <<< Добавляем стиль для неактивных будущих шагов
                     opacity={index > activeStep ? 0.5 : 1}
-                    _hover={index <= activeStep ? { bg: 'gray.100', borderRadius: 'md', _dark: { bg: 'gray.700' } } : {}} // Эффект при наведении только для активных + темная тема
+                    _hover={index <= activeStep ? { bg: 'gray.100', borderRadius: 'md', _dark: { bg: 'gray.700' } } : {}}
                  >
                     <StepIndicator>
                         <StepStatus
@@ -495,7 +514,6 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
 
         <VStack spacing={4} align="stretch">
             <Flex>
-                {/* <<< Добавлена leftIcon для кнопки Назад */}
                 <Button
                    onClick={handlePrevious}
                    isDisabled={activeStep === 0}
@@ -507,27 +525,24 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
                 <Spacer />
                  {}
                 {activeStep < currentSteps.length - 1 && (
-                    /* <<< Добавлена rightIcon для кнопки Далее */
                     <Button
                        onClick={handleNext}
-                       colorScheme="blue" // Используем стандартный синий
+                       colorScheme="primary"
                        rightIcon={<ArrowForwardIcon />}
                     >
                        Далее
                     </Button>
                 )}
-                 {/* Кнопки и результаты на последнем шаге */}
                 {activeStep === currentSteps.length - 1 && (
-                    // Используем Flex вместо VStack для горизонтального расположения кнопок
-                    <Flex direction="row" justify="flex-end"> {/* Выравниваем кнопки по правому краю */}
+                    <Flex direction="row" justify="flex-end">
                          <Button
                              type="button"
                              onClick={handleAnalyzeCase}
                              isLoading={isLoadingAnalysis}
                              isDisabled={isLoadingAnalysis || isSubmitting}
-                             colorScheme="teal" // Оставляем бирюзовый для RAG
+                             colorScheme="teal"
                              variant="outline"
-                             mr={3} // Отступ справа
+                             mr={3}
                          >
                              Провести RAG-анализ
                          </Button>
@@ -535,17 +550,16 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
                              type="submit"
                              isLoading={isSubmitting}
                              isDisabled={!isDirty || isSubmitting || isLoadingAnalysis}
-                             colorScheme="primary" // Используем основной синий цвет
+                             colorScheme="primary"
                          >
                              Отправить на проверку
                          </Button>
                     </Flex>
                 )}
-            </Flex> {/* Закрываем Flex для кнопок Назад/Далее/Отправить */}
+            </Flex>
 
-             {/* Отображение статуса/результата RAG (теперь под кнопками) */}
-             {activeStep === currentSteps.length - 1 && ( // Показываем только на последнем шаге
-                 <VStack spacing={4} align="stretch" mt={4}> {/* Отступ сверху */}
+             {activeStep === currentSteps.length - 1 && (
+                 <VStack spacing={4} align="stretch" mt={4}>
                       {isLoadingAnalysis && (
                           <Flex justify="center" align="center" direction="column" p={4}>
                               <CircularProgress isIndeterminate color="teal.300" />
@@ -592,8 +606,8 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
                       )}
                  </VStack>
              )}
-        </VStack> {/* Закрываем основной VStack */}
-    </Box> /* Закрываем Box формы */
+        </VStack>
+    </Box>
   );
 }
 

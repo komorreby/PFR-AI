@@ -11,8 +11,8 @@ import {
 } from '@chakra-ui/react';
 import { SearchIcon } from '@chakra-ui/icons';
 import HistoryList from '../components/HistoryList';
-import { HistoryEntry } from '../components/HistoryList';
-import { getHistory, downloadDocument } from '../api/client';
+import { HistoryEntry } from '../types';
+import { getHistory, downloadDocument } from '../services/client';
 
 function HistoryPage() {
     const [historyData, setHistoryData] = useState<HistoryEntry[]>([]);
@@ -23,7 +23,7 @@ function HistoryPage() {
     const fetchHistory = useCallback(async () => {
         setHistoryLoading(true);
         try {
-            const data = await getHistory();
+            const data = await getHistory(100,0);
             setHistoryData(data);
         } catch (error) {
             toast({ 
@@ -50,7 +50,7 @@ function HistoryPage() {
             duration: null, 
             isClosable: false,
         });
-        console.log(`Requesting download for case ${caseId}, format: ${format}`);
+        
         try {
             const response = await downloadDocument(caseId, format);
 
@@ -61,7 +61,12 @@ function HistoryPage() {
                     const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
                     const matches = filenameRegex.exec(disposition);
                     if (matches?.[1]) {
-                        filename = matches[1].replace(/['"]/g, '');
+                        try {
+                            filename = decodeURIComponent(matches[1].replace(/['"]/g, ''));
+                        } catch (e) {
+                            filename = matches[1].replace(/['"]/g, '');
+                            console.warn("Could not decode filename from Content-Disposition", e);
+                        }
                     }
                 }
                 const blob = await response.blob();
@@ -83,8 +88,18 @@ function HistoryPage() {
                     });
                 }
             } else {
-                const errorData = await response.json().catch(() => null);
-                const errorDetail = errorData?.detail || `Ошибка ${response.status}`;
+                let errorDetail = `Ошибка ${response.status}`;
+                try {
+                    const errorResponse = await response.json();
+                    if (errorResponse && errorResponse.detail) {
+                         errorDetail = Array.isArray(errorResponse.detail) 
+                            ? errorResponse.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ') 
+                            : String(errorResponse.detail);
+                    } else if (errorResponse && errorResponse.message) {
+                        errorDetail = errorResponse.message;
+                    }
+                } catch (_e) { /* Оставляем errorDetail как статус, если JSON парсинг неудачен */ }
+
                 if (toastId) {
                     toast.update(toastId, { 
                         title: "Ошибка скачивания", 
@@ -94,7 +109,7 @@ function HistoryPage() {
                         isClosable: true 
                     });
                 }
-                console.error("Download error:", response.status, response.statusText);
+                console.error("Download error:", response.status, response.statusText, await response.text());
             }
         } catch (error) {
             if (toastId) {
@@ -115,10 +130,17 @@ function HistoryPage() {
             return historyData;
         }
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        return historyData.filter(entry => 
-            entry.id.toString().includes(lowerCaseSearchTerm) ||
-            entry.personal_data?.full_name?.toLowerCase().includes(lowerCaseSearchTerm)
-        );
+        return historyData.filter(entry => {
+            const idMatch = entry.id.toString().includes(lowerCaseSearchTerm);
+            const personalData = entry.personal_data;
+            const nameMatch = personalData ? 
+                (personalData.last_name?.toLowerCase().includes(lowerCaseSearchTerm) || 
+                 personalData.first_name?.toLowerCase().includes(lowerCaseSearchTerm) || 
+                 personalData.middle_name?.toLowerCase().includes(lowerCaseSearchTerm)) 
+                : false;
+            const snilsMatch = personalData?.snils?.replace(/\D/g, '').includes(lowerCaseSearchTerm.replace(/\D/g, ''));
+            return idMatch || nameMatch || snilsMatch;
+        });
     }, [historyData, searchTerm]);
 
     return (
@@ -131,7 +153,7 @@ function HistoryPage() {
                      <SearchIcon color="gray.300" />
                 </InputLeftElement>
                 <Input 
-                    placeholder="Поиск по ID или ФИО..." 
+                    placeholder="Поиск по ID, ФИО или СНИЛС..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     bg="cardBackground"

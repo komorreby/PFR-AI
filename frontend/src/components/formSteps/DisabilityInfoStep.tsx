@@ -1,5 +1,6 @@
 import { FieldErrors, UseFormRegister, Control } from 'react-hook-form';
-import { CaseFormDataType } from '../CaseForm'; // Импортируем основной тип
+// import { CaseFormDataType } from '../CaseForm'; // Старый импорт
+import { CaseFormDataTypeForRHF, DisabilityInfo } from '../../types'; // Новый импорт
 import {
   FormControl,
   FormLabel,
@@ -10,29 +11,28 @@ import {
   Heading
 } from '@chakra-ui/react';
 
-// Предполагаем, что DisabilityInfoType экспортируется из CaseForm или определен глобально
-// Если нет, его нужно определить здесь:
-type DisabilityInfoType = {
-    group: string;
-    date: string;
-    cert_number?: string;
-};
+// Локальный тип DisabilityInfoType УДАЛЕН, используется импортированный DisabilityInfo
+// type DisabilityInfoType = {
+//     group: string;
+//     date: string;
+//     cert_number?: string;
+// };
 
-// Примерный интерфейс для пропсов, может потребоваться доработка
 interface DisabilityInfoStepProps {
-  register: UseFormRegister<CaseFormDataType>;
-  errors: FieldErrors<DisabilityInfoType>; // <<< Используем FieldErrors<DisabilityInfoType>
-  control: Control<CaseFormDataType>;
-  getErrorMessage: (fieldName: string) => string | undefined;
+  register: UseFormRegister<CaseFormDataTypeForRHF>;
+  // Ошибки теперь для всего объекта disability, доступ через errors.disability?.group
+  // Или, если getErrorMessage используется, он должен обрабатывать 'disability.group'
+  errors: FieldErrors<CaseFormDataTypeForRHF>; 
+  control: Control<CaseFormDataTypeForRHF>; // Обновляем тип Control
+  getErrorMessage: (fieldName: keyof DisabilityInfo | `disability.${keyof DisabilityInfo}`) => string | undefined;
 }
 
-function DisabilityInfoStep({ register, errors}: DisabilityInfoStepProps) {
+function DisabilityInfoStep({ register, errors, getErrorMessage }: DisabilityInfoStepProps) {
   return (
     <VStack spacing={4} align="stretch">
         <Heading size="md" mb={2}>Сведения об инвалидности</Heading>
 
-        {/* Группа инвалидности */}
-        <FormControl isInvalid={!!errors.group}>
+        <FormControl isInvalid={!!getErrorMessage('disability.group') || !!errors.disability?.group}>
             <FormLabel htmlFor='disability.group'>Группа инвалидности</FormLabel>
             <Select
                 id='disability.group'
@@ -46,31 +46,30 @@ function DisabilityInfoStep({ register, errors}: DisabilityInfoStepProps) {
                 <option value="3">III группа</option>
                 <option value="child">Ребенок-инвалид</option>
             </Select>
-            <FormErrorMessage>{errors.group?.message}</FormErrorMessage>
+            <FormErrorMessage>{getErrorMessage('disability.group') || errors.disability?.group?.message}</FormErrorMessage>
         </FormControl>
 
-        {/* Дата установления инвалидности */}
-        <FormControl isInvalid={!!errors.date}>
+        <FormControl isInvalid={!!getErrorMessage('disability.date') || !!errors.disability?.date}>
             <FormLabel htmlFor='disability.date'>Дата установления инвалидности</FormLabel>
             <Input
                 id='disability.date'
-                type="date"
+                type="date" // Для нативного date picker, IMaskInput не используется здесь
                 {...register('disability.date', {
                     required: 'Пожалуйста, укажите дату установления инвалидности'
+                    // Можно добавить валидацию, чтобы дата не была в будущем
                 })}
             />
-            <FormErrorMessage>{errors.date?.message}</FormErrorMessage>
+            <FormErrorMessage>{getErrorMessage('disability.date') || errors.disability?.date?.message}</FormErrorMessage>
         </FormControl>
 
-        {/* Номер справки МСЭ (опционально) */}
-        <FormControl isInvalid={!!errors.cert_number}>
+        <FormControl isInvalid={!!getErrorMessage('disability.cert_number') || !!errors.disability?.cert_number}>
             <FormLabel htmlFor='disability.cert_number'>Номер справки МСЭ (если есть)</FormLabel>
             <Input
                 id='disability.cert_number'
                 type="text"
                 {...register('disability.cert_number')}
             />
-            <FormErrorMessage>{errors.cert_number?.message}</FormErrorMessage>
+            <FormErrorMessage>{getErrorMessage('disability.cert_number') || errors.disability?.cert_number?.message}</FormErrorMessage>
         </FormControl>
 
     </VStack>

@@ -15,21 +15,26 @@ import {
   AccordionIcon,
 } from '@chakra-ui/react';
 import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
-import { ProcessResult } from './CaseForm'; // Импортируем типы
+// import { ProcessResult } from './CaseForm'; // Старый импорт
+import { ProcessOutput as BackendProcessOutput } from '../types'; // Новый импорт
 
 interface ProcessResultDisplayProps {
-  result: ProcessResult;
+  result: BackendProcessOutput; // Используем BackendProcessOutput
 }
 
 const ProcessResultDisplay: React.FC<ProcessResultDisplayProps> = ({ result }) => {
-  const { status, explanation } = result;
+  // Обновляем деструктуризацию и логику в соответствии с полями BackendProcessOutput
+  const { final_status, explanation, confidence_score, case_id } = result;
   const bgColor = useColorModeValue('gray.50', 'gray.700');
-  const statusColorScheme = status === 'approved' ? 'green' : 'red';
-  const StatusIcon = status === 'approved' ? CheckCircleIcon : WarningIcon;
+  
+  // Определяем цвет и иконку на основе final_status
+  const isApproved = final_status.toLowerCase().includes('соответствует');
+  const statusColorScheme = isApproved ? 'green' : 'red';
+  const StatusIcon = isApproved ? CheckCircleIcon : WarningIcon;
 
   return (
     <VStack spacing={6} align="stretch">
-      <Heading size="lg" textAlign="center">Результат обработки</Heading>
+      <Heading size="lg" textAlign="center">Результат обработки дела ID: {case_id}</Heading>
 
       <Stat
         p={4}
@@ -47,16 +52,21 @@ const ProcessResultDisplay: React.FC<ProcessResultDisplayProps> = ({ result }) =
           Итоговый статус
         </StatLabel>
         <StatNumber color={`${statusColorScheme}.600`} _dark={{ color: `${statusColorScheme}.300` }}>
-          {status === 'approved' ? 'Одобрено' : 'Отказано'}
+          {final_status}
         </StatNumber>
+        {confidence_score !== undefined && (
+            <Text fontSize="xs" color="gray.500" mt={1}>
+                Уверенность: {(confidence_score * 100).toFixed(1)}%
+            </Text>
+        )}
       </Stat>
 
-      <Accordion allowMultiple defaultIndex={[0]}>
+      <Accordion allowToggle defaultIndex={[0]}>
         <AccordionItem>
           <h2>
             <AccordionButton>
               <Box flex="1" textAlign="left" fontWeight="semibold">
-                Объяснение
+                Подробное объяснение
               </Box>
               <AccordionIcon />
             </AccordionButton>

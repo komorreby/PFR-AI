@@ -1,5 +1,5 @@
 import React from 'react';
-import { Control, Controller, FieldErrors, UseFormRegister, UseFieldArrayReturn, UseFormGetValues } from 'react-hook-form';
+import { Control, Controller, FieldErrors, UseFormRegister, UseFormGetValues, UseFieldArrayAppend, UseFieldArrayRemove, UseFieldArrayUpdate, FieldArrayWithId } from 'react-hook-form';
 import DatePicker from "react-datepicker";
 import { parse } from 'date-fns';
 import {
@@ -23,33 +23,52 @@ import {
     Button
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
-import { CaseFormDataType } from '../CaseForm';
+import { CaseFormDataTypeForRHF, WorkRecord } from '../../types';
 import CustomDateInput from '../formInputs/CustomDateInput';
 import { formatDateForInput } from '../../utils';
 
 interface WorkExperienceStepProps {
-    control: Control<CaseFormDataType>;
-    register: UseFormRegister<CaseFormDataType>;
-    errors: FieldErrors<CaseFormDataType>;
-    fieldArray: UseFieldArrayReturn<CaseFormDataType, "work_experience.records", "id">;
+    control: Control<CaseFormDataTypeForRHF>;
+    register: UseFormRegister<CaseFormDataTypeForRHF>;
+    errors: FieldErrors<CaseFormDataTypeForRHF>;
+    fields: FieldArrayWithId<CaseFormDataTypeForRHF, "work_experience.records", "id">[];
+    append: UseFieldArrayAppend<CaseFormDataTypeForRHF, "work_experience.records">;
+    remove: UseFieldArrayRemove;
     getErrorMessage: (name: string) => string | undefined;
-    getValues: UseFormGetValues<CaseFormDataType>;
+    getValues: UseFormGetValues<CaseFormDataTypeForRHF>;
 }
 
 const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({ 
-    control, register, fieldArray, getErrorMessage, getValues
+    control, register, fields, append, remove, getErrorMessage, getValues
 }) => {
-    const { fields, append, remove } = fieldArray;
-
     return (
         <VStack spacing={4} align="stretch">
             <Heading size="md" mb={4}>Трудовой стаж</Heading>
             <FormControl isInvalid={!!getErrorMessage('work_experience.total_years')}>
               <FormLabel htmlFor="total_years">Общий подтвержденный стаж (лет)</FormLabel>
-              <NumberInput id="total_years" min={0} defaultValue={0} precision={1} step={0.5} >
-                <NumberInputField {...register("work_experience.total_years", { valueAsNumber: true, required: "Общий стаж обязателен", min: { value: 0, message: "Стаж не может быть отрицательным" } })} />
-                <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
-              </NumberInput>
+              <Controller
+                name="work_experience.total_years"
+                control={control}
+                rules={{ 
+                    required: "Общий стаж обязателен", 
+                    min: { value: 0, message: "Стаж не может быть отрицательным" },
+                    validate: value => typeof value === 'number' || "Значение должно быть числом"
+                }}
+                render={({ field }) => (
+                    <NumberInput 
+                        id="total_years" 
+                        min={0} 
+                        precision={1} 
+                        step={0.5}
+                        value={field.value === undefined || field.value === null ? '' : String(field.value)}
+                        onChange={(_valueAsString, valueAsNumber) => field.onChange(valueAsNumber)}
+                        onBlur={field.onBlur}
+                    >
+                        <NumberInputField ref={field.ref} />
+                        <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
+                    </NumberInput>
+                )}
+              />
                <FormErrorMessage>{getErrorMessage('work_experience.total_years')}</FormErrorMessage>
             </FormControl>
 
@@ -63,18 +82,24 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
                       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                           <FormControl isInvalid={!!getErrorMessage(`work_experience.records.${index}.organization`)}>
                               <FormLabel htmlFor={`work_experience.records.${index}.organization`}>Организация</FormLabel>
-                              <Input id={`work_experience.records.${index}.organization`} {...register(`work_experience.records.${index}.organization`, { required: "Организация обязательна" })} />
+                              <Input 
+                                id={`work_experience.records.${index}.organization`} 
+                                {...register(`work_experience.records.${index}.organization` as const, { required: "Организация обязательна" })} 
+                              />
                                <FormErrorMessage>{getErrorMessage(`work_experience.records.${index}.organization`)}</FormErrorMessage>
                            </FormControl>
                            <FormControl isInvalid={!!getErrorMessage(`work_experience.records.${index}.position`)}>
                               <FormLabel htmlFor={`work_experience.records.${index}.position`}>Должность</FormLabel>
-                              <Input id={`work_experience.records.${index}.position`} {...register(`work_experience.records.${index}.position`, { required: "Должность обязательна" })} />
+                              <Input 
+                                id={`work_experience.records.${index}.position`} 
+                                {...register(`work_experience.records.${index}.position` as const, { required: "Должность обязательна" })} 
+                              />
                                <FormErrorMessage>{getErrorMessage(`work_experience.records.${index}.position`)}</FormErrorMessage>
                            </FormControl>
                             <FormControl isInvalid={!!getErrorMessage(`work_experience.records.${index}.start_date`)}>
                                <FormLabel htmlFor={`work_experience.records.${index}.start_date`}>Дата начала</FormLabel>
                                <Controller
-                                   name={`work_experience.records.${index}.start_date`}
+                                   name={`work_experience.records.${index}.start_date` as const}
                                    control={control}
                                    rules={{ required: "Дата начала обязательна" }}
                                    render={({ field }) => (
@@ -94,9 +119,18 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
                             <FormControl isInvalid={!!getErrorMessage(`work_experience.records.${index}.end_date`)}>
                                <FormLabel htmlFor={`work_experience.records.${index}.end_date`}>Дата окончания</FormLabel>
                                 <Controller
-                                   name={`work_experience.records.${index}.end_date`}
+                                   name={`work_experience.records.${index}.end_date` as const}
                                    control={control}
-                                   rules={{ required: "Дата окончания обязательна" }}
+                                   rules={{ 
+                                       required: "Дата окончания обязательна",
+                                       validate: value => {
+                                           const startDate = getValues(`work_experience.records.${index}.start_date`);
+                                           if (startDate && value && parse(value, 'yyyy-MM-dd', new Date()) < parse(startDate, 'yyyy-MM-dd', new Date())) {
+                                               return "Дата окончания не может быть раньше даты начала";
+                                           }
+                                           return true;
+                                       }
+                                    }}
                                    render={({ field }) => (
                                        <DatePicker
                                           selected={field.value ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
@@ -115,7 +149,11 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
                        </SimpleGrid>
                        <HStack mt={4} justify="space-between">
                           <FormControl display="flex" alignItems="center" width="auto">
-                              <Checkbox id={`work_experience.records.${index}.special_conditions`} {...register(`work_experience.records.${index}.special_conditions`)} mr={2} />
+                              <Checkbox 
+                                id={`work_experience.records.${index}.special_conditions`} 
+                                {...register(`work_experience.records.${index}.special_conditions` as const)} 
+                                mr={2} 
+                              />
                               <FormLabel htmlFor={`work_experience.records.${index}.special_conditions`} mb="0">Особые условия труда</FormLabel>
                            </FormControl>
                            <IconButton aria-label="Удалить место работы" icon={<DeleteIcon />} colorScheme="red" variant="ghost" size="sm" onClick={() => remove(index)} />
@@ -126,7 +164,7 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
 
              <Button
                 leftIcon={<AddIcon />}
-                onClick={() => append({ organization: '', start_date: '', end_date: '', position: '', special_conditions: false })}
+                onClick={() => append({ organization: '', start_date: '', end_date: '', position: '', special_conditions: false } as WorkRecord) }
                 variant="outline" colorScheme="green" size="sm" mt={4}
              >
                Добавить место работы

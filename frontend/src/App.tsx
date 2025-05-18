@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import CaseForm from './components/CaseForm';
-import { ProcessResult } from './components/CaseForm'; 
+import { ProcessOutput as BackendProcessOutput } from './types';
 import HistoryPage from './pages/HistoryPage';
 import ProcessResultDisplay from './components/ProcessResultDisplay';
 
@@ -23,19 +23,19 @@ import {
 import { SunIcon, MoonIcon } from '@chakra-ui/icons';
 
 function App() {
-  const [processResult, setProcessResult] = useState<ProcessResult | null>(null);
+  const [processResult, setProcessResult] = useState<BackendProcessOutput | null>(null);
 
   const toast = useToast();
   const { colorMode, toggleColorMode } = useColorMode();
 
-  const handleFormSubmitSuccess = (result: ProcessResult) => {
+  const handleFormSubmitSuccess = (result: BackendProcessOutput) => {
     console.log("Received result from backend:", result);
     setProcessResult(result);
     toast({ 
         title: "Анализ завершен",
-        description: `Статус: ${result.status === 'approved' ? 'Одобрено' : 'Отказано'}`,
-        status: result.status === 'approved' ? "success" : "error",
-        duration: 5000,
+        description: `Статус: ${result.final_status}. ${result.explanation.substring(0,100)}...`,
+        status: result.final_status.toLowerCase().includes('соответствует') ? "success" : "error",
+        duration: 7000,
         isClosable: true,
     });
   };
