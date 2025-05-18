@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field, field_validator # Изменяем импорт
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import date
 from enum import Enum
+import logging
 
 # Enum для формата документа
 class DocumentFormat(str, Enum):
@@ -66,11 +67,45 @@ class CaseDataInput(BaseModel):
             raise ValueError(f"Недопустимый тип пенсии: {v}. Допустимые: {list(rag_config.PENSION_TYPE_MAP.keys())}")
         return v
 
+class DocumentTypeToExtract(str, Enum):
+    PASSPORT = "passport"
+    SNILS = "snils"
+    OTHER = "other" # Добавляем новый тип
+
 class ProcessOutput(BaseModel):
     case_id: int
-    final_status: str # <--- Переименовано c status
+    final_status: str
     explanation: str
-    confidence_score: float # <--- Добавлено
+    confidence_score: float
+    department_code: Optional[str] = None # Код подразделения (например, "770-001")
+
+    # Можно добавить валидаторы для форматов серии, номера, кода подразделения, если нужно
+
+class SnilsData(BaseModel):
+    snils_number: Optional[str] = None  # Номер СНИЛС (например, "123-456-789 00")
+
+    @field_validator('snils_number')
+    @classmethod
+    def format_snils(cls, v: Optional[str]):
+        if v is None:
+            return None
+        # Импортируем logger здесь, чтобы избежать проблем на уровне модуля, если он не настроен глобально
+        logger = logging.getLogger(__name__) # Используем имя текущего модуля для логгера
+        # Удаляем все нецифровые символы
+        cleaned = "".join(filter(str.isdigit, v))
+        # Проверяем, что осталось 11 цифр
+        if len(cleaned) == 11:
+            # Форматируем как XXX-XXX-XXX XX
+            return f"{cleaned[:3]}-{cleaned[3:6]}-{cleaned[6:9]} {cleaned[9:]}"
+        logger.warning(f"Номер СНИЛС '{v}' не содержит 11 цифр после очистки. Возвращен без изменений.")
+        return v # Возвращаем как есть, если не 11 цифр, или None если изначально был None
+
+class OtherDocumentData(BaseModel):
+    identified_document_type: Optional[str] = Field(None, description="Тип документа, определенный мультимодальной моделью (например, 'Свидетельство о рождении', 'Договор').")
+    standardized_document_type: Optional[str] = Field(None, description="Стандартизированный тип документа, если он совпадает с известным типом пенсионных документов.")
+    extracted_fields: Optional[Dict[str, Any]] = Field(None, description="Извлеченные поля из документа в формате ключ-значение.")
+    multimodal_assessment: Optional[str] = Field(None, description="Оценка документа мультимодальной моделью (например, качество, читаемость, полнота).")
+    text_llm_reasoning: Optional[str] = Field(None, description="Дополнительный анализ или 'осмысление' от текстовой LLM на основе извлеченных данных.")
 
 # Новая модель для представления записи в истории
 class CaseHistoryEntry(BaseModel):
@@ -81,3 +116,48 @@ class CaseHistoryEntry(BaseModel):
     final_explanation: Optional[str] = None 
     rag_confidence: Optional[float] = None
     personal_data: Optional[PersonalData] = None
+
+class PassportData(BaseModel):
+    last_name: Optional[str] = None
+    first_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    birth_date: Optional[date] = None
+    sex: Optional[str] = None # Пол (например, "МУЖ." или "ЖЕН.")
+    birth_place: Optional[str] = None # <--- ДОБАВЛЕНО ПОЛЕ МЕСТО РОЖДЕНИЯ
+    passport_series: Optional[str] = None # Серия паспорта (например, "1234")
+    passport_number: Optional[str] = None # Номер паспорта (например, "567890")
+    issue_date: Optional[date] = None     # Дата выдачи
+    issuing_authority: Optional[str] = None # Кем выдан
+    department_code: Optional[str] = None # Код подразделения (например, "770-001")
+
+    # Можно добавить валидаторы для форматов серии, номера, кода подразделения, если нужно
+
+PENSION_DOCUMENT_TYPES = [
+    "Паспорт гражданина РФ",
+    "СНИЛС", # Уже есть как отдельный тип, но пусть будет для полноты
+    "Заявление о назначении пенсии",
+    "Трудовая книжка",
+    "Трудовой договор", # "Трудовые договоры"
+    "Справка от работодателя", # "Справки от работодателей / госорганов"
+    "Справка от госоргана", # "Справки от работодателей / госорганов"
+    "Военный билет",
+    "Свидетельство о рождении ребенка", # "Свидетельства о рождении детей"
+    "Документ об уплате взносов", # "Документы об уплате взносов (для ИП, самозанятых)"
+    "Справка о зарплате за 60 месяцев до 2002 года",
+    "Документ, подтверждающий особые условия труда", # "Документы, подтверждающие особые условия труда (вредность, Север и т.д.)"
+    "Документ, подтверждающий педагогический стаж", # "Документы для подтверждения педагогического, медицинского и др. льготного стажа"
+    "Документ, подтверждающий медицинский стаж", # "Документы для подтверждения педагогического, медицинского и др. льготного стажа"
+    "Документ, подтверждающий льготный стаж", # "Документы для подтверждения педагогического, медицинского и др. льготного стажа"
+    "Свидетельство о рождении всех детей", # (для многодетных матерей)
+    "Документ об инвалидности ребенка", # (для родителей/опекунов инвалидов с детства)
+    "Справка об инвалидности", # (для пенсии по инвалидности)
+    "Свидетельство о смерти кормильца",
+    "Документ о родстве с умершим",
+    "Документ об иждивении",
+    "Справка из учебного заведения", # (для детей старше 18 лет)
+    "Свидетельство о перемене ФИО",
+    "Документ о месте жительства", # "Документы о месте жительства/пребывания"
+    "Документ о месте пребывания", # "Документы о месте жительства/пребывания"
+    "Справка о составе семьи",
+    "Документ, подтверждающий наличие иждивенцев" # (кроме детей)
+]

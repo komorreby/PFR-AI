@@ -197,3 +197,11 @@ if RERANKER_TOP_N > INITIAL_RETRIEVAL_TOP_K: # Проверяем относит
 #         f"RERANKER_TOP_N ({RERANKER_TOP_N}) "
 #         f"must be <= FILTERED_RETRIEVAL_TOP_K ({FILTERED_RETRIEVAL_TOP_K})"
 #     ) 
+
+# Мультимодальная LLM для анализа изображений (например, паспортов)
+OLLAMA_MULTIMODAL_LLM_MODEL_NAME = "qwen2.5vl:latest" # Убедитесь, что имя правильное для вашей Ollama
+# Таймаут для мультимодальной LLM
+MULTIMODAL_LLM_REQUEST_TIMEOUT = 900.0
+
+# Конфигурация для Google Vision API (если используется)
+# ... existing code ... 

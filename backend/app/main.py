@@ -1,18 +1,22 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, File, UploadFile, Form
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
 from app.rag_core.engine import PensionRAG
-from .models import CaseDataInput, ProcessOutput, CaseHistoryEntry, DocumentFormat, DisabilityInfo, PersonalData
+from .models import CaseDataInput, ProcessOutput, CaseHistoryEntry, DocumentFormat, DisabilityInfo, PersonalData, PassportData, SnilsData, DocumentTypeToExtract, OtherDocumentData
 
 from .database import create_db_and_tables, get_db_connection, async_engine
 from sqlalchemy.ext.asyncio import AsyncConnection
 from . import crud
 from . import services
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any, Union, Set
 import traceback
 import json
+from . import vision_services
+import logging # Добавляем импорт
+
+logger = logging.getLogger(__name__) # Инициализируем логгер
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -361,4 +365,41 @@ async def download_document(
     except Exception as e:
         print(f"Error generating document for case {case_id}: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Ошибка генерации документа: {e}") 
+        raise HTTPException(status_code=500, detail=f"Ошибка генерации документа: {e}")
+
+@app.post("/extract_document_data", response_model=Optional[Union[PassportData, SnilsData, OtherDocumentData]])
+async def extract_document_data_endpoint(
+    document_type: DocumentTypeToExtract = Form(...),
+    image: UploadFile = File(...)
+):
+    """
+    Извлекает структурированные данные из изображения документа (паспорт РФ или СНИЛС).
+
+    - **document_type**: Тип документа ('passport' или 'snils').
+    - **image**: Файл изображения.
+    """
+    if not image.content_type.startswith("image/"):
+        logger.error(f"Попытка загрузки не-изображения: {image.filename}, тип: {image.content_type}")
+        raise HTTPException(status_code=400, detail="Неверный тип файла. Пожалуйста, загрузите изображение.")
+
+    logger.info(f"Получено изображение для извлечения данных ({document_type.value}): {image.filename}, тип: {image.content_type}")
+    
+    try:
+        image_content = await image.read()
+        # Используем обновленный сервис
+        extracted_data = await vision_services.extract_document_data_from_image(
+            image_bytes=image_content, 
+            document_type=document_type
+        )
+
+        if extracted_data:
+            logger.info(f"Успешно извлечены данные для {document_type.value}: {image.filename}")
+            return extracted_data
+        else:
+            logger.warning(f"Не удалось извлечь данные для {document_type.value} из {image.filename}. Сервис вернул None.")
+            raise HTTPException(status_code=500, detail=f"Не удалось извлечь данные из документа ({document_type.value}).")
+    except HTTPException as http_exc: # Перехватываем свои же HTTPException, чтобы не попасть в общий Exception
+        raise http_exc 
+    except Exception as e:
+        logger.error(f"Ошибка в эндпоинте /api/v1/extract_document_data ({document_type.value}): {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера при обработке документа ({document_type.value}).") 
