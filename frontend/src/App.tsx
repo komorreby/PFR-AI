@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import CaseForm from './components/CaseForm';
-import { ProcessResult } from './components/CaseForm'; 
+import { DocumentSetCheckResponse } from './components/CaseForm';
 import HistoryPage from './pages/HistoryPage';
-import ProcessResultDisplay from './components/ProcessResultDisplay';
+import DocumentCheckPage from './pages/DocumentCheckPage';
 
 // Импорты Chakra UI
 import {
@@ -16,26 +16,24 @@ import {
   Flex,
   Spacer,
   useColorMode,
-  IconButton
+  IconButton,
+  useColorModeValue
 } from '@chakra-ui/react';
 
 // Импорт иконок для переключателя
 import { SunIcon, MoonIcon } from '@chakra-ui/icons';
 
 function App() {
-  const [processResult, setProcessResult] = useState<ProcessResult | null>(null);
-
   const toast = useToast();
   const { colorMode, toggleColorMode } = useColorMode();
 
-  const handleFormSubmitSuccess = (result: ProcessResult) => {
-    console.log("Received result from backend:", result);
-    setProcessResult(result);
+  const handleFormSubmitSuccess = (result: DocumentSetCheckResponse) => {
+    console.log("Received document check result from backend:", result);
     toast({ 
-        title: "Анализ завершен",
-        description: `Статус: ${result.status === 'approved' ? 'Одобрено' : 'Отказано'}`,
-        status: result.status === 'approved' ? "success" : "error",
-        duration: 5000,
+        title: "Проверка комплекта документов завершена",
+        description: `Общий статус: ${result.overall_status}`,
+        status: result.overall_status.toLowerCase().includes("требуются") || result.overall_status.toLowerCase().includes("ошибка") ? "warning" : "success",
+        duration: 7000,
         isClosable: true,
     });
   };
@@ -48,7 +46,6 @@ function App() {
         duration: 9000, 
         isClosable: true,
     });
-    setProcessResult(null);
   };
 
   return (
@@ -60,6 +57,9 @@ function App() {
       <Flex mb={6}>
         <Link as={RouterLink} to="/" fontWeight="bold" _hover={{ textDecoration: 'underline' }}>
             Ввод данных
+        </Link>
+        <Link as={RouterLink} to="/check-documents" fontWeight="bold" _hover={{ textDecoration: 'underline' }} ml={4}>
+            Проверка комплекта
         </Link>
         <Spacer />
         <Link as={RouterLink} to="/history" fontWeight="bold" _hover={{ textDecoration: 'underline' }}>
@@ -79,22 +79,17 @@ function App() {
       <Routes>
         <Route path="/" element={
           <Box>
-            <Box bg="cardBackground" p={6} borderRadius="md" shadow="md"> 
+            <Box bg={useColorModeValue('white', 'gray.750')} p={6} borderRadius="md" shadow="md"> 
               <CaseForm 
                 onSubmitSuccess={handleFormSubmitSuccess}
                 onSubmitError={handleFormSubmitError}
               />
             </Box>
-
-            {processResult && (
-              <Box mt={6}>
-                 <ProcessResultDisplay result={processResult} />
-              </Box>
-            )}
           </Box>
         } />
 
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/check-documents" element={<DocumentCheckPage />} />
       </Routes>
 
     </Container>

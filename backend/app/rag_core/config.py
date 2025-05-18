@@ -12,8 +12,9 @@ DOCUMENTS_DIR = os.path.join(BACKEND_DIR, "data") # Новый путь - дир
 # --- Модели ---
 # Имена моделей Ollama
 # OLLAMA_EMBED_MODEL_NAME = "mxbai-embed-large:latest" # Убираем или комментируем
-HF_EMBED_MODEL_NAME = "jinaai/jina-embeddings-v3" # Новая модель эмбеддингов
-OLLAMA_LLM_MODEL_NAME = "gemma3:latest" # Замените на вашу модель, если нужно
+# HF_EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2" # Новая модель эмбеддингов
+HF_EMBED_MODEL_NAME = "jinaai/jina-embeddings-v3"
+OLLAMA_LLM_MODEL_NAME = "gemma3:1b-it-qat" # Замените на вашу модель, если нужно
 OLLAMA_BASE_URL = "http://localhost:11434"
 
 # Модель для реранкера
@@ -39,14 +40,14 @@ SECONDARY_CHUNK_SIZE = 512
 SECONDARY_CHUNK_OVERLAP = 50
 
 # --- Параметры LLM ---
-LLM_REQUEST_TIMEOUT = 300.0 # Таймаут запроса к LLM в секундах
+LLM_REQUEST_TIMEOUT = 600.0 # Таймаут запроса к LLM в секундах
 LLM_CONTEXT_WINDOW = 100000 # Размер контекстного окна LLM (подберите под вашу модель)
 
 # --- Параметры Реранкера ---
 RERANKER_MAX_LENGTH = 512 # Максимальная длина последовательности для реранкера
 
 # --- Общие параметры ---
-LOGGING_LEVEL = "DEBUG" # Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+LOGGING_LEVEL = "INFO" # Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 
 
 # --- Дополнительно: маппинг типов пенсий на фильтры ---

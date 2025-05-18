@@ -33,7 +33,17 @@ async function handleResponse<T>(response: Response): Promise<T> {
         let errorDetail = `Ошибка ${response.status}: ${response.statusText}`;
         try {
             const errorData = await response.json();
-            errorDetail = errorData.detail || JSON.stringify(errorData);
+            if (errorData.detail) {
+                if (Array.isArray(errorData.detail)) {
+                    errorDetail = errorData.detail.map((e: any) => JSON.stringify(e)).join('\n');
+                } else if (typeof errorData.detail === 'object') {
+                    errorDetail = JSON.stringify(errorData.detail);
+                } else {
+                    errorDetail = errorData.detail;
+                }
+            } else {
+                errorDetail = JSON.stringify(errorData);
+            }
         } catch (_jsonError) { /* ignore */ }
         console.error("API Error:", errorDetail);
         throw new Error(errorDetail); // Бросаем ошибку с деталями

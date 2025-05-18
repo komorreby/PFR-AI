@@ -14,6 +14,7 @@ import { CaseFormDataType } from '../CaseForm'; // Импортируем тип
 
 interface SummaryStepProps {
   formData: CaseFormDataType;
+  availablePensionTypes: { [key: string]: string; }; // Added prop
 }
 
 // Вспомогательная функция для отображения списков
@@ -33,12 +34,12 @@ const renderList = (items: string[] | undefined, title: string) => {
   );
 };
 
-function SummaryStep({ formData }: SummaryStepProps) {
+function SummaryStep({ formData, availablePensionTypes }: SummaryStepProps) {
   const { personal_data, work_experience, pension_points, benefits, documents, has_incorrect_document, disability, pension_type } = formData;
 
-  const pensionTypeLabel = pension_type === 'retirement_standard' ? 'Страховая по старости' :
-                            pension_type === 'disability_social' ? 'Социальная по инвалидности' :
-                            'Неизвестный тип';
+  const pensionTypeLabel = pension_type && availablePensionTypes[pension_type]
+    ? availablePensionTypes[pension_type]
+    : 'Неизвестный тип';
 
   return (
     <VStack spacing={6} align="stretch">

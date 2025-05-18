@@ -1,7 +1,7 @@
 import React from 'react';
 import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import DatePicker from "react-datepicker";
-import { parse } from 'date-fns';
+import { parse, isValid, format } from 'date-fns';
 import { IMaskInput } from 'react-imask';
 import {
     VStack,
@@ -83,23 +83,69 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                         name="personal_data.birth_date"
                         control={control}
                         rules={{ required: "Дата рождения обязательна" }}
-                        render={({ field }) => (
-                            <DatePicker
-                                selected={field.value ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
-                                onChange={(date: Date | null) => field.onChange(formatDateForInput(date))}
-                                locale="ru"
-                                showYearDropdown scrollableYearDropdown yearDropdownItemNumber={100}
-                                maxDate={new Date()}
-                                customInput={
-                                    <CustomDateInput
-                                        id={field.name}
-                                        fieldOnChange={field.onChange}
-                                        maxDate={new Date()}
-                                    />
+                        render={({ field }) => {
+                            const valueForParse = field.value;
+                            let dateForSelected = null;
+                            if (valueForParse && valueForParse.trim() !== '') {
+                                // Ожидаем, что field.value уже в формате yyyy-MM-dd благодаря DocumentUploadStep
+                                const parsed = parse(valueForParse, 'yyyy-MM-dd', new Date());
+                                console.log(
+                                    'DatePicker (birth_date): field.value =',
+                                    valueForParse,
+                                    '; Parsed = ', parsed,
+                                    '; IsValid = ', isValid(parsed)
+                                );
+                                if (isValid(parsed)) {
+                                    dateForSelected = parsed;
+                                } else {
+                                    // Дополнительная попытка распарсить как dd.MM.yyyy, если вдруг значение пришло в таком формате
+                                    const parsedAlt = parse(valueForParse, 'dd.MM.yyyy', new Date());
+                                    if (isValid(parsedAlt)) {
+                                        dateForSelected = parsedAlt;
+                                        // Важно: если мы успешно распарсили "dd.MM.yyyy",
+                                        // немедленно обновим значение в react-hook-form на правильный формат "yyyy-MM-dd"
+                                        // чтобы при следующем рендере оно уже было корректным.
+                                        // Это особенно актуально, если CustomDateInput не используется.
+                                        field.onChange(format(parsedAlt, 'yyyy-MM-dd'));
+                                    } else {
+                                        console.error(
+                                            'DatePicker (birth_date): parse returned Invalid Date for value (tried yyyy-MM-dd and dd.MM.yyyy):',
+                                            valueForParse
+                                        );
+                                    }
                                 }
-                                dateFormat="dd.MM.yyyy" placeholderText="ДД.ММ.ГГГГ" autoComplete="off" shouldCloseOnSelect={true}
-                            />
-                        )}
+                            } else {
+                                console.log(
+                                    'DatePicker (birth_date): field.value (',
+                                    valueForParse,
+                                    ') is null or empty, selected = null'
+                                );
+                            }
+
+                            return (
+                                <DatePicker
+                                    selected={dateForSelected} // selected ожидает объект Date или null
+                                    onChange={(date: Date | null) => {
+                                        // field.onChange ожидает строку в формате 'yyyy-MM-dd' или пустую строку
+                                        field.onChange(date && isValid(date) ? format(date, 'yyyy-MM-dd') : '');
+                                    }}
+                                    customInput={ // Добавляем CustomDateInput
+                                        <CustomDateInput
+                                            id={field.name}
+                                            fieldOnChange={(value: string) => field.onChange(value)} // CustomDateInput уже возвращает 'yyyy-MM-dd'
+                                            maxDate={new Date()}
+                                        />
+                                    }
+                                    locale="ru"
+                                    showYearDropdown scrollableYearDropdown yearDropdownItemNumber={100}
+                                    maxDate={new Date()} // Этот maxDate для DatePicker, CustomDateInput имеет свой
+                                    dateFormat="dd.MM.yyyy" // Этот dateFormat для отображения в DatePicker, если CustomInput не используется активно
+                                    placeholderText="ДД.ММ.ГГГГ" 
+                                    autoComplete="off" 
+                                    shouldCloseOnSelect={true}
+                                />
+                            );
+                        }}
                     />
                     <FormErrorMessage>{getErrorMessage('personal_data.birth_date')}</FormErrorMessage>
                 </FormControl>
@@ -160,7 +206,7 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             <Checkbox
                 isChecked={!!watchHasNameChangeInfo}
                 onChange={(e) => {
-                    setValue('personal_data.name_change_info', e.target.checked ? { old_full_name: '', date_changed: '' } : null, { shouldValidate: false });
+                    setValue('personal_data.name_change_info', e.target.checked ? { old_full_name: '', date_changed: null } : null, { shouldValidate: false });
                 }}
             >
                 Была смена ФИО?
@@ -183,7 +229,7 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                             rules={{ required: watchHasNameChangeInfo ? "Дата смены обязательна" : false }}
                             render={({ field }) => (
                                 <DatePicker
-                                    selected={field.value ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
+                                    selected={field.value && field.value.trim() !== '' ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
                                     onChange={(date: Date | null) => field.onChange(formatDateForInput(date))}
                                     locale="ru"
                                     showYearDropdown scrollableYearDropdown yearDropdownItemNumber={100}

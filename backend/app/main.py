@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, File, UploadFile, Form
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 # --- Добавляем импорты для RAG и Lifespan ---
@@ -18,19 +18,27 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 sys.path.insert(0, project_root) # Используем insert(0, ...) для приоритета
 # ----------------------------------------------------------------------------
 from app.models import CaseDataInput, ProcessOutput, ErrorOutput, CaseHistoryEntry, DocumentFormat, DisabilityInfo
-from error_classifier import ErrorClassifier # Теперь импорт из корня должен работать
+# from error_classifier import ErrorClassifier # Теперь импорт из корня должен работать
 # Импорты для БД
 from app.database import create_db_and_tables, get_db_connection, async_engine
 from sqlalchemy.ext.asyncio import AsyncConnection
 from app import crud # Импортируем crud
 from app import services # Импортируем services
-from typing import List, Optional, Tuple # Добавляем List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any # Добавляем List, Optional, Tuple, Dict, Any
 import traceback # <<< Добавляем traceback
+import logging # <<< Импорт logging ОДИН РАЗ ЗДЕСЬ >>>
+
+# Импортируем OCR модуль
+from app.ocr.document_processor import process_document
+from app.document_requirements import PENSION_DOCUMENT_REQUIREMENTS, PENSION_TYPE_CHOICES # Добавляем импорт
+
+# <<< Инициализируем логгер для этого модуля ЗДЕСЬ >>>
+logger = logging.getLogger(__name__)
 
 # --- Инициализация при старте через Lifespan ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.classifier = None # Инициализируем состояние для классификатора
+    # app.state.classifier = None # Инициализируем состояние для классификатора
     app.state.rag_engine = None # Инициализируем состояние для RAG движка
     print("Starting up...")
     # Создаем таблицы БД
@@ -49,14 +57,14 @@ async def lifespan(app: FastAPI):
     # -------------------------------------------
     
     # --- Инициализируем ErrorClassifier ЗДЕСЬ --- 
-    print("Initializing Error Classifier...")
-    try:
-        # Сохраняем экземпляр в состоянии приложения
-        app.state.classifier = ErrorClassifier()
-        print("Error Classifier initialized.")
-    except Exception as e:
-        print(f"!!! ERROR initializing ErrorClassifier: {e}")
-        app.state.classifier = None # Убедимся, что None, если ошибка
+    # print("Initializing Error Classifier...")
+    # try:
+    #     # Сохраняем экземпляр в состоянии приложения
+    #     app.state.classifier = ErrorClassifier()
+    #     print("Error Classifier initialized.")
+    # except Exception as e:
+    #     print(f"!!! ERROR initializing ErrorClassifier: {e}")
+    #     app.state.classifier = None # Убедимся, что None, если ошибка
     # -------------------------------------------
 
     print("Startup complete.")
@@ -99,7 +107,29 @@ class CaseAnalysisResponse(BaseModel):
     confidence_score: float = Field(ge=0, le=1)
 # ---------------------------------------
 
-# <<< ВОЗВРАЩАЕМ УДАЛЕННЫЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ >>>
+# Добавляем модели для OCR
+class OCRResponse(BaseModel):
+    extracted_text: str
+    extracted_fields: Dict[str, Any]
+
+# Модели для нового эндпоинта проверки комплекта документов
+class DocumentCheckInfo(BaseModel):
+    id: str
+    name: str
+    status: str # например, "Предоставлен (данные из OCR)", "Предоставлен (подтверждено пользователем)", "Не предоставлен (критично)", "Не предоставлен"
+    description: Optional[str] = None
+    condition_text: Optional[str] = None
+    is_critical: bool
+    ocr_data: Optional[Dict[str, Any]] = None
+
+class DocumentSetCheckResponse(BaseModel):
+    pension_type_key: str
+    pension_display_name: str
+    pension_description: str
+    overall_status: str # например, "Комплект предварительно полный", "Требуются критичные документы", "Требуются дополнительные документы"
+    checked_documents: List[DocumentCheckInfo]
+    missing_critical_documents: List[str]
+    missing_other_documents: List[str]
 
 # --- Вспомогательная функция для форматирования описания дела --- 
 def format_case_description_for_rag(case_data: CaseDataInput) -> str:
@@ -252,15 +282,18 @@ async def analyze_pension_case(case_data: CaseDataInput, req: Request):
 # Эндпоинт /process (ОБНОВЛЕННЫЙ)
 @app.post("/process", response_model=ProcessOutput)
 async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncConnection = Depends(get_db_connection)):
-    classifier = request.app.state.classifier
-    if classifier is None:
-        raise HTTPException(status_code=503, detail="Error Classifier service is not available.")
+    # classifier = request.app.state.classifier
+    # if classifier is None:
+    #     # <<< Используем logger здесь, если он будет инициализирован к этому моменту >>>
+    #     # Или можно оставить print, если logger используется только в OCR эндпоинте
+    #     logger.error("Error Classifier service is not available.") # Пример
+    #     raise HTTPException(status_code=503, detail="Error Classifier service is not available.")
 
     try:
         # 1. Получаем ошибки от ML классификатора
         case_data_dict_json_compatible = case_data.model_dump(mode='json')
-        ml_errors = classifier.classify_errors(case_data_dict_json_compatible)
-        ml_errors_output = [ErrorOutput(**error) for error in ml_errors]
+        # ml_errors = classifier.classify_errors(case_data_dict_json_compatible)
+        ml_errors_output = []
 
         # 2. Формируем описание дела для RAG
         case_description_full = format_case_description_for_rag(case_data)
@@ -340,8 +373,9 @@ async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncCo
         # ... (остальной код вызова crud.create_case и возврата ProcessOutput ...
 
     except Exception as e:
-        print(f"Error during processing: {e}")
-        traceback.print_exc()
+        # <<< Используем logger здесь >>>
+        logger.error(f"Error during processing: {e}", exc_info=True)
+        # traceback.print_exc() # Можно убрать, если logger.error с exc_info=True используется
         raise HTTPException(status_code=500, detail=f"Internal server error during processing: {str(e)}")
 
 # Новый эндпоинт для истории
@@ -405,4 +439,149 @@ async def download_document(
     except Exception as e:
         print(f"Error generating document for case {case_id}: {e}")
         # В продакшене здесь должно быть более детальное логгирование
-        raise HTTPException(status_code=500, detail=f"Internal server error generating document: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Internal server error generating document: {str(e)}")
+
+# Добавляем эндпоинт для OCR
+@app.post("/api/v1/ocr/upload_document", response_model=OCRResponse)
+async def upload_ocr_document(
+    file: UploadFile = File(...),
+    document_type: str = "passport"
+):
+    """
+    Загружает документ и извлекает из него текст и структурированные данные.
+    """
+    try:
+        contents = await file.read() # Чтение файла остается асинхронным
+        # Обрабатываем документ СИНХРОННО
+        result = process_document(contents, document_type, filename=file.filename)
+        
+        return OCRResponse(
+            extracted_text=result.get("extracted_text", ""), # Используем .get для безопасности
+            extracted_fields=result.get("extracted_fields", {}) # Используем .get для безопасности
+        )
+        
+    except Exception as e:
+        logger.error(f"Ошибка при обработке документа (upload_ocr_document): {str(e)}", exc_info=True)
+        # Если process_document вернул словарь с ошибкой, его можно передать напрямую
+        # Но FastAPI ожидает HTTPException для кодов ошибок, отличных от 200
+        # Однако, если ошибка уже отловлена и обернута в process_document, то здесь будет общий Exception
+        detail_message = str(e)
+        if isinstance(result, dict) and result.get("error"): # Проверяем, не вернул ли process_document свою ошибку
+             detail_message = result.get("error")
+
+        raise HTTPException(
+            status_code=500, # или 422, если ошибка связана с данными, а не сервером
+            detail=detail_message
+        )
+    # finally:
+        # UploadFile в FastAPI обычно закрывается автоматически
+        # await file.close() # Не нужно для синхронной обработки, если только чтение не вызвало проблем
+        pass 
+
+# --- ЭНДПОИНТ ДЛЯ ПРОВЕРКИ КОМПЛЕКТНОСТИ ДОКУМЕНТОВ ---
+@app.post("/api/v1/check_document_set", response_model=DocumentSetCheckResponse)
+async def check_document_set_endpoint(
+    pension_type_key: str = Form(...),
+    uploaded_document_ids: Optional[List[str]] = Form(None), # Список ID документов, "загруженных" пользователем
+    passport_file: Optional[UploadFile] = File(None) # Файл паспорта для OCR
+):
+    logger.info(f"Запрос на проверку комплекта документов для типа пенсии: {pension_type_key}")
+    logger.info(f"Предоставленные ID других документов: {uploaded_document_ids}")
+    logger.info(f"Файл паспорта: {passport_file.filename if passport_file else 'Не предоставлен'}")
+
+    if pension_type_key not in PENSION_DOCUMENT_REQUIREMENTS:
+        raise HTTPException(status_code=404, detail=f"Тип пенсии '{pension_type_key}' не найден.")
+
+    pension_config = PENSION_DOCUMENT_REQUIREMENTS[pension_type_key]
+    required_documents_config = pension_config.get("documents", [])
+    
+    checked_documents_list: List[DocumentCheckInfo] = []
+    missing_critical_docs_names: List[str] = []
+    missing_other_docs_names: List[str] = []
+    
+    # Обеспечим, чтобы uploaded_document_ids был списком, даже если пустой
+    processed_uploaded_ids = uploaded_document_ids[0].split(',') if uploaded_document_ids and uploaded_document_ids[0] else []
+    logger.info(f"Обработанные ID других документов: {processed_uploaded_ids}")
+
+    for doc_req in required_documents_config:
+        doc_id = doc_req["id"]
+        doc_name = doc_req["name"]
+        doc_is_critical = doc_req["is_critical"]
+        doc_ocr_type = doc_req.get("ocr_type")
+        doc_description = doc_req.get("description")
+        doc_condition_text = doc_req.get("condition_text")
+        
+        status = ""
+        ocr_data_for_doc = None
+        doc_found = False
+
+        if doc_ocr_type == "passport_rf" and passport_file:
+            try:
+                logger.info(f"Обработка паспорта ({passport_file.filename}) для документа '{doc_name}'...")
+                passport_bytes = await passport_file.read()
+                # Перед повторным чтением файла, если это тот же объект файла, нужно "перемотать" его
+                # Однако, FastAPI обычно создает новый объект UploadFile для каждого запроса, 
+                # или если файл передается один раз, его можно прочитать только один раз.
+                # Если бы мы читали passport_file несколько раз в одном запросе, потребовалось бы:
+                # await passport_file.seek(0)
+                ocr_result = process_document(passport_bytes, document_type="passport", filename=passport_file.filename)
+                if ocr_result.get("error"):
+                    status = f"Паспорт РФ предоставлен, ошибка OCR: {ocr_result.get('error')}"
+                    logger.error(f"Ошибка OCR для паспорта: {ocr_result.get('error')}")
+                else:
+                    ocr_data_for_doc = ocr_result.get("extracted_fields")
+                    status = "Предоставлен (данные из OCR)"
+                    logger.info(f"Паспорт РФ обработан, извлечено полей: {len(ocr_data_for_doc) if ocr_data_for_doc else 0}")
+                doc_found = True
+            except Exception as e:
+                logger.error(f"Критическая ошибка при OCR обработке паспорта {passport_file.filename}: {str(e)}", exc_info=True)
+                status = "Паспорт РФ предоставлен, ошибка при обработке файла OCR"
+                doc_found = True # Файл был, но обработка не удалась
+        elif doc_id in processed_uploaded_ids:
+            status = "Предоставлен (подтверждено пользователем)"
+            doc_found = True
+
+        if not doc_found:
+            if doc_is_critical:
+                status = "Не предоставлен (критично!)"
+                missing_critical_docs_names.append(doc_name)
+            else:
+                status = "Не предоставлен"
+                missing_other_docs_names.append(doc_name)
+        
+        checked_documents_list.append(DocumentCheckInfo(
+            id=doc_id,
+            name=doc_name,
+            status=status,
+            description=doc_description,
+            condition_text=doc_condition_text,
+            is_critical=doc_is_critical,
+            ocr_data=ocr_data_for_doc
+        ))
+
+    overall_status_text = ""
+    if missing_critical_docs_names:
+        overall_status_text = "Требуются критичные документы"
+    elif missing_other_docs_names:
+        overall_status_text = "Требуются дополнительные документы (не критичные)"
+    else:
+        overall_status_text = "Комплект предварительно полный"
+
+    logger.info(f"Проверка комплекта завершена. Общий статус: {overall_status_text}")
+    logger.info(f"Отсутствуют критичные документы: {missing_critical_docs_names}")
+    logger.info(f"Отсутствуют другие документы: {missing_other_docs_names}")
+
+    return DocumentSetCheckResponse(
+        pension_type_key=pension_type_key,
+        pension_display_name=pension_config.get("display_name", ""),
+        pension_description=pension_config.get("description", ""),
+        overall_status=overall_status_text,
+        checked_documents=checked_documents_list,
+        missing_critical_documents=missing_critical_docs_names,
+        missing_other_documents=missing_other_docs_names
+    )
+
+# --- ЭНДПОИНТ ДЛЯ ПОЛУЧЕНИЯ СПИСКА ТИПОВ ПЕНСИЙ (для фронтенда) ---
+@app.get("/api/v1/pension_types")
+async def get_pension_types():
+    return PENSION_TYPE_CHOICES 

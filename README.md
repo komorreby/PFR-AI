@@ -115,3 +115,55 @@
 
 *   См. `backend/README.md` для детальной информации о бэкенде.
 *   См. `frontend/README.md` для детальной информации о фронтенде.
+
+## OCR Функционал
+
+API поддерживает загрузку и обработку отсканированных документов через OCR (Optical Character Recognition).
+
+### Эндпоинты
+
+#### POST /api/v1/ocr/upload_document
+
+Загружает документ и извлекает из него текст и структурированные данные.
+
+**Параметры запроса:**
+- `file`: Изображение документа (multipart/form-data)
+- `document_type`: Тип документа (по умолчанию "passport")
+
+**Ответ:**
+```json
+{
+    "extracted_text": "Полный текст документа",
+    "extracted_fields": {
+        "last_name": "Фамилия",
+        "first_name": "Имя",
+        "middle_name": "Отчество",
+        "birth_date": "01.01.1990",
+        "snils": "123-456-789 01"
+    }
+}
+```
+
+**Требования:**
+- Установленный Tesseract OCR
+- Поддерживаемые форматы изображений: PNG, JPEG, TIFF
+
+### Установка Tesseract OCR
+
+#### Windows
+1. Скачайте установщик с [официального сайта](https://github.com/UB-Mannheim/tesseract/wiki)
+2. Установите, добавив путь в переменную PATH
+3. Установите русский языковой пакет
+
+#### Linux
+```bash
+sudo apt-get update
+sudo apt-get install tesseract-ocr
+sudo apt-get install tesseract-ocr-rus
+```
+
+#### macOS
+```bash
+brew install tesseract
+brew install tesseract-lang
+```

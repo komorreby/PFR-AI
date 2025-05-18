@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   FormControl,
   FormLabel,
@@ -5,35 +6,22 @@ import {
   Button,
   FormErrorMessage,
   Heading,
-  Icon
+  Alert,
+  AlertIcon
 } from '@chakra-ui/react';
-import { FaUserClock, FaWheelchair } from 'react-icons/fa';
-import { IconType } from 'react-icons';
 
 interface PensionTypeStepProps {
   selectedValue: string | null;
   onChange: (value: string) => void;
   errorMessage?: string;
+  availablePensionTypes: { [key: string]: string };
 }
-
-const pensionTypes: { value: string; label: string; icon: IconType }[] = [
-  {
-    value: 'retirement_standard',
-    label: 'Страховая пенсия по старости (общий случай)',
-    icon: FaUserClock,
-  },
-  {
-    value: 'disability_social',
-    label: 'Социальная пенсия по инвалидности',
-    icon: FaWheelchair,
-  },
-  // TODO: Добавить другие типы пенсий с их иконками
-];
 
 function PensionTypeStep({
   selectedValue,
   onChange,
   errorMessage,
+  availablePensionTypes,
 }: PensionTypeStepProps) {
   return (
     <FormControl isInvalid={!!errorMessage}>
@@ -41,27 +29,33 @@ function PensionTypeStep({
         Выберите тип назначаемой пенсии
       </Heading>
       <FormLabel>Тип пенсии:</FormLabel>
-      <Stack direction={['column', 'row']} spacing="4" align="stretch">
-        {pensionTypes.map((type) => (
+      <Stack direction={['column', 'row']} spacing="4" align="stretch" wrap="wrap">
+        {Object.entries(availablePensionTypes).map(([key, name]) => (
           <Button
-            key={type.value}
-            variant={selectedValue === type.value ? 'solid' : 'outline'}
+            key={key}
+            variant={selectedValue === key ? 'solid' : 'outline'}
             colorScheme="blue"
-            onClick={() => onChange(type.value)}
-            leftIcon={<Icon as={type.icon} />}
+            onClick={() => onChange(key)}
             size="lg"
             justifyContent="flex-start"
-            flex={1}
+            flex={{ base: "100%", md: "auto" }}
             textAlign="left"
             whiteSpace="normal"
             height="auto"
             py={3}
+            minWidth="200px"
           >
-            {type.label}
+            {name}
           </Button>
         ))}
       </Stack>
       {errorMessage && <FormErrorMessage>{errorMessage}</FormErrorMessage>}
+      {Object.keys(availablePensionTypes).length === 0 && (
+        <Alert status="warning" mt={4}>
+            <AlertIcon />
+            Нет доступных типов пенсий для выбора.
+        </Alert>
+      )}
     </FormControl>
   );
 }
