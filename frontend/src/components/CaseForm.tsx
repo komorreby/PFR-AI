@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-// import { isValid, differenceInYears } from 'date-fns';
-
-// Импорты Chakra UI (оставляем только нужные для обертки формы и навигации)
 import {
   Box, Button, Heading, Stepper, Step, StepIndicator, StepStatus,
   StepIcon, StepNumber, StepTitle, StepDescription, StepSeparator,
@@ -33,7 +30,6 @@ import DisabilityInfoStep from './formSteps/DisabilityInfoStep';
 import SummaryStep from './formSteps/SummaryStep';
 
 // Определяем типы для данных формы, основываясь на Pydantic моделях
-// (Упрощенно, без дат как Date объектов пока, используем string)
 type NameChangeInfoType = {
   old_full_name: string;
   date_changed: string;
@@ -83,17 +79,8 @@ export type CaseFormDataType = {
   disability?: DisabilityInfoType; // <<< Добавляем опциональное поле для данных об инвалидности
 };
 
-// Определяем тип для ошибок (соответствует ErrorOutput в бэкенде)
-export type ApiError = {
-  code: string;
-  description: string;
-  law: string;
-  recommendation: string;
-};
-
 // <<< Определяем тип для полного ответа от /process
 export type ProcessResult = {
-  errors: ApiError[];
   status: 'approved' | 'rejected';
   explanation: string;
 };
@@ -148,19 +135,6 @@ const getStepsForPensionType = (type: string | null): StepDefinition[] => {
       return [stepDefinitions.pensionType];
   }
 };
-
-// // Функция для вычисления возраста
-// const calculateAge = (birthDateString: string): number | string => {
-//   try {
-//     const birthDate = new Date(birthDateString);
-//     if (isValid(birthDate)) {
-//       return differenceInYears(new Date(), birthDate);
-//     }
-//   } catch (e) {
-//     // ignore
-//   }
-//   return 'неизвестно'; // Возвращаем строку, если дата некорректна
-// };
 
 function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -247,22 +221,9 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
         dataToSend.personal_data.name_change_info = null;
     }
 
-    // --- Преобразование данных для эндпоинта /process --- 
-    const payloadForProcess = JSON.parse(JSON.stringify(dataToSend)); // Снова глубокая копия
-    payloadForProcess.personal_data.full_name = [
-        payloadForProcess.personal_data.last_name,
-        payloadForProcess.personal_data.first_name,
-        payloadForProcess.personal_data.middle_name
-    ].filter(Boolean).join(' ');
-    // Удаляем раздельные поля
-    delete payloadForProcess.personal_data.last_name;
-    delete payloadForProcess.personal_data.first_name;
-    delete payloadForProcess.personal_data.middle_name;
-    // ----------------------------------------------------
-
     try {
-      // <<< Отправляем преобразованный payloadForProcess
-      const result = await processCase(payloadForProcess); 
+      // <<< Отправляем НЕ преобразованный dataToSend (который соответствует CaseDataInput) 
+      const result = await processCase(dataToSend); 
       onSubmitSuccess(result); // <<< Передаем весь результат
       setActiveStep(0); // Сбрасываем на первый шаг после успешной отправки
       setSelectedPensionType(null); // Сбрасываем тип пенсии

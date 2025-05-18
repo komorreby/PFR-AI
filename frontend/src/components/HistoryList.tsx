@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ApiError } from './CaseForm'; // Используем тип ошибки
 import {
     Box, 
     Heading, 
@@ -28,7 +27,6 @@ type HistoryPersonalDataType = {
 export type HistoryEntry = {
     id: number;
     personal_data: HistoryPersonalDataType; // Используем упрощенный тип
-    errors: ApiError[];
 };
 
 // Пропсы компонента
@@ -92,10 +90,10 @@ function HistoryList({ history, onDownload }: HistoryListProps) {
                              <CardFooter pt={2} display="flex" justifyContent="space-between" alignItems="center"> 
                                  <Tag 
                                    size="sm" 
-                                   colorScheme={entry.errors.length > 0 ? 'red' : 'green'}
+                                   colorScheme={'green'}
                                    variant="solid"
                                  >
-                                    Ошибок: {entry.errors.length}
+                                    Статус: Ок
                                  </Tag>
                                  <HStack spacing={2}> 
                                     <Button 

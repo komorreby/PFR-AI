@@ -1,8 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator # Изменяем импорт
 from typing import List, Optional
 from datetime import date
 from enum import Enum
-from pydantic import validator
 
 # Enum для формата документа
 class DocumentFormat(str, Enum):
@@ -14,8 +13,9 @@ class DisabilityInfo(BaseModel):
     date: date # Дата установления
     cert_number: Optional[str] = None # Номер справки МСЭ (опционально)
 
-    @validator('group')
-    def check_group_value(cls, v):
+    @field_validator('group') # Обновляем декоратор
+    @classmethod # Добавляем classmethod
+    def check_group_value(cls, v: str): # Можно добавить тип для v
         allowed_groups = {"1", "2", "3", "child"}
         if v not in allowed_groups:
             raise ValueError(f'Недопустимое значение группы инвалидности: {v}. Допустимые: {allowed_groups}')
@@ -30,11 +30,12 @@ class PersonalData(BaseModel):
     first_name: str
     middle_name: Optional[str] = None # Отчество опционально
     birth_date: date
-    snils: str # TODO: Add validation for SNILS format
-    gender: str # TODO: Use Enum? (e.g., 'male', 'female')
+    snils: str
+    gender: str
     citizenship: str
     name_change_info: Optional[NameChangeInfo] = None
-    dependents: int = Field(ge=0) # ge=0 means greater than or equal to 0
+    dependents: int = Field(ge=0)
+    
 
 class WorkRecord(BaseModel):
     organization: str
@@ -48,7 +49,7 @@ class WorkExperience(BaseModel):
     records: List[WorkRecord] = []
 
 class CaseDataInput(BaseModel):
-    pension_type: str
+    pension_type: str # TODO: Возможно, тоже Enum
     personal_data: PersonalData
     work_experience: WorkExperience
     pension_points: float = Field(ge=0)
@@ -56,22 +57,27 @@ class CaseDataInput(BaseModel):
     documents: List[str] = []
     has_incorrect_document: bool = False
     disability: Optional[DisabilityInfo] = None
-    # Note: This model expects structured JSON input, not form data like the Flask app.
-    # The React frontend will need to send data in this JSON format.
 
-class ErrorOutput(BaseModel):
-    code: str
-    description: str
-    law: str
-    recommendation: str
+    @field_validator('pension_type')
+    @classmethod
+    def validate_pension_type(cls, v: str):
+        from .rag_core import config as rag_config # Импорт здесь, чтобы избежать циклического импорта
+        if v not in rag_config.PENSION_TYPE_MAP:
+            raise ValueError(f"Недопустимый тип пенсии: {v}. Допустимые: {list(rag_config.PENSION_TYPE_MAP.keys())}")
+        return v
 
 class ProcessOutput(BaseModel):
-    errors: List[ErrorOutput]
-    status: str
+    case_id: int
+    final_status: str # <--- Переименовано c status
     explanation: str
+    confidence_score: float # <--- Добавлено
 
 # Новая модель для представления записи в истории
 class CaseHistoryEntry(BaseModel):
     id: int
-    personal_data: dict # Оставляем как dict, т.к. структура уже определена в PersonalData
-    errors: List[ErrorOutput] # Используем ErrorOutput для согласованности 
+    created_at: date # Или datetime, если время тоже важно. Пока оставим date.
+    pension_type: str
+    final_status: str
+    final_explanation: Optional[str] = None 
+    rag_confidence: Optional[float] = None
+    personal_data: Optional[PersonalData] = None

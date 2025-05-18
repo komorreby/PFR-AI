@@ -3,6 +3,7 @@ import os
 import glob
 import json
 import logging
+import re # <--- ДОБАВЛЕН ИМПОРТ
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, date
 
@@ -15,60 +16,42 @@ from llama_index.core import (
 )
 from llama_index.core.schema import NodeWithScore, TextNode
 from llama_index.core.retrievers import BaseRetriever
-from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.core.vector_stores import MetadataFilter, ExactMatchFilter, MetadataFilters
 from sentence_transformers import CrossEncoder
 import torch
+from cachetools import TTLCache # Импорт для кэширования
 
-# Сначала импортируем config, так как он нужен для настройки логгера
 from . import config
-# Затем импортируем остальные компоненты
-from . import document_parser # Используем новый модуль парсера
+from . import document_parser
+# Ожидаемые методы KnowledgeGraphBuilder:
+# - __init__(self, uri: str, user: str, password: str, db_name: Optional[str] = None)
+# - add_nodes_and_edges(self, nodes: List[Dict], edges: List[Dict]) -> None: Добавляет узлы и ребра в граф Neo4j.
+# - get_article_enrichment_data(self, article_id: str) -> Optional[Dict[str, Any]]: Возвращает данные обогащения для статьи.
+# - close(self) -> None: Закрывает соединение с Neo4j.
+# - _clean_neo4j_database(self, graph_builder: KnowledgeGraphBuilder) -> None: (этот метод в engine.py, но он вызывает методы graph_builder._driver.session)
+from ..graph_builder import KnowledgeGraphBuilder
+from .document_parser import extract_graph_data_from_document
 
-# Настройка логирования
-# Настраиваем базовый конфиг, чтобы логгер был доступен сразу
 logging.basicConfig(level=config.LOGGING_LEVEL, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Локальные импорты (теперь можно импортировать после логгера и config)
-try:
-    from .loader import load_documents
-    from .embeddings import JinaV3Embedding
-except ImportError as e:
-    # Эта секция предназначена для возможности запуска engine.py напрямую как скрипта.
-    # Если ошибка возникает при запуске основного приложения (main.py), 
-    # скорее всего, проблема в зависимостях для embeddings.py или loader.py.
-    # Проверьте установку: pip install sentence-transformers torch einops "numpy<2" transformers unstructured[local-inference]
-    logger.error(f"Ошибка импорта в engine.py (возможно, запуск как скрипт или проблема зависимостей): {e}", exc_info=True)
-    # Попытка импорта для случая запуска как скрипта
-    try:
-        from loader import load_documents
-        from embeddings import JinaV3Embedding
-        logger.warning("Импорты для запуска engine.py как скрипта выполнены.")
-    except ModuleNotFoundError:
-        logger.critical("Не удалось выполнить импорты ни как часть пакета, ни как скрипт. Проверьте структуру проекта и зависимости.")
-        raise
+# Основные импорты из текущего пакета
+from .loader import load_documents
+from .embeddings import JinaV3Embedding
 
-# Используем относительный импорт, если engine.py находится внутри app
+# Импорт моделей Pydantic из родительского пакета app
 try:
-    from ..models import CaseDataInput # Если engine.py в app/rag_core
+    from ..models import CaseDataInput
 except ImportError:
-    # Фоллбэк, если структура иная или для тестов
-    try: 
-        from app.models import CaseDataInput
-    except ImportError:
-         logger.error("Не удалось импортировать CaseDataInput. Проверьте структуру проекта.")
-         # Можно определить заглушку, если необходимо для работы остального кода
-         class CaseDataInput: pass 
+    logger.error("Не удалось импортировать CaseDataInput из ..models. Проверьте структуру проекта и PYTHONPATH.", exc_info=True)
+    # Если engine.py когда-либо будет запускаться как главный скрипт (что нетипично для FastAPI-приложения)
+    # и PYTHONPATH будет указывать на директорию выше 'app', то можно попробовать импорт из 'app.models'
+    # Но в рамках FastAPI-приложения, работающего из корня 'backend', '..models' должно работать.
+    # Поднятие исключения здесь заставит обратить внимание на проблему конфигурации/структуры.
+    raise RuntimeError("Критическая ошибка импорта: CaseDataInput не найден. Проверьте структуру проекта.")
 
-# # --- Старое место настройки логгера --- 
-# # Настройка логирования
-# # Настраиваем базовый конфиг, чтобы логгер был доступен сразу
-# logging.basicConfig(level=config.LOGGING_LEVEL, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# logger = logging.getLogger(__name__)
 
-# <<< Вспомогательная функция для расчета возраста >>>
 def calculate_age(birth_date: date) -> int:
     """Рассчитывает возраст на текущую дату."""
     today = date.today()
@@ -84,54 +67,80 @@ class PensionRAG:
     def __init__(self):
         logger.info("Initializing PensionRAG engine...")
         
-        # 1. Загружаем конфигурацию (через импортированный модуль)
         self.config = config 
-        # Устанавливаем уровень логирования из конфига динамически (если нужно переопределить basicConfig)
-        # logging.getLogger().setLevel(self.config.LOGGING_LEVEL) 
         
-        # 2. Инициализируем компоненты
         self.llm = self._initialize_llm()
         self.embed_model = self._initialize_embedder()
-        self.reranker_model = self._initialize_reranker()
+        self.reranker = self._initialize_reranker()
+        self.retrieval_cache = TTLCache(maxsize=100, ttl=3600) # Кэш на 100 записей, TTL 1 час
         
-        # 3. Загружаем или создаем индекс
-        self.index = self._load_or_create_index()
+        # Инициализируем KnowledgeGraphBuilder один раз
+        self.graph_builder: Optional[KnowledgeGraphBuilder] = None # Типизация для ясности
+        try:
+            self.graph_builder = KnowledgeGraphBuilder(
+                uri=self.config.NEO4J_URI,
+                user=self.config.NEO4J_USER,
+                password=self.config.NEO4J_PASSWORD,
+                db_name=self.config.NEO4J_DATABASE
+            )
+            logger.info("KnowledgeGraphBuilder initialized.")
+        except Exception as e:
+            logger.error(f"Failed to initialize KnowledgeGraphBuilder: {e}", exc_info=True)
+            # В зависимости от критичности, можно либо пробросить исключение, либо работать без графа
+            # self.graph_builder = None # Уже None, но для ясности
+            # raise RuntimeError(f"Could not initialize KnowledgeGraphBuilder: {e}") from e
+            logger.warning("PensionRAG will operate without KnowledgeGraphBuilder due to initialization error.")
+
+        self.index = self._load_or_create_index() # Передаем self.graph_builder внутрь
         
         logger.info("PensionRAG engine initialized successfully.")
 
     def _initialize_llm(self) -> Ollama:
-        """Инициализирует и возвращает LLM модель Ollama."""
-        logger.debug("Initializing LLM...")
+        """Инициализирует и возвращает экземпляр LLM (Ollama)."""
+        logger.debug(
+            f"Initializing LLM. Model: {self.config.OLLAMA_LLM_MODEL_NAME}, "
+            f"Base URL: {self.config.OLLAMA_BASE_URL}"
+        )
         try:
             llm = Ollama(
                 model=self.config.OLLAMA_LLM_MODEL_NAME,
                 base_url=self.config.OLLAMA_BASE_URL,
                 request_timeout=self.config.LLM_REQUEST_TIMEOUT,
+                # Дополнительные параметры можно передать здесь, если Ollama их поддерживает
+                # Например, temperature, top_p и т.д. через options или напрямую, если есть
             )
-            # Опционально: проверка соединения/доступности модели
-            # llm.complete("Test prompt") 
-            logger.info(f"LLM initialized: Ollama (model={self.config.OLLAMA_LLM_MODEL_NAME}, base_url={self.config.OLLAMA_BASE_URL})")
+            # Попытка простого запроса для проверки доступности
+            try:
+                # Проверяем, есть ли у модели метод .show() или аналогичный для проверки
+                # Вместо реального запроса, который может быть долгим, можно проверить доступность сервиса
+                # Например, через GET запрос к base_url/api/tags, если это возможно без доп. библиотек.
+                # Пока что оставим как есть, предполагая, что сама инициализация вызовет ошибку если URL недоступен.
+                pass # llm.show(self.config.OLLAMA_LLM_MODEL_NAME) # Это может не работать или быть не тем
+            except Exception as check_e:
+                 logger.warning(f"LLM service at {self.config.OLLAMA_BASE_URL} might be available, but model check failed: {check_e}")
+
+            logger.info(f"LLM initialized successfully. Model: {self.config.OLLAMA_LLM_MODEL_NAME}")
             return llm
         except Exception as e:
-            logger.error(f"Failed to initialize Ollama LLM: {e}", exc_info=True)
-            raise RuntimeError(f"Could not initialize LLM. Ensure Ollama is running and model '{self.config.OLLAMA_LLM_MODEL_NAME}' is available. Error: {e}") from e
+            logger.error(
+                f"Failed to initialize LLM. Model: {self.config.OLLAMA_LLM_MODEL_NAME}, "
+                f"Base URL: {self.config.OLLAMA_BASE_URL}, Error: {str(e)}",
+                exc_info=True # Добавляем информацию о трассировке стека
+            )
+            # Пробрасываем исключение дальше, чтобы приложение не запустилось с неработающим LLM
+            raise RuntimeError(f"Could not initialize LLM '{self.config.OLLAMA_LLM_MODEL_NAME}' at '{self.config.OLLAMA_BASE_URL}': {e}") from e
 
     def _initialize_embedder(self) -> JinaV3Embedding:
         """Инициализирует и возвращает модель эмбеддингов Jina V3 из Hugging Face."""
         logger.debug("Initializing Jina V3 Embeddings model...")
-        # Определяем устройство (предпочитаем GPU, если доступно)
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         logger.info(f"Using device for Jina V3 embeddings: {device}")
         
         try:
-            # Используем наш кастомный класс
             embed_model = JinaV3Embedding(
                 model_name=self.config.HF_EMBED_MODEL_NAME,
-                device=device, # Передаем выбранное устройство
-                # embed_batch_size можно взять из config, если нужно настроить
-                # callback_manager=... # Если используется
+                device=device,
             )
-            # embed_model инициализируется и логирует внутри своего __init__
             logger.info(f"Embeddings model initialized: {embed_model.class_name()} (model_name={self.config.HF_EMBED_MODEL_NAME}) on {device}")
             return embed_model
         except Exception as e:
@@ -152,14 +161,13 @@ class PensionRAG:
                 self.config.RERANKER_MODEL_NAME, 
                 max_length=self.config.RERANKER_MAX_LENGTH,
                 device=device,
-                # Можно добавить trust_remote_code=True, если модель требует
             )
             logger.info(f"Reranker model initialized: CrossEncoder (model_name={self.config.RERANKER_MODEL_NAME}) on {device}")
             return reranker_model
         except Exception as e:
             logger.error(f"Failed to initialize Reranker model '{self.config.RERANKER_MODEL_NAME}': {e}", exc_info=True)
             logger.warning("Proceeding without reranker due to initialization error.")
-            return None # Реранкер опционален
+            return None
 
     def _check_and_handle_reindex(self) -> bool:
         """
@@ -196,7 +204,6 @@ class PensionRAG:
         if force_reindex:
             logger.info(f"Reindexing required. Removing old index files from {persist_dir}...")
             deleted_count = 0
-            # Удаляем все .json файлы, связанные с LlamaIndex хранилищами
             index_files = glob.glob(os.path.join(persist_dir, "*store.json"))
             for f_path in index_files:
                  try:
@@ -235,115 +242,148 @@ class PensionRAG:
         except Exception as e:
             logger.error(f"Error writing index parameters to {params_log_file}: {e}", exc_info=True)
 
-    def _parse_documents(self) -> List[TextNode]:
-         """Загружает документы и парсит их на узлы (TextNode), используя document_parser."""
+    def _parse_documents(self, graph_builder_instance: Optional[KnowledgeGraphBuilder]) -> List[TextNode]:
+         """Загружает документы и парсит их на узлы (TextNode), используя document_parser.
+         Также извлекает данные для графа и загружает их в Neo4j, если graph_builder_instance предоставлен.
+         """
+         logger.info(f"Starting _parse_documents. Will use graph_builder: {graph_builder_instance is not None}")
          logger.info(f"Loading documents from {self.config.DOCUMENTS_DIR}...")
-         try:
-             # Используем функцию загрузки из loader.py
-             raw_documents = load_documents(self.config.DOCUMENTS_DIR) 
-             if not raw_documents:
-                  logger.warning(f"No documents found in {self.config.DOCUMENTS_DIR}.")
-                  return []
-             logger.info(f"Loaded {len(raw_documents)} raw document(s).")
-         except Exception as e:
-             logger.error(f"Failed to load documents: {e}", exc_info=True)
-             raise RuntimeError(f"Could not load documents from {self.config.DOCUMENTS_DIR}: {e}") from e
+         
+         raw_documents = load_documents(self.config.DOCUMENTS_DIR)
+         all_parsed_nodes: List[TextNode] = []
 
-         all_nodes = []
-         logger.info("Parsing documents into nodes using hierarchical parser...")
-         for doc in raw_documents:
+         if not raw_documents:
+             logger.warning(f"No documents found in {self.config.DOCUMENTS_DIR}. Index will be empty if it's being created.")
+             return []
+
+         logger.info(f"Loaded {len(raw_documents)} raw documents for parsing.")
+
+         for i, doc in enumerate(raw_documents):
+             doc_file_name = doc.metadata.get("file_name", f"unknown_doc_{i}")
+             logger.debug(f"Processing raw document: {doc_file_name}")
+             
              try:
-                 # Используем функцию из модуля document_parser
-                 nodes_for_doc = document_parser.parse_document_hierarchical(doc)
-                 all_nodes.extend(nodes_for_doc)
+                 parsed_nodes_from_doc = document_parser.parse_document_hierarchical(doc)
+                 logger.info(f"Successfully parsed {len(parsed_nodes_from_doc)} TextNodes from {doc_file_name}.")
+                 all_parsed_nodes.extend(parsed_nodes_from_doc)
              except Exception as e:
-                 file_name = doc.metadata.get("file_name", "unknown")
-                 logger.error(f"Failed to parse document {file_name}: {e}", exc_info=True)
-                 # Решаем, пропустить ли документ или остановить процесс
-                 # continue 
-                 raise RuntimeError(f"Failed to parse document {file_name}: {e}") from e
+                 logger.error(f"Error parsing document {doc_file_name} with hierarchical parser: {e}", exc_info=True)
+                 continue
 
-         logger.info(f"Total nodes parsed: {len(all_nodes)}. Parser version: {self.config.METADATA_PARSER_VERSION}")
-         if not all_nodes:
-              logger.warning("No nodes were generated after parsing all documents.")
-         return all_nodes
+             if graph_builder_instance:
+                 logger.info(f"Extracting graph data for Neo4j from document: {doc_file_name}")
+                 try:
+                     nodes_data, edges_data = extract_graph_data_from_document(
+                         parsed_nodes=parsed_nodes_from_doc,
+                         doc_metadata=doc.metadata,
+                         pension_type_map=self.config.PENSION_KEYWORD_MAP,
+                         pension_type_filters=self.config.PENSION_TYPE_FILTERS
+                     )
+                     
+                     if nodes_data or edges_data:
+                         logger.debug(f"Extracted {len(nodes_data)} nodes and {len(edges_data)} edges for graph from {doc_file_name}. Adding to Neo4j...")
+                         graph_builder_instance.add_nodes_and_edges(nodes_data, edges_data)
+                         logger.info(f"Successfully added graph data from {doc_file_name} to Neo4j.")
+                     else:
+                         logger.info(f"No graph nodes or edges extracted from {doc_file_name}.")
+                 except Exception as e:
+                     logger.error(f"Error extracting/adding graph data for {doc_file_name}: {e}", exc_info=True)
+             else:
+                 logger.debug(f"Graph builder instance is None, skipping graph data extraction for {doc_file_name}.")
+         
+         logger.info(f"Finished parsing all documents. Total TextNodes created: {len(all_parsed_nodes)}")
+         return all_parsed_nodes
 
     def _load_or_create_index(self) -> VectorStoreIndex:
         """
-        Загружает существующий индекс или создает новый.
-        Использует _check_and_handle_reindex для определения необходимости пересоздания.
-        Важно: Передает модель эмбеддингов при загрузке и создании.
+        Загружает существующий индекс LlamaIndex из хранилища или создает новый,
+        если он не найден, устарел или требуется переиндексация.
+        Использует self.graph_builder, если он доступен.
         """
         persist_dir = self.config.PERSIST_DIR
-        needs_reindex = self._check_and_handle_reindex()
+        force_reindex = self._check_and_handle_reindex()
+        # graph_builder_instance больше не создается здесь локально
 
-        # Попытка загрузки, если не требуется принудительная переиндексация и папка существует
-        if not needs_reindex and os.path.exists(persist_dir) and os.path.exists(os.path.join(persist_dir, "docstore.json")):
+        if not force_reindex and (
+           os.path.exists(os.path.join(persist_dir, "docstore.json")) and 
+           os.path.exists(os.path.join(persist_dir, "default__vector_store.json"))
+        ):
+            logger.info(f"Loading existing LlamaIndex index from {persist_dir}...")
             try:
-                logger.info(f"Attempting to load existing index from {persist_dir}...")
                 storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
-                # ! ВАЖНО: Передаем текущую модель эмбеддингов при загрузке !
                 index = load_index_from_storage(
-                    storage_context,
-                    embed_model=self.embed_model 
+                    storage_context, 
+                    embed_model=self.embed_model
                 )
-                logger.info("Existing index loaded successfully.")
-                # Дополнительная проверка: убедиться, что модель в загруженном индексе совпадает
-                # (LlamaIndex может не проверять это строго при загрузке)
-                # if hasattr(index.embed_model, 'model_name') and index.embed_model.model_name != self.embed_model.model_name:
-                #     logger.warning(f"Loaded index uses different embedding model ('{index.embed_model.model_name}') than configured ('{self.embed_model.model_name}'). Rebuilding index.")
-                #     needs_reindex = True # Форсируем перестроение, если модель не совпадает
-                # else:
-                #     return index # Модель совпадает, возвращаем загруженный индекс
-                return index # Пока просто возвращаем, надеясь, что LlamaIndex обработает
-
+                logger.info("LlamaIndex Index loaded successfully from storage.")
+                return index
             except Exception as e:
-                logger.warning(f"Failed to load index from {persist_dir}: {e}. Will rebuild index.", exc_info=True)
-                # Если загрузка не удалась, удаляем потенциально поврежденные файлы и форсируем переиндексацию
-                if not needs_reindex: # Проверяем, чтобы не вызывать дважды подряд
-                    self._check_and_handle_reindex() # Вызываем еще раз, т.к. ошибка могла быть из-за несовместимости
-                needs_reindex = True # Устанавливаем флаг для перехода к созданию
-        
-        # Создание нового индекса
-        logger.info("Creating new index...")
+                logger.error(f"Failed to load LlamaIndex index from storage: {e}. Will attempt to re-create.", exc_info=True)
+                self._check_and_handle_reindex() 
+                force_reindex = True
+
+        logger.info("Creating new LlamaIndex index...")
         try:
-            nodes = self._parse_documents()
-            if not nodes:
-                logger.error("No nodes were parsed from documents. Cannot create index.")
-                # Возможно, стоит вернуть пустой индекс или поднять исключение
-                raise RuntimeError("Failed to create index: no nodes parsed.")
-                
-            storage_context = StorageContext.from_defaults()
-            # ! ВАЖНО: Передаем текущую модель эмбеддингов при создании !
-            index = VectorStoreIndex(
-                nodes,
-                embed_model=self.embed_model, # <--- Передаем здесь
-                storage_context=storage_context,
-                show_progress=True # Показываем прогресс эмбеддинга
-            )
-            logger.info(f"New index created successfully with {len(nodes)} nodes.")
+            # graph_builder_instance уже self.graph_builder
+            if self.graph_builder and force_reindex:
+                logger.info("Cleaning Neo4j database before rebuilding the graph...")
+                self._clean_neo4j_database(self.graph_builder) # Используем self.graph_builder
+                logger.info("Neo4j database cleaned successfully.")
             
-            logger.info(f"Persisting index to {persist_dir}...")
+            nodes = self._parse_documents(graph_builder_instance=self.graph_builder) # Используем self.graph_builder
+            
+            if not nodes:
+                logger.warning("No nodes were parsed from documents. Cannot create LlamaIndex index.")
+                # Закрытие graph_builder здесь не нужно, т.к. он управляется жизненным циклом PensionRAG
+                raise RuntimeError("Cannot create index: No text nodes parsed from documents.")
+
+            logger.info(f"Building LlamaIndex VectorStoreIndex with {len(nodes)} TextNode(s).")
+            index = VectorStoreIndex(
+                nodes, 
+                embed_model=self.embed_model,
+            )
+            logger.info("LlamaIndex VectorStoreIndex built successfully.")
+            
+            logger.debug(f"Persisting LlamaIndex index to {persist_dir}...")
             os.makedirs(persist_dir, exist_ok=True)
             index.storage_context.persist(persist_dir=persist_dir)
-            logger.info("Index persisted successfully.")
+            logger.info(f"LlamaIndex Index persisted to {persist_dir}.")
             
-            # Записываем параметры ПОСЛЕ успешного создания и сохранения индекса
             self._write_index_params()
             
             return index
-
         except Exception as e:
-            logger.error(f"Failed to create or persist index: {e}", exc_info=True)
-            raise RuntimeError(f"Could not create or persist index: {e}") from e
+            logger.error(f"Fatal error during LlamaIndex index creation: {e}", exc_info=True)
+            # Закрытие self.graph_builder здесь не требуется, это делается при уничтожении PensionRAG
+            raise RuntimeError(f"Could not create LlamaIndex index: {e}") from e
 
-    # --- Методы для выполнения запроса (пока плейсхолдеры) ---
+    def _clean_neo4j_database(self, graph_builder: KnowledgeGraphBuilder) -> None:
+        """
+        Очищает базу данных Neo4j перед созданием нового графа.
+        """
+        if not graph_builder or not hasattr(graph_builder, '_driver'):
+            logger.error("Cannot clean Neo4j database: graph_builder not initialized properly.")
+            return
+        
+        try:
+            with graph_builder._driver.session(database=graph_builder._db_name) as session:
+                session.run("MATCH ()-[r]-() DELETE r")
+                logger.debug("All relationships deleted from Neo4j database.")
+                
+                session.run("MATCH (n) DELETE n")
+                logger.debug("All nodes deleted from Neo4j database.")
+                
+                logger.info("Neo4j database successfully cleaned.")
+        except Exception as e:
+            logger.error(f"Error cleaning Neo4j database: {e}", exc_info=True)
+            logger.warning("Continuing with graph building despite database cleaning error.")
 
-    def _get_retriever(self, filters: Optional[List[MetadataFilter]] = None) -> BaseRetriever:
+    def _get_retriever(self, filters: Optional[List[MetadataFilter]] = None, similarity_top_k: Optional[int] = None) -> BaseRetriever:
          """Создает и возвращает ретривер для индекса с опциональными фильтрами."""
-         logger.debug(f"Creating retriever with similarity_top_k={self.config.INITIAL_RETRIEVAL_TOP_K} and filters={'yes' if filters else 'no'}")
+         top_k = similarity_top_k if similarity_top_k is not None else self.config.INITIAL_RETRIEVAL_TOP_K
+         logger.debug(f"Creating retriever with similarity_top_k={top_k} and filters={'yes' if filters else 'no'}")
          return self.index.as_retriever(
-             similarity_top_k=self.config.INITIAL_RETRIEVAL_TOP_K,
+             similarity_top_k=top_k,
              filters=filters
          )
          
@@ -352,9 +392,7 @@ class PensionRAG:
         Определяет фильтры метаданных на основе типа пенсии и текста запроса.
         Возвращает (список фильтров, флаг применения фильтров).
         """
-        # <<< Убираем предупреждение >>>
-        # logger.warning("_apply_filters method is not fully implemented yet.")
-        
+       
         if not pension_type or pension_type not in self.config.PENSION_TYPE_FILTERS:
             logger.debug("No valid pension type provided or found in config, skipping filters.")
             return [], False
@@ -363,14 +401,11 @@ class PensionRAG:
         query_text = query_bundle.query_str.lower()
         condition_keywords = filter_config.get('condition_keywords', [])
         
-        # Логика применения фильтров на основе ключевых слов
         apply = True
         if condition_keywords:
-             # Фильтр применяется ТОЛЬКО если есть ключевое слово
              if not any(keyword in query_text for keyword in condition_keywords):
                  logger.debug(f"Query does not contain required keywords {condition_keywords} for '{pension_type}', skipping filters.")
                  apply = False
-        # Добавить логику для 'exclude_keywords', если нужно
 
         if apply and filter_config.get('filters'):
             metadata_filter_list = [
@@ -380,49 +415,38 @@ class PensionRAG:
             logger.info(f"Applying metadata filters for pension type '{pension_type}': {filter_config['filters']}")
             return MetadataFilters(filters=metadata_filter_list), True
         else:
-             # Либо не было фильтров в конфиге, либо не выполнилось условие по словам
              return [], False
 
-
-    def _retrieve_nodes(self, query_bundle: QueryBundle, pension_type: Optional[str]) -> List[NodeWithScore]:
-        """Выполняет поиск узлов (retrieval) с фильтрами и без, объединяет результаты, отдавая приоритет фильтрованным."""
-        
-        logger.info(f"Retrieving nodes for query: '{query_bundle.query_str[:100]}...'")
+    def _perform_actual_retrieval(self, query_bundle: QueryBundle, pension_type: Optional[str], effective_config: Dict) -> List[NodeWithScore]:
+        """Этот метод содержит оригинальную логику _retrieve_nodes."""
+        logger.info(f"Performing actual retrieval for query: '{query_bundle.query_str[:100]}...'")
         target_filters, filters_applied = self._apply_filters(query_bundle, pension_type)
         
-        # Поиск с фильтрами (если они применимы)
         filtered_nodes: List[NodeWithScore] = []
+        filtered_top_k = effective_config['FILTERED_RETRIEVAL_TOP_K']
+        initial_top_k = effective_config['INITIAL_RETRIEVAL_TOP_K']
+
         if filters_applied:
             try:
-                # <<< Используем self.config.FILTERED_RETRIEVAL_TOP_K для фильтрованного поиска >>>
-                logger.debug(f"Creating filtered retriever with similarity_top_k={self.config.FILTERED_RETRIEVAL_TOP_K} and filters=yes")
-                filtered_retriever = self.index.as_retriever(
-                    similarity_top_k=self.config.FILTERED_RETRIEVAL_TOP_K, # <-- Новый параметр
-                    filters=target_filters
-                )
+                logger.debug(f"Creating filtered retriever with similarity_top_k={filtered_top_k} and filters=yes")
+                filtered_retriever = self._get_retriever(filters=target_filters, similarity_top_k=filtered_top_k)
                 filtered_nodes = filtered_retriever.retrieve(query_bundle)
-                logger.debug(f"Retrieved {len(filtered_nodes)} nodes with filters (asked for {self.config.FILTERED_RETRIEVAL_TOP_K}).")
+                logger.debug(f"Retrieved {len(filtered_nodes)} nodes with filters (asked for {filtered_top_k}).")
                 for node in filtered_nodes:
                      node.metadata['retrieval_score'] = node.score
             except Exception as e:
                  logger.error(f"Error retrieving nodes with filters: {e}", exc_info=True)
-                 filtered_nodes = [] # Продолжаем без фильтрованных узлов в случае ошибки
+                 filtered_nodes = []
         else:
             logger.debug("Filters were not applied for this query.")
         
-        # Основной поиск (без фильтров)
-        # <<< Используем self.config.INITIAL_RETRIEVAL_TOP_K для базового поиска >>>
-        logger.debug(f"Creating base retriever with similarity_top_k={self.config.INITIAL_RETRIEVAL_TOP_K} and filters=no")
-        base_retriever = self.index.as_retriever(
-            similarity_top_k=self.config.INITIAL_RETRIEVAL_TOP_K, # <-- Старый параметр
-            filters=None # Явно указываем отсутствие фильтров
-        )
+        logger.debug(f"Creating base retriever with similarity_top_k={initial_top_k} and filters=no")
+        base_retriever = self._get_retriever(filters=None, similarity_top_k=initial_top_k)
         base_nodes = base_retriever.retrieve(query_bundle)
-        logger.debug(f"Retrieved {len(base_nodes)} base nodes (asked for {self.config.INITIAL_RETRIEVAL_TOP_K}).")
+        logger.debug(f"Retrieved {len(base_nodes)} base nodes (asked for {initial_top_k}).")
         for node in base_nodes:
              node.metadata['retrieval_score'] = node.score 
         
-        # Объединение и дедупликация с приоритетом для фильтрованных узлов
         combined_nodes_dict: Dict[str, NodeWithScore] = {node.node.node_id: node for node in filtered_nodes}
         added_from_base = 0
         for node in base_nodes:
@@ -437,14 +461,39 @@ class PensionRAG:
         
         return combined_nodes
 
-    def _rerank_nodes(self, query_bundle: QueryBundle, nodes: List[NodeWithScore]) -> Tuple[List[NodeWithScore], float]:
+    def _retrieve_nodes(self, query_bundle: QueryBundle, pension_type: Optional[str], effective_config: Dict) -> List[NodeWithScore]:
+        """Выполняет поиск узлов (retrieval) с использованием кэша."""
+        # Ключ кэша должен учитывать все параметры, влияющие на результат ретривинга
+        cache_key_parts = [
+            query_bundle.query_str,
+            pension_type,
+            effective_config.get('INITIAL_RETRIEVAL_TOP_K'),
+            effective_config.get('FILTERED_RETRIEVAL_TOP_K')
+        ]
+        # Добавляем информацию о фильтрах, если они применялись, т.к. это меняет результат
+        # Простой способ - сериализовать фильтры, но это может быть громоздко.
+        # Пока ограничимся типом пенсии, который определяет фильтры.
+        cache_key = tuple(cache_key_parts)
+                
+        if cache_key in self.retrieval_cache:
+            logger.info(f"Returning CACHED retrieval results for query: '{query_bundle.query_str[:50]}...', type: {pension_type}")
+            return self.retrieval_cache[cache_key]
+        
+        logger.info(f"NO CACHE - Performing retrieval for query: '{query_bundle.query_str[:50]}...', type: {pension_type}")
+        nodes = self._perform_actual_retrieval(query_bundle, pension_type, effective_config)
+        self.retrieval_cache[cache_key] = nodes
+        return nodes
+
+    def _rerank_nodes(self, query_bundle: QueryBundle, nodes: List[NodeWithScore], effective_config: Dict) -> Tuple[List[NodeWithScore], float]:
         """Применяет реранкер (если доступен) к узлам-кандидатам.
         Возвращает кортеж: (список лучших N узлов, скор уверенности, основанный на топ-1 узле).
         """
-        if not self.reranker_model or not nodes:
+        reranker_top_n = effective_config['RERANKER_TOP_N']
+
+        if not self.reranker or not nodes:
             logger.debug("Reranker not available or no nodes to rerank. Returning top N initial nodes with 0.0 score.")
-            initial_top_nodes = nodes[:self.config.RERANKER_TOP_N]
-            return initial_top_nodes, 0.0 # Возвращаем 0.0 как скор
+            initial_top_nodes = nodes[:reranker_top_n]
+            return initial_top_nodes, 0.0
 
         logger.info(f"Reranking {len(nodes)} nodes...")
         query_text = query_bundle.query_str
@@ -452,22 +501,19 @@ class PensionRAG:
         rerank_pairs = [[query_text, passage] for passage in passages]
         
         try:
-            scores = self.reranker_model.predict(rerank_pairs, show_progress_bar=False)
+            scores = self.reranker.predict(rerank_pairs, show_progress_bar=False)
             
-            # Присваиваем новые скоры узлам
             for node, score in zip(nodes, scores):
                 node.metadata['rerank_score'] = float(score) 
-                node.score = float(score) # Используем rerank_score как основной score
+                node.score = float(score)
 
             nodes.sort(key=lambda x: x.score, reverse=True)
-            reranked_nodes = nodes[:self.config.RERANKER_TOP_N]
+            reranked_nodes = nodes[:reranker_top_n]
             logger.info(f"Reranking complete. Selected top {len(reranked_nodes)} nodes.")
             
-            # <<< ДОБАВЛЯЕМ ЛОГИРОВАНИЕ МЕТАДАННЫХ ВЫБРАННЫХ УЗЛОВ >>>
             logger.info("--- Top nodes selected for LLM context: ---")
             for i, node in enumerate(reranked_nodes):
                 metadata = node.metadata
-                # Формируем строку с основной информацией
                 log_entry = (
                     f"  {i+1}. Score: {node.score:.4f}, "
                     f"File: {metadata.get('file_name', '?')}, "
@@ -476,65 +522,89 @@ class PensionRAG:
                     f"(Node ID: {node.node.node_id})"
                 )
                 logger.info(log_entry)
-                # Дополнительно логируем начало текста узла на уровне DEBUG, если нужно
-                # logger.debug(f"      Text: {node.get_content()[:100]}...")
-            logger.info("-----------------------------------------")
-            # <<< КОНЕЦ ЛОГИРОВАНИЯ >>>
-
-            top_scores_log = [f"{n.score:.4f}" for n in reranked_nodes[:3]] # Оставляем для логов
-            # logger.debug(f"Top reranked scores: {top_scores_log}") # Можно закомментировать, т.к. лог выше информативнее
             
-            # --- ИЗМЕНЕННАЯ ЛОГИКА СКОРА УВЕРЕННОСТИ ---
             confidence_score = 0.0
             if reranked_nodes:
-                # Используем скор самого релевантного (первого) узла
                 confidence_score = float(reranked_nodes[0].score)
                 logger.info(f"Using top-1 reranked score as confidence score: {confidence_score:.4f}")
             else:
                  logger.warning("No nodes left after reranking, confidence score is 0.0")
-            # -------------------------------------------
             
             return reranked_nodes, confidence_score 
             
         except Exception as e:
             logger.error(f"Error during reranking: {e}", exc_info=True)
             logger.warning("Reranking failed. Returning top N nodes based on initial retrieval scores.")
-            # Сортируем по исходному скору (если сохранили в metadata)
             nodes.sort(key=lambda x: x.metadata.get('retrieval_score', x.score), reverse=True) 
-            # Возвращаем изначальные ноды и скор 0.0 при ошибке
-            return nodes[:self.config.RERANKER_TOP_N], 0.0 
+            return nodes[:reranker_top_n], 0.0
 
 
     def _build_prompt(self, query_text: str, context_nodes: List[NodeWithScore], case_data: CaseDataInput, disability_info: Optional[dict]) -> str:
         """Формирует финальный промпт для LLM, используя метаданные и структурированные данные."""
         logger.debug("Building final prompt for LLM...")
         
-        # Собираем контекст и информацию об источниках из метаданных
         context_parts = []
-        sources_summary = set() # Используем set для уникальных источников
-        for i, node in enumerate(context_nodes):
+        sources_summary = set()
+        for i, node_with_score in enumerate(context_nodes):
+            node = node_with_score.node
             content = node.get_content()
             metadata = node.metadata
-            # Формируем описание источника на основе доступных метаданных
-            source_desc = f"Источник {i+1}: {metadata.get('file_name', 'Неизвестный файл')}"
-            if metadata.get('article'):
-                source_desc += f", Статья {metadata.get('article')}"
-            if metadata.get('paragraph'):
-                source_desc += f", Пункт {metadata.get('paragraph')}"
-            if metadata.get('subparagraph'):
-                 source_desc += f", Подпункт {metadata.get('subparagraph')}"
+            graph_enrichment = metadata.get('graph_enrichment')
+
+            source_desc_parts = [
+                f"Источник {i+1}: {metadata.get('file_name', 'Неизвестный файл')}"
+            ]
+            article_number_text = metadata.get('article_meta', {}).get('number_text') 
+            if not article_number_text:
+                article_number_text = metadata.get('article')
+
+            if article_number_text:
+                source_desc_parts.append(f"Статья {article_number_text}")
             
-            context_parts.append(f"{source_desc}\n{content}")
-            # Добавляем краткое имя файла и статью в общий список источников (если есть)
-            if metadata.get('file_name') and metadata.get('article'):
-                 sources_summary.add(f"{metadata.get('file_name')} (Статья {metadata.get('article')})")
-            elif metadata.get('file_name'):
-                 sources_summary.add(metadata.get('file_name'))
+            article_title_from_graph = None
+            if graph_enrichment and graph_enrichment.get('article_title'):
+                article_title_from_graph = graph_enrichment['article_title']
+                source_desc_parts.append(f'"{article_title_from_graph}"')
+
+            related_pension_types_from_graph = []
+            if graph_enrichment and graph_enrichment.get('related_pension_types'):
+                related_pension_types_from_graph = graph_enrichment['related_pension_types']
+                if related_pension_types_from_graph:
+                    source_desc_parts.append(f"(Относится к типам пенсий: {', '.join(related_pension_types_from_graph)})")
+
+            if metadata.get('paragraph'):
+                source_desc_parts.append(f"Пункт {metadata.get('paragraph')}")
+            if metadata.get('subparagraph'):
+                 source_desc_parts.append(f"Подпункт {metadata.get('subparagraph')}")
+            
+            source_desc = ", ".join(source_desc_parts)
+            
+            enrichment_details_str = ""
+            if graph_enrichment:
+                conditions = graph_enrichment.get('conditions', [])
+                if conditions:
+                    conditions_strs = []
+                    for cond in conditions:
+                        cond_desc = cond.get("condition", "н/д")
+                        cond_val = cond.get("value", "н/д")
+                        cond_pt = cond.get("pension_type", "н/д")
+                        conditions_strs.append(f"  - Условие: {cond_desc}, Значение: {cond_val} (для типа пенсии: {cond_pt})")
+                    if conditions_strs:
+                        enrichment_details_str += "\nДополнительная информация из графа знаний для данной статьи:\nОпределенные условия:\n" + "\n".join(conditions_strs)
+            
+            context_parts.append(f"{source_desc}\n{content}{enrichment_details_str}")
+            
+            summary_source_name = metadata.get('file_name', 'Неизвестный файл')
+            if article_number_text:
+                summary_source_name += f" (Статья {article_number_text}"
+                if article_title_from_graph:
+                    summary_source_name += f": {article_title_from_graph}"
+                summary_source_name += ")"
+            sources_summary.add(summary_source_name)
 
         context_str = "\n\n---\n\n".join(context_parts)
         sources_str = ", ".join(sorted(list(sources_summary))) or "Не указаны"
 
-        # Формируем строку информации об инвалидности
         disability_str = ""
         if disability_info:
             group_code = disability_info.get("group")
@@ -542,16 +612,13 @@ class PensionRAG:
             reason = disability_info.get("reason", "не указана")
             disability_str = f"\nДополнительная информация: Инвалидность {group_name}, причина - {reason}."
 
-        current_date_str = datetime.now().strftime("%d.%m.%Y")  # Формат ДД.ММ.ГГГГ
+        current_date_str = datetime.now().strftime("%d.%m.%Y")
         
-        # <<< Извлекаем и форматируем ключевые параметры >>>
         pd = case_data.personal_data
         we = case_data.work_experience
         calculated_age_val = calculate_age(pd.birth_date)
-        pension_type_str = self.config.PENSION_TYPE_MAP.get(case_data.pension_type, case_data.pension_type) # Используем маппинг из конфига
-        # <<< Получаем ИПК из case_data, чтобы явно использовать в промпте ниже >>>
+        pension_type_str = self.config.PENSION_TYPE_MAP.get(case_data.pension_type, case_data.pension_type)
         applicant_ipk_value = case_data.pension_points 
-        # -----------------------------------------------
 
         prompt = f"""
             Запрос на правовой анализ пенсионного случая в соответствии с законодательством РФ
@@ -610,107 +677,197 @@ class PensionRAG:
         return prompt
 
 
-    def query(self, case_data: CaseDataInput, case_description: str, pension_type: Optional[str] = None, disability_info: Optional[dict] = None) -> Tuple[str, float]:
+    def query(self, 
+              case_description: str, 
+              pension_type: Optional[str] = None, 
+              disability_info: Optional[dict] = None,
+              case_data: Optional[CaseDataInput] = None,
+              config_override: Optional[dict] = None
+              ) -> Tuple[str, float]:
         """
-        Основной метод для выполнения запроса к RAG системе.
-        Возвращает кортеж: (текст ответа LLM, скор уверенности).
-        """
-        logger.warning("Query method needs review/update for confidence score logic.")
+        Обрабатывает запрос пользователя, включая ретривинг, реранкинг и генерацию ответа.
 
-        logger.info(f"Processing query: '{case_description[:100]}...', pension_type: {pension_type}")
-        query_bundle = QueryBundle(case_description)
-        
-        try:
-            # 1. Retrieve
-            candidate_nodes = self._retrieve_nodes(query_bundle, pension_type)
+        Args:
+            case_description (str): Описание случая или вопрос пользователя.
+            pension_type (Optional[str]): Тип пенсии, если известен.
+            disability_info (Optional[dict]): Информация об инвалидности.
+            case_data (Optional[CaseDataInput]): Дополнительные данные о случае.
+            config_override (Optional[dict]): Позволяет переопределить параметры конфигурации для этого запроса.
+
+        Returns:
+            Tuple[str, float]: Сгенерированный ответ и оценка уверенности.
+        """
+        effective_config = {
+            'INITIAL_RETRIEVAL_TOP_K': self.config.INITIAL_RETRIEVAL_TOP_K,
+            'FILTERED_RETRIEVAL_TOP_K': self.config.FILTERED_RETRIEVAL_TOP_K,
+            'RERANKER_TOP_N': self.config.RERANKER_TOP_N
+        }
+
+        if config_override:
+            logger.info(f"Applying config override: {config_override}")
+            effective_config.update(config_override)
+            # Валидация и корректировка переопределенных значений
+            if effective_config['FILTERED_RETRIEVAL_TOP_K'] > effective_config['INITIAL_RETRIEVAL_TOP_K']:
+                logger.warning(f"FILTERED_RETRIEVAL_TOP_K ({effective_config['FILTERED_RETRIEVAL_TOP_K']}) cannot be greater than INITIAL_RETRIEVAL_TOP_K ({effective_config['INITIAL_RETRIEVAL_TOP_K']}). Adjusting...")
+                effective_config['FILTERED_RETRIEVAL_TOP_K'] = effective_config['INITIAL_RETRIEVAL_TOP_K']
             
-            # 2. Rerank
-            ranked_nodes, confidence_score = self._rerank_nodes(query_bundle, candidate_nodes) 
+            # RERANKER_TOP_N должен быть меньше или равен FILTERED_RETRIEVAL_TOP_K, если фильтры использовались,
+            # или INITIAL_RETRIEVAL_TOP_K, если фильтры не использовались (это сложнее отследить здесь без знания, были ли фильтры применены).
+            # Для простоты, если FILTERED_RETRIEVAL_TOP_K был переопределен, то RERANKER_TOP_N не должен его превышать.
+            # Если только RERANKER_TOP_N переопределен, он не должен превышать существующий FILTERED_RETRIEVAL_TOP_K.
+            # Наиболее безопасная проверка - RERANKER_TOP_N <= INITIAL_RETRIEVAL_TOP_K, т.к. это максимум извлекаемых узлов.
+            if effective_config['RERANKER_TOP_N'] > effective_config['INITIAL_RETRIEVAL_TOP_K']:
+                 logger.warning(f"RERANKER_TOP_N ({effective_config['RERANKER_TOP_N']}) cannot be greater than INITIAL_RETRIEVAL_TOP_K ({effective_config['INITIAL_RETRIEVAL_TOP_K']}). Adjusting...")
+                 effective_config['RERANKER_TOP_N'] = effective_config['INITIAL_RETRIEVAL_TOP_K']
+        
+        logger.info(f"Effective RAG params: Initial K={effective_config['INITIAL_RETRIEVAL_TOP_K']}, Filtered K={effective_config['FILTERED_RETRIEVAL_TOP_K']}, Reranker N={effective_config['RERANKER_TOP_N']}")
+
+        if not case_description:
+            logger.warning("Query text is empty. Returning default message.")
+            return "Пожалуйста, предоставьте описание вашего случая или вопрос.", 0.0
+
+        query_bundle = QueryBundle(case_description)
+        confidence_score = 0.0
+
+        try:
+            logger.debug(f"Starting retrieval for query: '{query_bundle.query_str[:100]}...'")
+            retrieved_nodes = self._retrieve_nodes(query_bundle, pension_type=pension_type, effective_config=effective_config)
+            logger.info(f"Retrieved {len(retrieved_nodes)} nodes initially.")
+
+            if self.reranker:
+                logger.debug(f"Reranking {len(retrieved_nodes)} nodes...")
+                ranked_nodes, confidence_score_from_reranker = self._rerank_nodes(query_bundle, retrieved_nodes, effective_config=effective_config)
+                logger.info(f"Reranked to {len(ranked_nodes)} nodes. Confidence score from reranker: {confidence_score_from_reranker:.4f}")
+                confidence_score = confidence_score_from_reranker
+            else:
+                logger.info("Reranker not available. Using top N nodes from retrieval without reranking.")
+                ranked_nodes = retrieved_nodes[:effective_config['RERANKER_TOP_N']]
+                if ranked_nodes and all(hasattr(n, 'score') and n.score is not None for n in ranked_nodes):
+                    pass
+                else:
+                    logger.debug("No scores available from retrieved nodes to calculate average, or no nodes retrieved.")
 
             if not ranked_nodes:
-                 logger.warning("No relevant documents found after retrieval and reranking.")
-                 return "К сожалению, не удалось найти релевантную информацию в базе знаний для ответа на ваш запрос.", 0.0 
+                 logger.warning(f"No relevant documents found for query: '{query_bundle.query_str[:100]}...'")
+                 return "К сожалению, я не смог найти релевантную информацию по вашему запросу в базе знаний. Попробуйте переформулировать вопрос.", 0.0
 
-            # 3. Build Prompt
-            final_prompt = self._build_prompt(case_description, ranked_nodes, case_data, disability_info)
+            logger.info(f"Enriching {len(ranked_nodes)} nodes with graph data...")
+            enriched_nodes = self._enrich_nodes_with_graph_data(ranked_nodes)
+            logger.info("Node enrichment complete.")
+
+            if case_data is None:
+                logger.warning("CaseDataInput is None. Cannot build prompt without case_data.")
+                return "Ошибка: Отсутствуют данные о деле (case_data). Невозможно сформировать ответ.", 0.0
             
-            # <<< ДОБАВЛЯЕМ ЛОГИРОВАНИЕ ПОЛНОГО ПРОМПТА >>>
-            logger.debug(f"Final prompt being sent to LLM:\n------ START PROMPT ------\n{final_prompt}\n------ END PROMPT ------")
-            # <<< КОНЕЦ ЛОГИРОВАНИЯ >>>
-            
-            # 4. Generate Response using LLM
-            logger.info("Sending request to LLM...")
+            logger.debug("Building prompt with enriched context...")
+            final_prompt = self._build_prompt(case_description, enriched_nodes, case_data, disability_info)
+            logger.debug(f"Final prompt (first 200 chars): {final_prompt[:200]}...")
+
+            # Добавляем собранный текст промпта в QueryBundle для возможного использования в ретривере или реранкере, если они его ожидают
+            query_bundle = QueryBundle(query_str=final_prompt)
+
+            logger.debug("Sending prompt to LLM...")
             response = self.llm.complete(final_prompt)
-            response_text = str(response)
             
-            logger.info(f"LLM response received (length: {len(response_text)}).")
-            logger.debug(f"LLM Response (first 100 chars): {response_text[:100]}...")
-            
-            return response_text, confidence_score
+            llm_output_text = str(response)
+            logger.info("Received response from LLM.")
+            logger.debug(f"LLM Response (raw, first 500 chars): {llm_output_text[:500]}...")
+
+            # Удаляем или заменяем блок <think>...</think>
+            # Паттерн для поиска блока <think>...</think> с учетом многострочности
+            # re.DOTALL позволяет точке '.' совпадать с символом новой строки
+            cleaned_response_text = re.sub(r"<think>.*?</think>\s*", "", llm_output_text, flags=re.DOTALL | re.IGNORECASE).strip()
+
+            # Если нужно сохранить "мысли" для логов, но не показывать пользователю:
+            match = re.search(r"<think>(.*?)</think>", llm_output_text, flags=re.DOTALL | re.IGNORECASE)
+            if match:
+                thoughts = match.group(1).strip()
+                logger.debug(f"LLM Thoughts:\n{thoughts}")
+            # cleaned_response_text уже определен выше и не требует повторного присвоения, если thoughts нужны только для лога
+
+            logger.debug(f"LLM Response (cleaned, first 100 chars): {cleaned_response_text[:100]}...")
+
+            # Расчет confidence_score (пока что просто возвращаем 0.0 или значение из Reranker, если есть)
+            # В будущем здесь может быть более сложная логика оценки уверенности на основе ответа LLM
+            # Мы уже имеем reranker_score, его можно использовать или адаптировать
+            final_confidence_score = confidence_score # Используем confidence_score, который обновляется в блоке reranker
+
+            return cleaned_response_text, final_confidence_score
 
         except Exception as e:
-            logger.error(f"Error processing query '{case_description[:50]}...': {e}", exc_info=True)
-            return f"Произошла внутренняя ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже или обратитесь к администратору. (Ошибка: {e})", 0.0
+            logger.error(f"Error during query processing: {e}", exc_info=True)
+            return f"Произошла ошибка при обработке вашего запроса: {e}. Пожалуйста, попробуйте позже.", 0.0
+        finally:
+            pass
 
+
+    def _enrich_nodes_with_graph_data(self, nodes: List[NodeWithScore]) -> List[NodeWithScore]:
+        """Enriches nodes with data from the knowledge graph."""
+        if not nodes:
+            logger.warning("No nodes provided for enrichment.")
+            return []
+
+        if not self.graph_builder:
+            logger.warning("KnowledgeGraphBuilder not available. Skipping graph enrichment.")
+            return nodes # Возвращаем исходные узлы, если нет графа
+
+        logger.info(f"Starting graph data enrichment for {len(nodes)} nodes using self.graph_builder...")
+        # graph_builder больше не создается и не закрывается здесь
+        enriched_count = 0
+        missing_article_id_count = 0
+        no_data_found_count = 0
+        
+        try:
+            # graph_builder = KnowledgeGraphBuilder( # Удаляем локальное создание
+            # ...
+            # )
+            enriched_nodes = []
+            
+            for idx, node_with_score in enumerate(nodes):
+                text_node = node_with_score.node
+                article_id_for_graph = text_node.metadata.get('canonical_article_id') 
+                
+                if article_id_for_graph:
+                    logger.debug(f"Node {idx+1}/{len(nodes)}: Querying graph for enrichment with article_id: {article_id_for_graph}")
+                    try:
+                        enrichment_data = self.graph_builder.get_article_enrichment_data(article_id_for_graph)
+                        if enrichment_data:
+                            text_node.metadata['graph_enrichment'] = enrichment_data
+                            logger.debug(f"Node {idx+1}/{len(nodes)}: Enriched with data for article_id {article_id_for_graph}: {enrichment_data}")
+                            enriched_count += 1
+                        else:
+                            logger.debug(f"Node {idx+1}/{len(nodes)}: No enrichment data found in graph for article_id: {article_id_for_graph}")
+                            no_data_found_count += 1
+                    except Exception as node_e:
+                        logger.error(f"Error enriching node {idx+1} with article_id {article_id_for_graph}: {node_e}")
+                        no_data_found_count += 1
+                else:
+                    logger.debug(f"Node {idx+1}/{len(nodes)}: No canonical_article_id found in metadata for node {text_node.node_id}")
+                    missing_article_id_count += 1
+                
+                enriched_nodes.append(node_with_score)
+            
+            logger.info(f"Graph enrichment complete. Stats: {enriched_count} nodes enriched, "
+                        f"{missing_article_id_count} nodes without article_id, "
+                        f"{no_data_found_count} nodes without enrichment data in graph.")
+            return enriched_nodes
+            
+        except Exception as e:
+            logger.error(f"Error during node enrichment with graph data: {e}", exc_info=True)
+            logger.warning("Continuing without graph enrichment due to error.")
+            return nodes
+        # finally:
+            # if graph_builder: # Удаляем закрытие локального graph_builder
+            # ...
 
 # --- Пример использования (для локального тестирования) ---
 if __name__ == '__main__':
-    # <<< Устанавливаем уровень DEBUG, чтобы видеть лог промпта >>>
-    # logger.setLevel(logging.DEBUG) # Устанавливаем уровень для корневого логгера
-    # for handler in logging.getLogger().handlers: # Устанавливаем уровень для всех хендлеров
-    #      handler.setLevel(logging.DEBUG)
-    # logging.getLogger(__name__).setLevel(logging.DEBUG) # Устанавливаем DEBUG только для этого модуля
-    # <<< Раскомментируем установку DEBUG для этого модуля >>>
     logging.getLogger(__name__).setLevel(logging.DEBUG)
          
     logger.info("="*20 + " Starting PensionRAG engine test " + "="*20)
     try:
         # Создаем экземпляр двигателя. Инициализация и загрузка/создание индекса происходят здесь.
         rag_engine = PensionRAG() 
-        
-        # --- Тестовые запросы ---
-        test_cases = [
-            {
-                "description": "Мужчина, 66 лет, пенсия по старости, стаж 12 лет, 20 баллов ИПК. Есть трудовая.",
-                "pension_type": "retirement_standard",
-                "disability_info": None
-            },
-            {
-                "description": "Женщина, 45 лет, инвалид II группы с детства.",
-                "pension_type": "disability_social", 
-                "disability_info": {"group": "2", "reason": "инвалид с детства"}
-            },
-             {
-                "description": "Работала 15 лет на севере, хочу выйти на пенсию досрочно в 55.",
-                "pension_type": "retirement_early", # Тип важен для фильтрации
-                "disability_info": None
-            },
-             {
-                "description": "Мне 60 лет, стаж 5 лет. Могу ли я получать пенсию?",
-                 "pension_type": None, # Без типа, общий поиск
-                "disability_info": None
-            }
-        ]
-
-        for i, case in enumerate(test_cases):
-             logger.info(f"--- Running Test Case {i+1} ---")
-             print(f"\n--- Query {i+1}: {case['description']} (Type: {case['pension_type']}) ---")
-             # Получаем и текст, и скор
-             result_text, score = rag_engine.query(
-                 case_data=CaseDataInput(
-                     personal_data=CaseDataInput.PersonalData(birth_date=date(1956, 1, 1)),
-                     work_experience=CaseDataInput.WorkExperience(total_years=12),
-                     pension_points=20,
-                     pension_type=case['pension_type']
-                 ),
-                 case_description=case['description'], 
-                 pension_type=case['pension_type'], 
-                 disability_info=case['disability_info']
-            )
-             # Печатаем оба
-             print(f"\nРезультат анализа {i+1} (Уверенность: {score:.4f}):\n{result_text}")
-             logger.info(f"--- Test Case {i+1} Finished ---")
-
     except Exception as e:
         logger.exception("An error occurred during the PensionRAG test run.")
         print(f"\n--- FATAL ERROR ---")

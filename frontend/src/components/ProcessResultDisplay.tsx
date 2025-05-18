@@ -13,19 +13,16 @@ import {
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
-  List,
-  ListItem,
-  ListIcon,
 } from '@chakra-ui/react';
 import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
-import { ProcessResult, ApiError } from './CaseForm'; // Импортируем типы
+import { ProcessResult } from './CaseForm'; // Импортируем типы
 
 interface ProcessResultDisplayProps {
   result: ProcessResult;
 }
 
 const ProcessResultDisplay: React.FC<ProcessResultDisplayProps> = ({ result }) => {
-  const { status, explanation, errors } = result;
+  const { status, explanation } = result;
   const bgColor = useColorModeValue('gray.50', 'gray.700');
   const statusColorScheme = status === 'approved' ? 'green' : 'red';
   const StatusIcon = status === 'approved' ? CheckCircleIcon : WarningIcon;
@@ -54,7 +51,7 @@ const ProcessResultDisplay: React.FC<ProcessResultDisplayProps> = ({ result }) =
         </StatNumber>
       </Stat>
 
-      <Accordion allowMultiple defaultIndex={[0, 1]}>
+      <Accordion allowMultiple defaultIndex={[0]}>
         <AccordionItem>
           <h2>
             <AccordionButton>
@@ -70,40 +67,6 @@ const ProcessResultDisplay: React.FC<ProcessResultDisplayProps> = ({ result }) =
             </Text>
           </AccordionPanel>
         </AccordionItem>
-
-        {errors && errors.length > 0 && (
-            <AccordionItem>
-            <h2>
-                <AccordionButton>
-                <Box flex="1" textAlign="left" fontWeight="semibold">
-                    Выявленные ошибки ({errors.length})
-                </Box>
-                <AccordionIcon />
-                </AccordionButton>
-            </h2>
-            <AccordionPanel pb={4} bg={bgColor} borderBottomRadius="md">
-                <List spacing={4}>
-                    {errors.map((error: ApiError, index: number) => (
-                    <ListItem key={index}>
-                        <VStack align="start" spacing={1}>
-                            <Heading size="sm" display="flex" alignItems="center">
-                                <ListIcon as={WarningIcon} color="orange.500" mr={2} />
-                                {error.code || `Ошибка ${index + 1}`}
-                            </Heading>
-                            <Text fontSize="md">{error.description}</Text>
-                            <Text fontSize="xs" color="textSecondary">
-                                Рекомендация: {error.recommendation || '-'}
-                            </Text>
-                            <Text fontSize="xs" color="textSecondary">
-                                Основание: {error.law || '-'}
-                            </Text>
-                        </VStack>
-                    </ListItem>
-                    ))}
-                </List>
-            </AccordionPanel>
-            </AccordionItem>
-        )}
       </Accordion>
 
     </VStack>

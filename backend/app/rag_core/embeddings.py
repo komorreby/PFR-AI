@@ -72,6 +72,11 @@ class JinaV3Embedding(BaseEmbedding):
         if not self._model:
             raise ValueError("Модель эмбеддингов не инициализирована.")
         
+        embedding_dim = self._model.get_sentence_embedding_dimension()
+        if not embedding_dim:
+            print("Ошибка: Не удалось определить размерность эмбеддингов.")
+            return []
+
         embeddings = self._model.encode(
             [query], 
             task="retrieval.query", # Используем LoRA для запросов
@@ -83,19 +88,19 @@ class JinaV3Embedding(BaseEmbedding):
             return embeddings[0].tolist() # Возвращаем как список float
         else:
              # Логирование или обработка ошибки, если эмбеддинг не получен
-             print(f"Предупреждение: Не удалось получить корректный эмбеддинг для запроса: {query}")
-             # Вернуть нулевой вектор или поднять исключение?
-             # Пока вернем пустой список, но это может потребовать доработки
-             # в зависимости от того, как LlamaIndex обрабатывает такие случаи.
-             # Возможно, лучше узнать размерность из self._model.get_sentence_embedding_dimension() 
-             # и вернуть нулевой вектор этой размерности.             
-             return [] 
+             print(f"Предупреждение: Не удалось получить корректный эмбеддинг для запроса: {query}. Возвращен нулевой вектор.")
+             return [0.0] * embedding_dim
 
 
     def _get_text_embedding(self, text: str) -> Embedding:
         """Получает эмбеддинг для документа (passage)."""
         if not self._model:
             raise ValueError("Модель эмбеддингов не инициализирована.")
+        
+        embedding_dim = self._model.get_sentence_embedding_dimension()
+        if not embedding_dim:
+            print("Ошибка: Не удалось определить размерность эмбеддингов.")
+            return []
             
         embeddings = self._model.encode(
             [text], 
@@ -106,24 +111,40 @@ class JinaV3Embedding(BaseEmbedding):
         if embeddings is not None and embeddings.ndim == 2 and embeddings.shape[0] == 1:
             return embeddings[0].tolist()
         else:
-             print(f"Предупреждение: Не удалось получить корректный эмбеддинг для текста: {text[:100]}...")
-             return []
+             print(f"Предупреждение: Не удалось получить корректный эмбеддинг для текста: {text[:100]}... Возвращен нулевой вектор.")
+             return [0.0] * embedding_dim
 
     def _get_text_embeddings(self, texts: List[str]) -> List[Embedding]:
         """Получает эмбеддинги для списка документов (passages)."""
         if not self._model:
             raise ValueError("Модель эмбеддингов не инициализирована.")
 
-        # Убираем пустые строки или нестроковые элементы
-        valid_texts = [t for t in texts if isinstance(t, str) and len(t.strip()) > 0]
+        embedding_dim = self._model.get_sentence_embedding_dimension()
+        if not embedding_dim:
+            print("Ошибка: Не удалось определить размерность эмбеддингов.")
+            # Возвращаем список пустых списков, если не можем определить размерность для нулевых векторов
+            return [[] for _ in texts] 
+
+        # Убираем пустые строки или нестроковые элементы, сохраняя индексы для восстановления
+        valid_texts_with_indices = []
+        for i, t in enumerate(texts):
+            if isinstance(t, str) and len(t.strip()) > 0:
+                valid_texts_with_indices.append((t, i))
+        
+        valid_texts = [item[0] for item in valid_texts_with_indices]
+        original_indices = [item[1] for item in valid_texts_with_indices]
+
+        # Инициализируем список результатов нулевыми векторами (или пустыми, если размерность неизвестна)
+        # Это гарантирует, что список будет той же длины, что и входной `texts`
+        default_embedding = [0.0] * embedding_dim if embedding_dim else []
+        result_embeddings: List[Embedding] = [default_embedding[:] for _ in texts] # Используем [:] для копирования
+
         if not valid_texts:
-            # Если после фильтрации не осталось текстов, нужно вернуть список пустых списков?
-            # Или список нулевых векторов нужной длины? Зависит от LlamaIndex.
-            # Вернем пустой список, но это может быть неверно. 
-            return [[] for _ in range(len(texts))] # Возвращаем список той же длины, что и texts?
+            print("Предупреждение: В батче нет валидных текстов для эмбеддинга. Возвращены нулевые векторы.")
+            return result_embeddings 
         
         try:    
-            embeddings = self._model.encode(
+            encoded_embeddings = self._model.encode(
                 valid_texts, 
                 task="retrieval.passage", 
                 batch_size=self.embed_batch_size, # Используем размер батча из настроек
@@ -131,27 +152,19 @@ class JinaV3Embedding(BaseEmbedding):
                 show_progress_bar=False # Можно включить при необходимости
             )
             
-            # Создаем полный список результатов, вставляя пустые эмбеддинги для невалидных текстов
-            result_embeddings = []
-            valid_idx = 0
-            for original_text in texts:
-                 if isinstance(original_text, str) and len(original_text.strip()) > 0:
-                     if valid_idx < len(embeddings):
-                         result_embeddings.append(embeddings[valid_idx].tolist())
-                         valid_idx += 1
-                     else:
-                         # Эта ситуация не должна возникнуть, если логика верна
-                         print("Ошибка: Индекс валидного текста вышел за пределы эмбеддингов.")
-                         result_embeddings.append([])
-                 else:
-                     result_embeddings.append([]) # Вставляем пустой для невалидных/пустых строк
+            # Заполняем result_embeddings полученными эмбеддингами на их оригинальные позиции
+            for i, emb_array in enumerate(encoded_embeddings):
+                original_idx = original_indices[i]
+                if emb_array is not None:
+                    result_embeddings[original_idx] = emb_array.tolist()
+                # else: оставляем default_embedding, если по какой-то причине encode вернул None для валидного текста
                      
             return result_embeddings
             
         except Exception as e:
-            print(f"Ошибка при кодировании батча текстов: {e}")
-            # В случае ошибки возвращаем список пустых эмбеддингов для всех текстов в батче
-            return [[] for _ in texts]
+            print(f"Ошибка при кодировании батча текстов: {e}. Возвращены нулевые векторы для всего батча.")
+            # В случае общей ошибки, все равно возвращаем список нулевых векторов нужной длины
+            return [default_embedding[:] for _ in texts]
 
 
     # --- Асинхронные методы (используем to_thread) ---

@@ -9,6 +9,8 @@ from sqlalchemy import (
     String,
     Text,
     create_engine, # Need sync engine for initial table creation if using Core directly without alembic etc.
+    Float, # Добавлено
+    Boolean # Добавлено
 )
 
 # Определяем путь к файлу БД относительно текущего файла (database.py)
@@ -34,38 +36,37 @@ cases_table = Table(
     Column("personal_data", Text, nullable=False),  # Storing as JSON string
     Column("errors", Text, nullable=False),         # Storing as JSON string
     Column("pension_type", String(100), nullable=True), # <<< Тип пенсии
-    Column("disability", Text, nullable=True)          # <<< Данные об инвалидности (JSON)
+    Column("disability", Text, nullable=True),          # <<< Данные об инвалидности (JSON)
+    Column("work_experience", Text, nullable=True), # Новое поле
+    Column("pension_points", Float, nullable=True), # Новое поле
+    Column("benefits", Text, nullable=True), # Новое поле
+    Column("documents", Text, nullable=True), # Новое поле
+    Column("has_incorrect_document", Boolean, nullable=True), # Новое поле
+    Column("final_status", String(50), nullable=True),   # Статус рассмотрения дела (approved/rejected)
+    Column("final_explanation", Text, nullable=True),    # Итоговое объяснение от RAG + ML
+    Column("rag_confidence", Float, nullable=True) # Новое поле
 )
 
 # --- Функция для создания таблицы при старте (если не существует) ---
 # SQLAlchemy Core не имеет встроенной проверки create_all как ORM.
 # Мы можем использовать синхронный движок для однократного создания.
-# В продакшене лучше использовать миграции (Alembic).
 def create_db_and_tables():
     print(f"Database path: {DATABASE_FILE_PATH}")
-    if not os.path.exists(DATABASE_FILE_PATH):
-         print(f"Database file not found at {DATABASE_FILE_PATH}. It might be created by the engine.")
-         # Ensure directory exists if needed
-         os.makedirs(os.path.dirname(DATABASE_FILE_PATH), exist_ok=True)
+    db_dir = os.path.dirname(DATABASE_FILE_PATH)
+    if db_dir: # Создаем директорию, если она не существует
+        os.makedirs(db_dir, exist_ok=True)
 
     try:
         sync_engine = create_engine(SYNC_DATABASE_URL)
         metadata.create_all(bind=sync_engine)
-        print("Table 'cases' checked/created successfully.")
+        print("Table 'cases' checked/created successfully (sync method).")
     except Exception as e:
-        print(f"Error creating database tables: {e}")
+        print(f"Error creating database tables (sync method): {e}")
     finally:
         if 'sync_engine' in locals() and sync_engine:
             sync_engine.dispose()
 
-
 # --- Асинхронная функция для получения соединения ---
-# При использовании SQLAlchemy Core мы обычно работаем с соединениями напрямую.
 async def get_db_connection():
     async with async_engine.connect() as connection:
         yield connection
-
-# --- (Опционально) Асинхронная функция для получения сессии (для ORM) ---
-# async def get_db_session():
-#     async with AsyncSessionLocal() as session:
-#         yield session 
