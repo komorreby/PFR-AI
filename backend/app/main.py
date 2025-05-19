@@ -17,6 +17,7 @@ import json
 from . import vision_services
 import logging # Добавляем импорт
 from datetime import datetime # Убираем date, так как CaseHistoryEntry будет использовать datetime
+from app.document_requirements import PENSION_DOCUMENT_REQUIREMENTS, PENSION_TYPE_CHOICES
 
 logger = logging.getLogger(__name__) # Инициализируем логгер
 
@@ -387,7 +388,7 @@ async def download_document(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Ошибка генерации документа: {e}")
 
-@app.post("/extract_document_data", response_model=Optional[Union[PassportData, SnilsData, OtherDocumentData]])
+@app.post("/extract_document_data")
 async def extract_document_data_endpoint(
     document_type: DocumentTypeToExtract = Form(...),
     image: UploadFile = File(...)
@@ -395,31 +396,64 @@ async def extract_document_data_endpoint(
     """
     Извлекает структурированные данные из изображения документа (паспорт РФ или СНИЛС).
 
-    - **document_type**: Тип документа ('passport' или 'snils').
+    - **document_type**: Тип документа ('passport', 'snils', 'other').
     - **image**: Файл изображения.
     """
-    if not image.content_type.startswith("image/"):
+    if not image.content_type or not image.content_type.startswith("image/"):
         logger.error(f"Попытка загрузки не-изображения: {image.filename}, тип: {image.content_type}")
-        raise HTTPException(status_code=400, detail="Неверный тип файла. Пожалуйста, загрузите изображение.")
+        # Возвращаем ошибку в формате, который может ожидать OcrExtractionResponse.error
+        return {
+            "documentType": "error",
+            "message": "Неверный тип файла. Пожалуйста, загрузите изображение.",
+            "errorDetails": {"filename": image.filename, "contentType": image.content_type}
+        }
 
     logger.info(f"Получено изображение для извлечения данных ({document_type.value}): {image.filename}, тип: {image.content_type}")
     
     try:
         image_content = await image.read()
-        # Используем обновленный сервис
-        extracted_data = await vision_services.extract_document_data_from_image(
+        extracted_data_object = await vision_services.extract_document_data_from_image(
             image_bytes=image_content, 
-            document_type=document_type
+            document_type=document_type,
+            filename=image.filename # Передаем filename в vision_services, если он там используется
         )
 
-        if extracted_data:
+        # Формируем правильный ответ для фронтенда
+        if extracted_data_object:
             logger.info(f"Успешно извлечены данные для {document_type.value}: {image.filename}")
-            return extracted_data
+            return {
+                "documentType": document_type.value,
+                "data": extracted_data_object
+            }
         else:
-            logger.warning(f"Не удалось извлечь данные для {document_type.value} из {image.filename}. Сервис вернул None.")
-            raise HTTPException(status_code=500, detail=f"Не удалось извлечь данные из документа ({document_type.value}).")
-    except HTTPException as http_exc: # Перехватываем свои же HTTPException, чтобы не попасть в общий Exception
-        raise http_exc 
+            # Этот случай (когда vision_services возвращает None) должен обрабатываться внутри vision_services
+            # и он должен был бы выбросить HTTPException, если не смог извлечь.
+            # Если мы дошли сюда и extracted_data_object это None, значит что-то не так в логике vision_services
+            # или он может легитимно вернуть None, если документ пустой, но это плохая практика.
+            # Для надежности, если такое произошло, вернем ошибку.
+            logger.warning(f"Не удалось извлечь данные для {document_type.value} из {image.filename}. Сервис vision_services вернул None.")
+            return {
+                "documentType": "error",
+                "message": f"Не удалось извлечь данные из документа ({document_type.value}). Сервис не вернул данных.",
+                "errorDetails": {"filename": image.filename}
+            }
+            
+    except HTTPException as http_exc: # Перехватываем HTTPException из vision_services
+        logger.warning(f"HTTPException при обработке {document_type.value} для {image.filename}: {http_exc.detail}")
+        return {
+            "documentType": "error",
+            "message": http_exc.detail, # Сообщение из HTTPException
+            "errorDetails": {"status_code": http_exc.status_code, "filename": image.filename}
+        }
     except Exception as e:
-        logger.error(f"Ошибка в эндпоинте /api/v1/extract_document_data ({document_type.value}): {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера при обработке документа ({document_type.value}).") 
+        logger.error(f"Ошибка в эндпоинте /extract_document_data ({document_type.value}) для {image.filename}: {e}", exc_info=True)
+        return {
+            "documentType": "error",
+            "message": f"Внутренняя ошибка сервера при обработке документа ({document_type.value}).",
+            "errorDetails": {"error_type": type(e).__name__, "filename": image.filename}
+        }
+
+# --- ЭНДПОИНТ ДЛЯ ПОЛУЧЕНИЯ СПИСКА ТИПОВ ПЕНСИЙ (для фронтенда) ---
+@app.get("/api/v1/pension_types")
+async def get_pension_types():
+    return PENSION_TYPE_CHOICES 

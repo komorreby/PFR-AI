@@ -97,4 +97,45 @@ export interface ApiErrorDetail {
 //   law?: string;
 //   recommendation?: string;
 //   field?: string; // Для ошибок валидации полей
-// } 
+// }
+
+// --- OCR Types ---
+
+// Соответствует PassportData с бэкенда
+export interface OcrPassportData {
+  last_name?: string;
+  first_name?: string;
+  middle_name?: string;
+  birth_date?: string; // Ожидаемый формат: YYYY-MM-DD или DD.MM.YYYY (требует обработки)
+  sex?: string;
+  birth_place?: string;
+  passport_series?: string;
+  passport_number?: string;
+  issue_date?: string; // Ожидаемый формат: YYYY-MM-DD или DD.MM.YYYY (требует обработки)
+  issuing_authority?: string;
+  department_code?: string;
+}
+
+// Соответствует SnilsData с бэкенда
+export interface OcrSnilsData {
+  snils_number?: string;
+}
+
+// Соответствует OtherDocumentData с бэкенда
+export interface OcrOtherDocumentData {
+  identified_document_type?: string;
+  standardized_document_type?: string;
+  extracted_fields?: Record<string, any>;
+  multimodal_assessment?: string;
+  text_llm_reasoning?: string;
+}
+
+// Тип ответа от /extract_document_data
+export type OcrExtractionResponse =
+  | { documentType: 'passport'; data: OcrPassportData }
+  | { documentType: 'snils'; data: OcrSnilsData }
+  | { documentType: 'other'; data: OcrOtherDocumentData }
+  | { documentType: 'error'; message: string; errorDetails?: any }; // Добавим вариант для ошибки OCR
+
+// Для удобства определения типа документа, который мы запрашиваем у OCR
+export type OcrDocumentType = 'passport' | 'snils' | 'other'; 

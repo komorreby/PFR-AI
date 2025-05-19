@@ -372,7 +372,7 @@ async def extract_document_data_from_image(
         if not raw_response_text_vision:
             logger.error(f"Received empty response from Ollama Multimodal LLM for {document_type.value}.")
             raise HTTPException(
-                status_code=502, # Bad Gateway, т.к. проблема с вышестоящим сервисом
+                status_code=502,
                 detail=f"Received empty response from Ollama Multimodal LLM for {document_type.value}.",
             )
 
@@ -381,8 +381,6 @@ async def extract_document_data_from_image(
             logger.error(
                 f"Could not extract JSON from Ollama Multimodal LLM response for {document_type.value}: {raw_response_text_vision[:500]}..."
             )
-            # Возвращаем как есть, пусть клиент решает. Или кидать ошибку?
-            # Решено кидать ошибку, т.к. мы ожидаем JSON
             raise HTTPException(
                 status_code=502,
                 detail=f"Failed to parse JSON structure from Ollama Multimodal LLM response for {document_type.value}.",
@@ -390,7 +388,6 @@ async def extract_document_data_from_image(
 
         parsed_multimodal_data = _parse_llm_json_safely(json_content_str_vision, document_type.value)
         if not parsed_multimodal_data:
-            # _parse_llm_json_safely уже залогировал ошибку
             raise HTTPException(
                 status_code=502,
                 detail=f"Failed to parse JSON data from LLM response after extraction for {document_type.value}.",
@@ -421,7 +418,6 @@ async def extract_document_data_from_image(
             if identified_type_from_vision_llm:
                 image_description += f", предварительно идентифицированного qwen-vl как '{identified_type_from_vision_llm}'"
             
-            # data_for_text_llm остается как есть - это вход для qwen3
             data_for_text_llm = {
                 "identified_document_type": identified_type_from_vision_llm,
                 "extracted_fields": parsed_multimodal_data.get("extracted_fields"),

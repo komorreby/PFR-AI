@@ -1,4 +1,4 @@
-import type { CaseFormData, ProcessOutput, HistoryEntry, RagAnalysisResponse, ApiErrorDetail } from '../types';
+import type { CaseFormData, ProcessOutput, HistoryEntry, RagAnalysisResponse, ApiErrorDetail, OcrExtractionResponse, OcrDocumentType } from '../types';
 
 // Используем переменные окружения Vite для API_BASE_URL
 // В файле .env.local (или других .env.* файлах) фронтенда нужно добавить:
@@ -115,4 +115,27 @@ export async function downloadDocument(caseId: number, format: 'pdf' | 'docx'): 
     throw error;
   }
   return response;
+}
+
+// Функция для OCR
+export async function extractDocumentData(
+  imageFile: File,
+  documentType: OcrDocumentType
+): Promise<OcrExtractionResponse> {
+  const formData = new FormData();
+  formData.append('image', imageFile); // На бэкенде ожидается 'image'
+  formData.append('document_type', documentType);
+
+  // Предполагаемый URL, убедитесь, что он соответствует вашему API
+  const response = await fetch(`${API_BASE_URL}/extract_document_data`, {
+    method: 'POST',
+    body: formData,
+    // 'Content-Type' для FormData устанавливается браузером автоматически, его не нужно указывать явно
+  });
+
+  // Здесь мы ожидаем, что бэкенд вернет JSON, который соответствует OcrExtractionResponse.
+  // handleJsonResponse должен уметь обрабатывать и успешные данные, и ошибки, упакованные в JSON.
+  // Если бэкенд в случае ошибки OCR возвращает { documentType: 'error', message: '...' },
+  // то handleJsonResponse должен это корректно распарсить как T (OcrExtractionResponse).
+  return handleJsonResponse<OcrExtractionResponse>(response);
 } 
