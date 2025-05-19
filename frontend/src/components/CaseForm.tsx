@@ -168,35 +168,82 @@ const stepDefinitions: { [key: string]: StepDefinition<CaseFormDataTypeForRHF> }
 
 // Функция для получения последовательности шагов по типу пенсии
 const getStepsForPensionType = (type: string | null): StepDefinition<CaseFormDataTypeForRHF>[] => {
-  const initialStep = stepDefinitions.pensionType; // Шаг выбора типа пенсии всегда первый
-
+  const initialStep = stepDefinitions.pensionType;
   if (!type) {
-    // Если тип пенсии еще не выбран, показываем только выбор типа пенсии
     return [initialStep];
   }
-
-  // После выбора типа пенсии, добавляем OCR как второй шаг, затем личные данные
+  // Шаг OCR и PersonalData теперь являются общими для всех типов после выбора типа пенсии.
   const commonStepsAfterTypeSelection = [initialStep, stepDefinitions.ocrStep, stepDefinitions.personalData];
 
   switch (type) {
-    case 'retirement_standard':
+    case 'retirement_standard': // Страховая по старости (общий случай)
       return [
         ...commonStepsAfterTypeSelection,
         stepDefinitions.workExperience,
         stepDefinitions.additionalInfo,
         stepDefinitions.summary
       ];
-    case 'disability_social':
+    case 'disability_social': // Социальная по инвалидности
       return [
         ...commonStepsAfterTypeSelection,
-        stepDefinitions.disabilityInfo, 
+        stepDefinitions.disabilityInfo,
         stepDefinitions.additionalInfo,
         stepDefinitions.summary
       ];
+    case 'disability_insurance': // Страховая по инвалидности
+      return [
+        ...commonStepsAfterTypeSelection,
+        stepDefinitions.disabilityInfo, 
+        stepDefinitions.workExperience, // Для страховой пенсии по инвалидности нужен стаж
+        stepDefinitions.additionalInfo,
+        stepDefinitions.summary
+      ];
+    case 'survivor_benefit': // По случаю потери кормильца (СПК)
+      // Для пенсии по потере кормильца могут быть специфичные шаги.
+      // Например, данные об умершем кормильце, данные о заявителе (иждивенце) и т.д.
+      return [
+        ...commonStepsAfterTypeSelection, // Личные данные заявителя (иждивенца)
+        // TODO: Добавить шаг для данных об умершем кормильце (если это отдельный блок данных)
+        // stepDefinitions.deceasedBreadwinnerInfo, 
+        // TODO: Добавить шаги для подтверждения родства и факта иждивения (обычно в additionalInfo)
+        stepDefinitions.additionalInfo, // Может содержать документы, специфичные для этого типа (св-во о смерти, о браке, о рождении иждивенца и т.п.)
+        stepDefinitions.summary
+      ];
+    case 'retirement_early_teacher': // Досрочная педагогическая
+      return [
+        ...commonStepsAfterTypeSelection,
+        stepDefinitions.workExperience, // Педагогический стаж здесь ключевое
+        // TODO: Возможно, нужен специфичный шаг для подтверждения именно педагогического стажа (условия, должности, периоды)
+        // stepDefinitions.pedagogicalExperienceDetails,
+        stepDefinitions.additionalInfo, // Справки о характере работы, льготные выписки
+        stepDefinitions.summary
+      ];
+    case 'retirement_early_north': // Досрочная "северная"
+      return [
+        ...commonStepsAfterTypeSelection,
+        stepDefinitions.workExperience, // "Северный" стаж
+        // TODO: Шаг для подтверждения работы в районах Крайнего Севера / приравненных местностях
+        // stepDefinitions.northernExperienceDetails, 
+        stepDefinitions.additionalInfo,
+        stepDefinitions.summary
+      ];
+    // ... другие case для новых типов пенсий, которые могут прийти с бэкенда ...
+    // Пример: case 'государственная_за_выслугу_лет': return [...] 
+
     default:
-      // По умолчанию, если тип не распознан (например, пустая строка после инициализации), 
-      // возвращаем только первый шаг - выбор типа пенсии.
-      return [initialStep];
+      // Если тип пенсии неизвестен фронтенду (например, новый тип добавлен на бэкенде, но фронт еще не обновлен),
+      // возвращаем базовый набор шагов или только первый шаг, чтобы избежать полной поломки формы.
+      // Также стоит выводить предупреждение в консоль.
+      console.warn(`Неизвестный тип пенсии "${type}" в getStepsForPensionType. Возвращаем набор шагов для общего случая или только первый шаг.`);
+      // Можно вернуть набор шагов, как для 'retirement_standard', или более универсальный:
+      return [ 
+        ...commonStepsAfterTypeSelection,
+        stepDefinitions.workExperience, // Как наиболее общий вариант после личных данных
+        stepDefinitions.additionalInfo,
+        stepDefinitions.summary
+        // Или, если совсем безопасно:
+        // initialStep 
+      ];
   }
 };
 

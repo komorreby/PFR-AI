@@ -21,23 +21,21 @@ RERANKER_MODEL_NAME = 'DiTy/cross-encoder-russian-msmarco'
 
 # --- Параметры RAG ---
 # Количество изначальных кандидатов для ретривера
-INITIAL_RETRIEVAL_TOP_K = 40
+INITIAL_RETRIEVAL_TOP_K = 60
 # <<< Новый параметр: Количество кандидатов для поиска С ФИЛЬТРАМИ >>>
 FILTERED_RETRIEVAL_TOP_K = 15 # Должно быть <= INITIAL_RETRIEVAL_TOP_K
 # Количество узлов после реранкинга для передачи в LLM
-RERANKER_TOP_N = 12 # Рекомендуется <= FILTERED_RETRIEVAL_TOP_K (если фильтры используются) или INITIAL_RETRIEVAL_TOP_K
-# Старое значение, если нужно где-то использовать (но лучше опираться на INITIAL_RETRIEVAL_TOP_K и RERANKER_TOP_N)
-# SIMILARITY_TOP_K = 12 
+RERANKER_TOP_N = 25 # Рекомендуется <= FILTERED_RETRIEVAL_TOP_K (если фильтры используются) или INITIAL_RETRIEVAL_TOP_K
 
 # --- Параметры парсинга и индексации ---
 # Версия парсера (для отслеживания изменений, требующих переиндексации)
 METADATA_PARSER_VERSION = "v2_hierarchical_structure"
 # Максимальная длина структурного чанка перед вторичным разбиением
-MAX_STRUCT_CHUNK_LENGTH = 1500
+MAX_STRUCT_CHUNK_LENGTH = 2500
 # Параметры для вторичного разбиения (если структурный чанк слишком длинный)
-SECONDARY_CHUNK_SIZE = 512
-SECONDARY_CHUNK_OVERLAP = 50
-MAX_PDF_PAGES = 100 # Максимальное количество страниц в PDF для обработки
+SECONDARY_CHUNK_SIZE = 812
+SECONDARY_CHUNK_OVERLAP = 150
+MAX_PDF_PAGES = 1000 # Максимальное количество страниц в PDF для обработки
 
 # --- Параметры LLM ---
 LLM_REQUEST_TIMEOUT = 300.0 # Таймаут запроса к LLM в секундах
@@ -49,7 +47,7 @@ LLM_CONTEXT_WINDOW = 100000
 # Максимальная длина последовательности для реранкера (в токенах). 
 # Увеличение может улучшить точность реранжирования за счет анализа большего контекста, 
 # но также увеличит потребление памяти и время обработки. Подберите значение, исходя из возможностей вашей модели реранкера и ресурсов.
-RERANKER_MAX_LENGTH = 512 
+RERANKER_MAX_LENGTH = 2048 
 
 # --- Общие параметры ---
 LOGGING_LEVEL = "DEBUG" # Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -191,17 +189,9 @@ if RERANKER_TOP_N > INITIAL_RETRIEVAL_TOP_K: # Проверяем относит
         f"RERANKER_TOP_N ({RERANKER_TOP_N}) "
         f"must be <= INITIAL_RETRIEVAL_TOP_K ({INITIAL_RETRIEVAL_TOP_K}) for safety, ideally <= FILTERED_RETRIEVAL_TOP_K if filters are applied."
     )
-# Можно добавить и RERANKER_TOP_N <= FILTERED_RETRIEVAL_TOP_K, если это жесткое требование
-# if RERANKER_TOP_N > FILTERED_RETRIEVAL_TOP_K:
-#     raise ValueError(
-#         f"RERANKER_TOP_N ({RERANKER_TOP_N}) "
-#         f"must be <= FILTERED_RETRIEVAL_TOP_K ({FILTERED_RETRIEVAL_TOP_K})"
-#     ) 
+
 
 # Мультимодальная LLM для анализа изображений (например, паспортов)
 OLLAMA_MULTIMODAL_LLM_MODEL_NAME = "qwen2.5vl:latest" # Убедитесь, что имя правильное для вашей Ollama
 # Таймаут для мультимодальной LLM
 MULTIMODAL_LLM_REQUEST_TIMEOUT = 900.0
-
-# Конфигурация для Google Vision API (если используется)
-# ... existing code ... 

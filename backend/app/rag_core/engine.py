@@ -24,12 +24,6 @@ from cachetools import TTLCache # Импорт для кэширования
 
 from . import config
 from . import document_parser
-# Ожидаемые методы KnowledgeGraphBuilder:
-# - __init__(self, uri: str, user: str, password: str, db_name: Optional[str] = None)
-# - add_nodes_and_edges(self, nodes: List[Dict], edges: List[Dict]) -> None: Добавляет узлы и ребра в граф Neo4j.
-# - get_article_enrichment_data(self, article_id: str) -> Optional[Dict[str, Any]]: Возвращает данные обогащения для статьи.
-# - close(self) -> None: Закрывает соединение с Neo4j.
-# - _clean_neo4j_database(self, graph_builder: KnowledgeGraphBuilder) -> None: (этот метод в engine.py, но он вызывает методы graph_builder._driver.session)
 from ..graph_builder import KnowledgeGraphBuilder
 from .document_parser import extract_graph_data_from_document
 
@@ -554,18 +548,32 @@ class PensionRAG:
             source_desc_parts = [
                 f"Источник {i+1}: {metadata.get('file_name', 'Неизвестный файл')}"
             ]
-            article_number_text = metadata.get('article_meta', {}).get('number_text') 
-            if not article_number_text:
-                article_number_text = metadata.get('article')
-
-            if article_number_text:
-                source_desc_parts.append(f"Статья {article_number_text}")
             
-            article_title_from_graph = None
-            if graph_enrichment and graph_enrichment.get('article_title'):
-                article_title_from_graph = graph_enrichment['article_title']
-                source_desc_parts.append(f'"{article_title_from_graph}"')
+            article_number_for_prompt = None
+            canonical_id = metadata.get('canonical_article_id')
+            if canonical_id:
+                match_num = re.search(r"_Ст_([\d\-]+)$", canonical_id) # Ищет "_Ст_ЧИСЛО(-ЧИСЛО)" в конце
+                if match_num:
+                    article_number_for_prompt = match_num.group(1).replace('-', '.') # "8" или "8.1"
 
+            article_title_from_graph = graph_enrichment.get('article_title') if graph_enrichment else None
+            full_article_title_from_meta = metadata.get('article')
+
+            if article_number_for_prompt:
+                source_desc_parts.append(f"Статья {article_number_for_prompt}")
+                
+                display_title = article_title_from_graph 
+                if not display_title and full_article_title_from_meta:
+                    # Очищаем "Статья X." из полного заголовка, если он начинается так
+                    cleaned_meta_title = re.sub(rf"^\s*Статья\s*{re.escape(article_number_for_prompt)}\s*\.?\s*", "", full_article_title_from_meta, flags=re.IGNORECASE).strip()
+                    if cleaned_meta_title:
+                        display_title = cleaned_meta_title
+                
+                if display_title:
+                    source_desc_parts.append(f'"{display_title}"')
+            elif full_article_title_from_meta: # Если номера нет, но есть полный заголовок
+                source_desc_parts.append(full_article_title_from_meta) # "Статья X. Название"
+            
             related_pension_types_from_graph = []
             if graph_enrichment and graph_enrichment.get('related_pension_types'):
                 related_pension_types_from_graph = graph_enrichment['related_pension_types']
@@ -594,13 +602,19 @@ class PensionRAG:
             
             context_parts.append(f"{source_desc}\n{content}{enrichment_details_str}")
             
-            summary_source_name = metadata.get('file_name', 'Неизвестный файл')
-            if article_number_text:
-                summary_source_name += f" (Статья {article_number_text}"
-                if article_title_from_graph:
-                    summary_source_name += f": {article_title_from_graph}"
-                summary_source_name += ")"
-            sources_summary.add(summary_source_name)
+            summary_source_name_parts = [metadata.get('file_name', 'Неизвестный файл')]
+            if article_number_for_prompt:
+                summary_source_name_parts.append(f"Ст. {article_number_for_prompt}")
+                
+                if display_title: # display_title уже очищен от "Статья X"
+                    summary_source_name_parts.append(f'"{display_title}"')
+            elif full_article_title_from_meta:
+                 # Если номера нет, но есть полный заголовок, пытаемся его сократить или взять как есть
+                 # Простая эвристика: если слишком длинный, то не добавляем.
+                 if len(full_article_title_from_meta) < 70 : # Произвольный порог длины
+                    summary_source_name_parts.append(f'"{full_article_title_from_meta}"')
+            
+            sources_summary.add(" ".join(summary_source_name_parts))
 
         context_str = "\n\n---\n\n".join(context_parts)
         sources_str = ", ".join(sorted(list(sources_summary))) or "Не указаны"
@@ -757,9 +771,6 @@ class PensionRAG:
             logger.debug("Building prompt with enriched context...")
             final_prompt = self._build_prompt(case_description, enriched_nodes, case_data, disability_info)
             logger.debug(f"Final prompt (first 200 chars): {final_prompt[:200]}...")
-
-            # Добавляем собранный текст промпта в QueryBundle для возможного использования в ретривере или реранкере, если они его ожидают
-            query_bundle = QueryBundle(query_str=final_prompt)
 
             logger.debug("Sending prompt to LLM...")
             response = self.llm.complete(final_prompt)

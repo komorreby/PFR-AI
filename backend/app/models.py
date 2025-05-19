@@ -63,7 +63,7 @@ class CaseDataInput(BaseModel):
     @field_validator('pension_type')
     @classmethod
     def validate_pension_type(cls, v: str):
-        from .rag_core import config as rag_config # Импорт здесь, чтобы избежать циклического импорта
+        from app.rag_core import config as rag_config # Импорт здесь, чтобы избежать циклического импорта
         if v not in rag_config.PENSION_TYPE_MAP:
             raise ValueError(f"Недопустимый тип пенсии: {v}. Допустимые: {list(rag_config.PENSION_TYPE_MAP.keys())}")
         return v
@@ -80,7 +80,6 @@ class ProcessOutput(BaseModel):
     confidence_score: float
     department_code: Optional[str] = None # Код подразделения (например, "770-001")
 
-    # Можно добавить валидаторы для форматов серии, номера, кода подразделения, если нужно
 
 class SnilsData(BaseModel):
     snils_number: Optional[str] = None  # Номер СНИЛС (например, "123-456-789 00")

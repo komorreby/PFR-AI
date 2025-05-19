@@ -138,4 +138,18 @@ export async function extractDocumentData(
   // Если бэкенд в случае ошибки OCR возвращает { documentType: 'error', message: '...' },
   // то handleJsonResponse должен это корректно распарсить как T (OcrExtractionResponse).
   return handleJsonResponse<OcrExtractionResponse>(response);
+}
+
+export interface PensionTypeChoice {
+    [key: string]: string; // Например, "retirement_standard": "Страховая пенсия по старости"
+}
+
+export async function getPensionTypes(): Promise<PensionTypeChoice> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/pension_types`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  return handleJsonResponse<PensionTypeChoice>(response);
 } 

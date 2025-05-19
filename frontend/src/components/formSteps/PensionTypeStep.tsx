@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import {
   FormControl,
   FormLabel,
@@ -5,10 +6,12 @@ import {
   Button,
   FormErrorMessage,
   Heading,
-  Icon
+  Spinner,
+  Alert,
+  AlertIcon,
+  Text
 } from '@chakra-ui/react';
-import { FaUserClock, FaWheelchair } from 'react-icons/fa';
-import { IconType } from 'react-icons';
+import { getPensionTypes, PensionTypeChoice } from '../../services/client';
 
 interface PensionTypeStepProps {
   selectedValue: string | null;
@@ -16,52 +19,77 @@ interface PensionTypeStepProps {
   errorMessage?: string;
 }
 
-const pensionTypes: { value: string; label: string; icon: IconType }[] = [
-  {
-    value: 'retirement_standard',
-    label: 'Страховая пенсия по старости (общий случай)',
-    icon: FaUserClock,
-  },
-  {
-    value: 'disability_social',
-    label: 'Социальная пенсия по инвалидности',
-    icon: FaWheelchair,
-  },
-  // TODO: Добавить другие типы пенсий с их иконками
-];
-
 function PensionTypeStep({
   selectedValue,
   onChange,
-  errorMessage,
+  errorMessage: propErrorMessage,
 }: PensionTypeStepProps) {
+  const [availablePensionTypes, setAvailablePensionTypes] = useState<PensionTypeChoice | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const types = await getPensionTypes();
+        setAvailablePensionTypes(types);
+      } catch (err) {
+        console.error("Failed to fetch pension types:", err);
+        setError(err instanceof Error ? err.message : "Не удалось загрузить типы пенсий.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTypes();
+  }, []);
+
+  if (loading) {
+    return <Spinner />;
+  }
+
+  if (error) {
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        {error}
+      </Alert>
+    );
+  }
+
+  if (!availablePensionTypes || Object.keys(availablePensionTypes).length === 0) {
+    return <Text>Типы пенсий не найдены или не загружены.</Text>;
+  }
+
   return (
-    <FormControl isInvalid={!!errorMessage}>
+    <FormControl isInvalid={!!propErrorMessage}>
       <Heading size="md" mb={6}>
         Выберите тип назначаемой пенсии
       </Heading>
-      <FormLabel>Тип пенсии:</FormLabel>
-      <Stack direction={['column', 'row']} spacing="4" align="stretch">
-        {pensionTypes.map((type) => (
+      <FormLabel htmlFor="pensionTypeSelect">Тип пенсии:</FormLabel>
+      <Stack direction={['column', 'row']} spacing="4" align="stretch" wrap="wrap">
+        {Object.entries(availablePensionTypes).map(([typeKey, typeLabel]) => (
           <Button
-            key={type.value}
-            variant={selectedValue === type.value ? 'solid' : 'outline'}
+            key={typeKey}
+            variant={selectedValue === typeKey ? 'solid' : 'outline'}
             colorScheme="blue"
-            onClick={() => onChange(type.value)}
-            leftIcon={<Icon as={type.icon} />}
+            onClick={() => onChange(typeKey)}
             size="lg"
             justifyContent="flex-start"
-            flex={1}
+            flex={{ base: "1 1 100%", md: "0 1 auto" }}
+            minWidth="200px"
             textAlign="left"
             whiteSpace="normal"
             height="auto"
             py={3}
+            px={4}
           >
-            {type.label}
+            {typeLabel}
           </Button>
         ))}
       </Stack>
-      {errorMessage && <FormErrorMessage>{errorMessage}</FormErrorMessage>}
+      {propErrorMessage && <FormErrorMessage>{propErrorMessage}</FormErrorMessage>}
     </FormControl>
   );
 }
