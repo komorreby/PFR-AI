@@ -1,5 +1,5 @@
 import React from 'react';
-import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch, UseFormSetValue } from 'react-hook-form';
+import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch, UseFormSetValue, FieldPath } from 'react-hook-form';
 import DatePicker from "react-datepicker";
 import { parse, isValid } from 'date-fns'; // format здесь не нужен, если formatDateForInput используется
 import { IMaskInput } from 'react-imask';
@@ -12,37 +12,39 @@ import {
     Input,
     FormErrorMessage,
     Select,
-    NumberInput,
+    NumberInput, // Оставим, т.к. может быть нужен в других частях или после рефакторинга
     NumberInputField,
     NumberInputStepper,
     NumberIncrementStepper,
     NumberDecrementStepper,
     Divider,
-    Checkbox
+    Checkbox,
+    Textarea
 } from '@chakra-ui/react';
 // Используем типы из центрального файла
-import { CaseFormDataTypeForRHF, PersonalData, NameChangeInfo } from '../../types'; 
+import { CaseFormDataTypeForRHF, PersonalData as PersonalDataModel, NameChangeInfo as NameChangeInfoModel } from '../../types'; 
 import CustomDateInput from '../formInputs/CustomDateInput';
 import { formatDateForInput } from '../../utils';
 
 // Список стран СНГ
 const cisCountries = [
     "Россия", "Армения", "Азербайджан", "Беларусь", "Казахстан",
-    "Кыргызстан", "Молдова", "Таджикистан", "Узбекистан"
+    "Кыргызстан", "Молдова", "Таджикистан", "Узбекистан", "Другое"
 ];
 
-// Уточняем тип для getErrorMessage для полей PersonalData
-type PersonalDataFieldName = `personal_data.${keyof PersonalData}` | `personal_data.name_change_info.${keyof NameChangeInfo}` | `personal_data.${string}`;
+// Обновляем тип для getErrorMessage, используя PersonalDataModel и NameChangeInfoModel для большей точности
+type PersonalDataStepFieldName = 
+  | `personal_data.${keyof Omit<PersonalDataModel, 'name_change_info' | 'dependents'>}` 
+  | `personal_data.name_change_info.${keyof NameChangeInfoModel}`;
 
 
 interface PersonalDataStepProps {
     control: Control<CaseFormDataTypeForRHF>;
     register: UseFormRegister<CaseFormDataTypeForRHF>;
-    // errors теперь типизируется более конкретно, если это поле из PersonalData
-    errors: FieldErrors<CaseFormDataTypeForRHF['personal_data']>; 
+    errors: FieldErrors<CaseFormDataTypeForRHF['personal_data']>;
     watch: UseFormWatch<CaseFormDataTypeForRHF>;
     setValue: UseFormSetValue<CaseFormDataTypeForRHF>;
-    getErrorMessage: (name: PersonalDataFieldName) => string | undefined;
+    getErrorMessage: (name: PersonalDataStepFieldName) => string | undefined;
 }
 
 const PersonalDataStep: React.FC<PersonalDataStepProps> = ({ 
@@ -55,7 +57,7 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
     return (
         <VStack spacing={4} align="stretch">
             <Heading size="md" mb={4}>Личные данные</Heading>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
                 {/* Фамилия */}
                 <FormControl isInvalid={!!getErrorMessage('personal_data.last_name') || !!errors?.last_name}>
                     <FormLabel htmlFor="personal_data.last_name">Фамилия</FormLabel>
@@ -153,9 +155,16 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                     </Select>
                     <FormErrorMessage>{getErrorMessage('personal_data.gender') || errors?.gender?.message}</FormErrorMessage>
                 </FormControl>
+            </SimpleGrid>
 
-                {/* Гражданство */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.citizenship') || !!errors?.citizenship}>
+            <FormControl isInvalid={!!getErrorMessage('personal_data.birth_place') || !!errors?.birth_place}>
+                <FormLabel htmlFor="personal_data.birth_place">Место рождения</FormLabel>
+                <Textarea id="personal_data.birth_place" {...register("personal_data.birth_place")} placeholder="Например: г. Москва, Российская Федерация" />
+                <FormErrorMessage>{getErrorMessage('personal_data.birth_place') || errors?.birth_place?.message}</FormErrorMessage>
+            </FormControl>
+            
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mt={4}>
+                 <FormControl isInvalid={!!getErrorMessage('personal_data.citizenship') || !!errors?.citizenship}>
                     <FormLabel htmlFor="personal_data.citizenship">Гражданство</FormLabel>
                     <Select
                         id="personal_data.citizenship"
@@ -170,31 +179,49 @@ const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                     <FormErrorMessage>{getErrorMessage('personal_data.citizenship') || errors?.citizenship?.message}</FormErrorMessage>
                 </FormControl>
 
-                {/* Иждивенцы */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.dependents') || !!errors?.dependents}>
-                    <FormLabel htmlFor="personal_data.dependents">Количество иждивенцев</FormLabel>
-                    <Controller
-                        name="personal_data.dependents"
+                <FormControl isInvalid={!!getErrorMessage('personal_data.passport_series') || !!errors?.passport_series}>
+                    <FormLabel htmlFor="personal_data.passport_series">Серия паспорта</FormLabel>
+                    <Input id="personal_data.passport_series" {...register("personal_data.passport_series")} placeholder="XXXX"/>
+                    <FormErrorMessage>{getErrorMessage('personal_data.passport_series') || errors?.passport_series?.message}</FormErrorMessage>
+                </FormControl>
+
+                <FormControl isInvalid={!!getErrorMessage('personal_data.passport_number') || !!errors?.passport_number}>
+                    <FormLabel htmlFor="personal_data.passport_number">Номер паспорта</FormLabel>
+                    <Input id="personal_data.passport_number" {...register("personal_data.passport_number")} placeholder="XXXXXX"/>
+                    <FormErrorMessage>{getErrorMessage('personal_data.passport_number') || errors?.passport_number?.message}</FormErrorMessage>
+                </FormControl>
+            </SimpleGrid>
+
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mt={4}>
+                 <FormControl isInvalid={!!getErrorMessage('personal_data.issuing_authority') || !!errors?.issuing_authority}>
+                    <FormLabel htmlFor="personal_data.issuing_authority">Кем выдан паспорт</FormLabel>
+                    <Input id="personal_data.issuing_authority" {...register("personal_data.issuing_authority")} />
+                    <FormErrorMessage>{getErrorMessage('personal_data.issuing_authority') || errors?.issuing_authority?.message}</FormErrorMessage>
+                </FormControl>
+
+                <FormControl isInvalid={!!getErrorMessage('personal_data.issue_date') || !!errors?.issue_date}>
+                    <FormLabel htmlFor="personal_data.issue_date">Дата выдачи паспорта</FormLabel>
+                     <Controller
+                        name="personal_data.issue_date"
                         control={control}
-                        defaultValue={0} // Установка defaultValue здесь
-                        rules={{ 
-                            min: { value: 0, message: "Должно быть не меньше 0"}
-                        }}
-                        render={({ field: { onChange, onBlur, value, ref } }) => ( // Явно деструктурируем field
-                            <NumberInput 
-                                id="personal_data.dependents" 
-                                min={0}
-                                value={value ?? ''} // Если value undefined/null, передаем '' в NumberInput
-                                onChange={(_valueAsString, valueAsNumber) => onChange(isNaN(valueAsNumber) ? 0 : valueAsNumber)} // Передаем 0 если NaN
-                                onBlur={onBlur}
-                                bg="cardBackground"
-                            >
-                                <NumberInputField ref={ref} />
-                                <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
-                            </NumberInput>
+                        render={({ field }) => (
+                            <DatePicker
+                                selected={field.value && isValid(parse(field.value, 'yyyy-MM-dd', new Date())) ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
+                                onChange={(date: Date | null) => field.onChange(formatDateForInput(date))}
+                                customInput={<CustomDateInput id={field.name} fieldOnChange={field.onChange} maxDate={new Date()} />}
+                                locale="ru" showYearDropdown scrollableYearDropdown yearDropdownItemNumber={100}
+                                maxDate={new Date()} dateFormat="dd.MM.yyyy" placeholderText="ДД.ММ.ГГГГ"
+                                autoComplete="off" shouldCloseOnSelect={true}
+                            />
                         )}
-                     />
-                    <FormErrorMessage>{getErrorMessage('personal_data.dependents') || errors?.dependents?.message}</FormErrorMessage>
+                    />
+                    <FormErrorMessage>{getErrorMessage('personal_data.issue_date') || errors?.issue_date?.message}</FormErrorMessage>
+                </FormControl>
+
+                <FormControl isInvalid={!!getErrorMessage('personal_data.department_code') || !!errors?.department_code}>
+                    <FormLabel htmlFor="personal_data.department_code">Код подразделения</FormLabel>
+                    <Input id="personal_data.department_code" {...register("personal_data.department_code")} placeholder="XXX-XXX"/>
+                    <FormErrorMessage>{getErrorMessage('personal_data.department_code') || errors?.department_code?.message}</FormErrorMessage>
                 </FormControl>
             </SimpleGrid>
 

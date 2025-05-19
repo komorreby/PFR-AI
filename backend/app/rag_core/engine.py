@@ -711,11 +711,6 @@ class PensionRAG:
                 logger.warning(f"FILTERED_RETRIEVAL_TOP_K ({effective_config['FILTERED_RETRIEVAL_TOP_K']}) cannot be greater than INITIAL_RETRIEVAL_TOP_K ({effective_config['INITIAL_RETRIEVAL_TOP_K']}). Adjusting...")
                 effective_config['FILTERED_RETRIEVAL_TOP_K'] = effective_config['INITIAL_RETRIEVAL_TOP_K']
             
-            # RERANKER_TOP_N должен быть меньше или равен FILTERED_RETRIEVAL_TOP_K, если фильтры использовались,
-            # или INITIAL_RETRIEVAL_TOP_K, если фильтры не использовались (это сложнее отследить здесь без знания, были ли фильтры применены).
-            # Для простоты, если FILTERED_RETRIEVAL_TOP_K был переопределен, то RERANKER_TOP_N не должен его превышать.
-            # Если только RERANKER_TOP_N переопределен, он не должен превышать существующий FILTERED_RETRIEVAL_TOP_K.
-            # Наиболее безопасная проверка - RERANKER_TOP_N <= INITIAL_RETRIEVAL_TOP_K, т.к. это максимум извлекаемых узлов.
             if effective_config['RERANKER_TOP_N'] > effective_config['INITIAL_RETRIEVAL_TOP_K']:
                  logger.warning(f"RERANKER_TOP_N ({effective_config['RERANKER_TOP_N']}) cannot be greater than INITIAL_RETRIEVAL_TOP_K ({effective_config['INITIAL_RETRIEVAL_TOP_K']}). Adjusting...")
                  effective_config['RERANKER_TOP_N'] = effective_config['INITIAL_RETRIEVAL_TOP_K']
@@ -773,9 +768,6 @@ class PensionRAG:
             logger.info("Received response from LLM.")
             logger.debug(f"LLM Response (raw, first 500 chars): {llm_output_text[:500]}...")
 
-            # Удаляем или заменяем блок <think>...</think>
-            # Паттерн для поиска блока <think>...</think> с учетом многострочности
-            # re.DOTALL позволяет точке '.' совпадать с символом новой строки
             cleaned_response_text = re.sub(r"<think>.*?</think>\s*", "", llm_output_text, flags=re.DOTALL | re.IGNORECASE).strip()
 
             # Если нужно сохранить "мысли" для логов, но не показывать пользователю:
@@ -787,9 +779,6 @@ class PensionRAG:
 
             logger.debug(f"LLM Response (cleaned, first 100 chars): {cleaned_response_text[:100]}...")
 
-            # Расчет confidence_score (пока что просто возвращаем 0.0 или значение из Reranker, если есть)
-            # В будущем здесь может быть более сложная логика оценки уверенности на основе ответа LLM
-            # Мы уже имеем reranker_score, его можно использовать или адаптировать
             final_confidence_score = confidence_score # Используем confidence_score, который обновляется в блоке reranker
 
             return cleaned_response_text, final_confidence_score
@@ -818,9 +807,6 @@ class PensionRAG:
         no_data_found_count = 0
         
         try:
-            # graph_builder = KnowledgeGraphBuilder( # Удаляем локальное создание
-            # ...
-            # )
             enriched_nodes = []
             
             for idx, node_with_score in enumerate(nodes):
@@ -856,9 +842,6 @@ class PensionRAG:
             logger.error(f"Error during node enrichment with graph data: {e}", exc_info=True)
             logger.warning("Continuing without graph enrichment due to error.")
             return nodes
-        # finally:
-            # if graph_builder: # Удаляем закрытие локального graph_builder
-            # ...
 
 # --- Пример использования (для локального тестирования) ---
 if __name__ == '__main__':

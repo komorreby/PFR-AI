@@ -47,7 +47,8 @@ cases_table = Table(
     Column("final_status", String(50), nullable=True),   # Статус рассмотрения дела (approved/rejected)
     Column("final_explanation", Text, nullable=True),    # Итоговое объяснение от RAG + ML
     Column("rag_confidence", Float, nullable=True), # Новое поле
-    Column("created_at", DateTime, server_default=func.now(), nullable=False) # <--- Добавлена колонка
+    Column("created_at", DateTime, server_default=func.now(), nullable=False), # <--- Добавлена колонка
+    Column("other_documents_extracted_data", Text, nullable=True) # Будем хранить как JSON строку
 )
 
 # --- Функция для создания таблицы при старте (если не существует) ---

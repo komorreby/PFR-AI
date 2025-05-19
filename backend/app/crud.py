@@ -19,7 +19,8 @@ async def create_case(
     has_incorrect_document: Optional[bool] = False,
     final_status: Optional[str] = None,
     final_explanation: Optional[str] = None,
-    rag_confidence: Optional[float] = None
+    rag_confidence: Optional[float] = None,
+    other_documents_extracted_data: Optional[List[Dict[str, Any]]] = None
 ):
     """Сохраняет данные дела, ошибки, тип пенсии и данные об инвалидности."""
     insert_stmt = insert(cases_table).values(
@@ -34,7 +35,8 @@ async def create_case(
         has_incorrect_document=has_incorrect_document,
         final_status=final_status,
         final_explanation=final_explanation,
-        rag_confidence=rag_confidence
+        rag_confidence=rag_confidence,
+        other_documents_extracted_data=json.dumps(other_documents_extracted_data) if other_documents_extracted_data else None
     )
     result = await conn.execute(insert_stmt)
     await conn.commit() # Явно коммитим транзакцию
@@ -66,7 +68,8 @@ async def get_cases(conn: AsyncConnection, skip: int = 0, limit: int = 100) -> L
             "final_status": case_data["final_status"],
             "final_explanation": case_data["final_explanation"],
             "rag_confidence": case_data["rag_confidence"],
-            "created_at": created_at_value
+            "created_at": created_at_value,
+            "other_documents_extracted_data": json.loads(case_data["other_documents_extracted_data"]) if case_data.get("other_documents_extracted_data") else None
         })
     return cases
 
@@ -79,6 +82,7 @@ async def get_case_by_id(conn: AsyncConnection, case_id: int) -> Optional[Dict[s
     if row:
         # Используем _mapping для доступа к данным по имени колонки
         case_data = row._mapping
+        created_at_value = case_data.get("created_at") 
         return {
             "id": case_data["id"],
             "personal_data": json.loads(case_data["personal_data"]),
@@ -92,6 +96,8 @@ async def get_case_by_id(conn: AsyncConnection, case_id: int) -> Optional[Dict[s
             "has_incorrect_document": case_data["has_incorrect_document"],
             "final_status": case_data["final_status"],
             "final_explanation": case_data["final_explanation"],
-            "rag_confidence": case_data["rag_confidence"]
+            "rag_confidence": case_data["rag_confidence"],
+            "created_at": created_at_value,
+            "other_documents_extracted_data": json.loads(case_data["other_documents_extracted_data"]) if case_data.get("other_documents_extracted_data") else None
         }
     return None

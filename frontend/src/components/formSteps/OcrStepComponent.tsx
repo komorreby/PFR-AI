@@ -13,7 +13,7 @@ import {
   AlertDescription,
   SimpleGrid, // Для размещения двух загрузчиков
 } from '@chakra-ui/react';
-import { UseFormSetValue, UseFormTrigger, Control } from 'react-hook-form';
+import { UseFormSetValue, UseFormTrigger, Control, FieldPath, UseFormGetValues } from 'react-hook-form';
 import OcrUploader from '../formInputs/OcrUploader';
 import type { CaseFormDataTypeForRHF, OcrExtractionResponse, OcrDocumentType, OcrPassportData, OcrSnilsData } from '../../types';
 import { formatDateForInput } from '../../utils'; // Для форматирования дат
@@ -22,57 +22,131 @@ import { isValid, parse as parseDate } from 'date-fns'; // Для парсинг
 interface OcrStepComponentProps {
   setValue: UseFormSetValue<CaseFormDataTypeForRHF>;
   trigger: UseFormTrigger<CaseFormDataTypeForRHF>;
-  control: Control<CaseFormDataTypeForRHF>; // Пока не используется, но может понадобиться
-  // Можно добавить проп для управления видимостью кнопки "Пропустить", если она нужна
-  // showSkipButton?: boolean;
-  // onSkip?: () => void;
+  getValues: UseFormGetValues<CaseFormDataTypeForRHF>;
+  control?: Control<CaseFormDataTypeForRHF>;
+  onOcrErrorProp?: (error: any, docType: OcrDocumentType) => void; // Переименовал, чтобы не конфликтовать
 }
 
 const OcrStepComponent: React.FC<OcrStepComponentProps> = ({
   setValue,
   trigger,
-  // control, // Пока не используется
-  // onStepComplete, // Пока не используется
+  getValues,
+  onOcrErrorProp, 
 }) => {
-  const toast = useToast();
+  const toast = useToast(); // toast объявлен здесь
+
+  // Обработчик ошибок по умолчанию или переданный
+  const handleOcrError = onOcrErrorProp || ((error, docType) => {
+    console.error(`Error processing ${docType}:`, error);
+    toast({
+        title: `Ошибка обработки ${docType}`,
+        description: error.message || "Произошла неизвестная ошибка",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+    });
+  });
 
   const handleOcrSuccess = async (ocrData: OcrExtractionResponse, docType: OcrDocumentType) => {
-    let fieldsUpdated: (keyof CaseFormDataTypeForRHF['personal_data'])[] = [];
+    let fieldsUpdated: FieldPath<CaseFormDataTypeForRHF>[] = [];
     let mainMessage = 'Данные не распознаны или документ не поддерживается для автозаполнения.';
     let toastStatus: "success" | "info" | "warning" = 'info';
 
     if (ocrData.documentType === 'passport' && ocrData.data) {
       const data = ocrData.data as OcrPassportData;
       mainMessage = 'Паспортные данные частично распознаны!';
-      if (data.last_name) { setValue('personal_data.last_name', data.last_name, { shouldDirty: true }); fieldsUpdated.push('last_name'); }
-      if (data.first_name) { setValue('personal_data.first_name', data.first_name, { shouldDirty: true }); fieldsUpdated.push('first_name'); }
-      if (data.middle_name) { setValue('personal_data.middle_name', data.middle_name, { shouldDirty: true }); fieldsUpdated.push('middle_name'); }
+      if (data.last_name) { setValue('personal_data.last_name', data.last_name, { shouldDirty: true }); fieldsUpdated.push('personal_data.last_name'); }
+      if (data.first_name) { setValue('personal_data.first_name', data.first_name, { shouldDirty: true }); fieldsUpdated.push('personal_data.first_name'); }
+      if (data.middle_name) { setValue('personal_data.middle_name', data.middle_name, { shouldDirty: true }); fieldsUpdated.push('personal_data.middle_name'); }
+      
       if (data.birth_date) {
-        // Пытаемся распарсить дату из DD.MM.YYYY или YYYY-MM-DD
-        let parsedDate = parseDate(data.birth_date, 'dd.MM.yyyy', new Date());
-        if (!isValid(parsedDate)) {
-          parsedDate = parseDate(data.birth_date, 'yyyy-MM-dd', new Date());
+        let parsedBDate = parseDate(data.birth_date, 'dd.MM.yyyy', new Date());
+        if (!isValid(parsedBDate)) {
+          parsedBDate = parseDate(data.birth_date, 'yyyy-MM-dd', new Date());
         }
-        if (isValid(parsedDate)) {
-          setValue('personal_data.birth_date', formatDateForInput(parsedDate), { shouldDirty: true });
-          fieldsUpdated.push('birth_date');
+        if (isValid(parsedBDate)) {
+          setValue('personal_data.birth_date', formatDateForInput(parsedBDate), { shouldDirty: true });
+          fieldsUpdated.push('personal_data.birth_date');
         } else {
-          console.warn(`OCR: Не удалось распознать формат даты рождения из паспорта: ${data.birth_date}`);
+          console.warn(`OCR Passport: Не удалось распознать формат даты рождения: ${data.birth_date}`);
         }
       }
-      if (data.sex) {
+
+      if (data.sex) { 
         const gender = data.sex.toLowerCase().startsWith('муж') ? 'male' : (data.sex.toLowerCase().startsWith('жен') ? 'female' : '');
-        if (gender) { setValue('personal_data.gender', gender, { shouldDirty: true }); fieldsUpdated.push('gender'); }
+        if (gender) { setValue('personal_data.gender', gender, { shouldDirty: true }); fieldsUpdated.push('personal_data.gender'); }
       }
-      // TODO: Добавить маппинг для других полей паспорта, если они есть в PersonalData (passport_series, number, issue_date etc.)
-      // например, если есть snils в паспорте, а не отдельным документом
-      // if (data.snils) { setValue('personal_data.snils', data.snils, { shouldDirty: true }); fieldsUpdated.push('snils'); }
+
+      if (data.birth_place) {
+        setValue('personal_data.birth_place', data.birth_place, { shouldDirty: true });
+        fieldsUpdated.push('personal_data.birth_place');
+        if (data.birth_place.toLowerCase().includes('российская федерация') || data.birth_place.toLowerCase().includes('россия')) {
+          setValue('personal_data.citizenship', 'Россия', { shouldDirty: true });
+          fieldsUpdated.push('personal_data.citizenship');
+        }
+      }
+      if (data.passport_series) { setValue('personal_data.passport_series', data.passport_series, { shouldDirty: true }); fieldsUpdated.push('personal_data.passport_series'); }
+      if (data.passport_number) { setValue('personal_data.passport_number', data.passport_number, { shouldDirty: true }); fieldsUpdated.push('personal_data.passport_number'); }
+      if (data.issuing_authority) { setValue('personal_data.issuing_authority', data.issuing_authority, { shouldDirty: true }); fieldsUpdated.push('personal_data.issuing_authority'); }
+      if (data.department_code) { setValue('personal_data.department_code', data.department_code, { shouldDirty: true }); fieldsUpdated.push('personal_data.department_code'); }
+
+      if (data.issue_date) {
+        let parsedIssueDate = parseDate(data.issue_date, 'dd.MM.yyyy', new Date());
+        if (!isValid(parsedIssueDate)) {
+          parsedIssueDate = parseDate(data.issue_date, 'yyyy-MM-dd', new Date());
+        }
+        if (isValid(parsedIssueDate)) {
+          setValue('personal_data.issue_date', formatDateForInput(parsedIssueDate), { shouldDirty: true });
+          fieldsUpdated.push('personal_data.issue_date');
+        } else {
+          console.warn(`OCR Passport: Не удалось распознать формат даты выдачи: ${data.issue_date}`);
+        }
+      }
+
+      // Добавляем "паспорт" в поле documents
+      const currentDocsStringPassport = getValues('documents') || '';
+      let docsArrayPassport = currentDocsStringPassport.split(',').map(d => d.trim()).filter(Boolean);
+      if (!docsArrayPassport.includes('паспорт')) {
+        docsArrayPassport.push('паспорт');
+        setValue('documents', docsArrayPassport.join(', '), { shouldDirty: true });
+      }
+
     } else if (ocrData.documentType === 'snils' && ocrData.data) {
       const data = ocrData.data as OcrSnilsData;
-      mainMessage = 'Номер СНИЛС распознан!';
-      if (data.snils_number) { setValue('personal_data.snils', data.snils_number, { shouldDirty: true }); fieldsUpdated.push('snils'); }
+      mainMessage = 'Данные СНИЛС частично распознаны!';
+      if (data.snils_number) { 
+        setValue('personal_data.snils', data.snils_number, { shouldDirty: true }); 
+        fieldsUpdated.push('personal_data.snils'); 
+      }
+      if (data.last_name && !getValues('personal_data.last_name')) { setValue('personal_data.last_name', data.last_name, { shouldDirty: true }); fieldsUpdated.push('personal_data.last_name'); }
+      if (data.first_name && !getValues('personal_data.first_name')) { setValue('personal_data.first_name', data.first_name, { shouldDirty: true }); fieldsUpdated.push('personal_data.first_name'); }
+      if (data.middle_name && !getValues('personal_data.middle_name')) { setValue('personal_data.middle_name', data.middle_name, { shouldDirty: true }); fieldsUpdated.push('personal_data.middle_name'); }
+      if (data.birth_date && !getValues('personal_data.birth_date')) {
+        let parsedBDateSnils = parseDate(data.birth_date, 'dd.MM.yyyy', new Date());
+        if (!isValid(parsedBDateSnils)) {
+          parsedBDateSnils = parseDate(data.birth_date, 'yyyy-MM-dd', new Date());
+        }
+        if (isValid(parsedBDateSnils)) {
+          setValue('personal_data.birth_date', formatDateForInput(parsedBDateSnils), { shouldDirty: true });
+          fieldsUpdated.push('personal_data.birth_date');
+        } else {
+           console.warn(`OCR SNILS: Не удалось распознать формат даты рождения: ${data.birth_date}`);
+        }
+      }
+       if (data.gender && !getValues('personal_data.gender')) {
+        const gender = data.gender.toLowerCase().startsWith('муж') ? 'male' : (data.gender.toLowerCase().startsWith('жен') ? 'female' : '');
+        if (gender) { setValue('personal_data.gender', gender, { shouldDirty: true }); fieldsUpdated.push('personal_data.gender'); }
+      }
+
+      // Добавляем "снилс" в поле documents
+      const currentDocsStringSnils = getValues('documents') || '';
+      let docsArraySnils = currentDocsStringSnils.split(',').map(d => d.trim()).filter(Boolean);
+      if (!docsArraySnils.includes('снилс')) {
+        docsArraySnils.push('снилс');
+        setValue('documents', docsArraySnils.join(', '), { shouldDirty: true });
+      }
+
     } else if (ocrData.documentType === 'other' && ocrData.data) {
-      // Логика для других типов документов, если она нужна для предзаполнения
       mainMessage = `Документ типа '${ocrData.data.identified_document_type || 'Другой'}' обработан. Автозаполнение для этого типа не настроено.`;
       console.log('OCR Other Document Data:', ocrData.data);
       toastStatus = 'info';
@@ -80,6 +154,7 @@ const OcrStepComponent: React.FC<OcrStepComponentProps> = ({
       mainMessage = ocrData.message || 'Произошла ошибка при обработке документа.';
       console.error('OCR Error (structured):', ocrData.errorDetails);
       toastStatus = 'warning';
+      handleOcrError(ocrData.errorDetails || new Error(mainMessage), docType); // Используем общий обработчик
     }
 
     if (fieldsUpdated.length > 0) {
@@ -91,34 +166,20 @@ const OcrStepComponent: React.FC<OcrStepComponentProps> = ({
         duration: 7000,
         isClosable: true,
       });
-      // Запускаем валидацию для обновленных полей
-      // Важно: trigger может принимать массив строк, соответствующих именам полей в react-hook-form
-      const fieldsToTrigger = fieldsUpdated.map(f => `personal_data.${f}` as const);
-      if (fieldsToTrigger.length > 0) {
-        trigger(fieldsToTrigger);
+      if (fieldsUpdated.length > 0) {
+        trigger(fieldsUpdated as FieldPath<CaseFormDataTypeForRHF>[]);
       }
     } else {
-      toast({
-        title: ocrData.documentType === 'error' ? 'Ошибка OCR' : 'Результат OCR',
-        description: mainMessage,
-        status: toastStatus, // уже установлено в 'info' или 'warning'
-        duration: 5000,
-        isClosable: true,
-      });
+      if (ocrData.documentType === 'error' || toastStatus !== 'info') {
+        toast({
+            title: ocrData.documentType === 'error' ? 'Ошибка OCR' : 'Результат OCR',
+            description: mainMessage,
+            status: toastStatus,
+            duration: 5000,
+            isClosable: true,
+        });
+      }
     }
-    
-    // Если есть колбэк для завершения шага (например, для автоматического перехода)
-    // onStepComplete?.();
-  };
-
-  const handleOcrError = (message: string, docType: OcrDocumentType) => {
-    toast({
-      title: `Критическая ошибка OCR (${docType})`,
-      description: message,
-      status: 'error',
-      duration: 7000,
-      isClosable: true,
-    });
   };
 
   return (
@@ -132,13 +193,13 @@ const OcrStepComponent: React.FC<OcrStepComponentProps> = ({
         <OcrUploader 
           documentType="passport" 
           onOcrSuccess={handleOcrSuccess} 
-          onOcrError={handleOcrError} 
+          onOcrError={(err) => handleOcrError(err, 'passport')} 
           uploaderTitle="Загрузить Паспорт РФ"
         />
         <OcrUploader 
           documentType="snils" 
           onOcrSuccess={handleOcrSuccess} 
-          onOcrError={handleOcrError} 
+          onOcrError={(err) => handleOcrError(err, 'snils')} 
           uploaderTitle="Загрузить СНИЛС"
         />
       </SimpleGrid>

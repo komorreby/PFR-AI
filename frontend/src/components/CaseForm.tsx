@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, useFieldArray, SubmitHandler, FieldPath, FieldValues, UseFormRegister, FieldErrors, Control, UseFormGetValues, UseFormSetValue, UseFormWatch } from 'react-hook-form';
+import { useForm, useFieldArray, SubmitHandler, FieldPath, FieldValues, UseFormRegister, FieldErrors, Control, UseFormGetValues, UseFormSetValue, UseFormWatch, UseFormTrigger } from 'react-hook-form';
 import {
   Box, Button, Heading, Stepper, Step, StepIndicator, StepStatus,
   StepIcon, StepNumber, StepTitle, StepDescription, StepSeparator,
@@ -36,7 +36,8 @@ import {
   CaseFormData, 
   ProcessOutput as BackendProcessOutput,
   ApiErrorDetail,
-  WorkRecord
+  WorkRecord,
+  PersonalData as PersonalDataModel // Импортируем оригинальный PersonalData для defaultValues
 } from '../types';
 
 // Определяем типы для данных формы, основываясь на Pydantic моделях
@@ -110,6 +111,7 @@ interface StepComponentProps {
   setValue: UseFormSetValue<CaseFormDataTypeForRHF>;
   getErrorMessage: (name: string) => string | undefined; // TODO: Можно сузить тип name
   watch: UseFormWatch<CaseFormDataTypeForRHF>;
+  trigger: UseFormTrigger<CaseFormDataTypeForRHF>;
   // Дополнительные пропсы для конкретных шагов могут быть добавлены через пересечение типов
   // Например: selectedValue?: string; onChange?: (value: string) => void; fieldArray?: any; pensionType?: string | null; formData?: CaseFormDataTypeForRHF
 }
@@ -119,7 +121,7 @@ interface StepDefinition<TFieldValues extends FieldValues = CaseFormDataTypeForR
   id: string;
   title: string;
   description: string;
-  component: React.FC<StepComponentProps & any>; // Возвращаем any для дополнительных пропсов
+  component: React.FC<StepComponentProps & any>;
   fieldsToValidate?: FieldPath<TFieldValues>[];
 }
 
@@ -131,29 +133,32 @@ const stepDefinitions: { [key: string]: StepDefinition<CaseFormDataTypeForRHF> }
   },
   ocrStep: {
     id: 'ocrStep', title: 'Шаг 2', description: 'Автозаполнение', component: OcrStepComponent,
-    fieldsToValidate: []
+    fieldsToValidate: [] // OCR шаг сам по себе не валидирует поля формы, он их заполняет
   },
   personalData: {
     id: 'personalData', title: 'Шаг 3', description: 'Личные данные', component: PersonalDataStep,
-    fieldsToValidate: [
+    fieldsToValidate: [ // Убрали 'personal_data.dependents'
       'personal_data.last_name', 'personal_data.first_name',
       'personal_data.birth_date', 'personal_data.snils',
-      'personal_data.gender', 'personal_data.citizenship', 'personal_data.dependents'
-      // Валидация name_change_info будет динамической
+      'personal_data.gender', 'personal_data.citizenship',
+      // Новые поля не добавляем в валидацию, т.к. они необязательные
     ]
   },
   workExperience: {
     id: 'workExperience', title: 'Шаг 4', description: 'Трудовой стаж', component: WorkExperienceStep,
     fieldsToValidate: ['work_experience.total_years']
-    // Валидация work_experience.records.* будет динамической
   },
   disabilityInfo: {
+    // Этот шаг может называться по-разному в зависимости от потока, 
+    // но ID должен быть уникальным, если это отдельный компонент.
+    // Если это тот же AdditionalInfoStep, но с другими полями, то ID может быть тем же.
+    // Пока оставим так, подразумевая что DisabilityInfoStep - это отдельный компонент шага.
     id: 'disabilityInfo', title: 'Шаг 4', description: 'Инвалидность', component: DisabilityInfoStep,
-    fieldsToValidate: ['disability.group', 'disability.date']
+    fieldsToValidate: ['disability.group', 'disability.date'] // Поля для валидации при инвалидности
   },
   additionalInfo: {
     id: 'additionalInfo', title: 'Шаг 5', description: 'Доп. инфо', component: AdditionalInfoStep,
-    fieldsToValidate: ['pension_points']
+    fieldsToValidate: ['pension_points', 'dependents'] // Добавили 'dependents' сюда
   },
   summary: {
     id: 'summary', title: 'Шаг 6', description: 'Сводка', component: SummaryStep,
@@ -238,17 +243,24 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     mode: 'onBlur',
     defaultValues: {
       pension_type: '',
-      personal_data: {
-        last_name: '',  
-        first_name: '', 
+      personal_data: { // dependents здесь нет
+        last_name: '',
+        first_name: '',
         middle_name: '',
         birth_date: '',
         snils: '',
         gender: '',
-        citizenship: '',
+        citizenship: '', // По умолчанию пустое
         name_change_info: null,
-        dependents: 0,
-      },
+        // Новые поля:
+        birth_place: '',
+        passport_series: '',
+        passport_number: '',
+        issue_date: '',
+        issuing_authority: '',
+        department_code: '',
+      } as Omit<PersonalDataModel, 'dependents'>, // Явное приведение типа
+      dependents: 0, // dependents теперь здесь
       work_experience: {
         total_years: 0,
         records: [],
@@ -258,6 +270,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
       documents: '',
       has_incorrect_document: false,
       disability: undefined,
+      other_documents_extracted_data: [], // НОВОЕ ПОЛЕ - инициализируем пустым массивом
     },
   });
 
@@ -349,7 +362,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
 
   const handleNext = async () => {
     let isValidStep = true;
-    setPensionTypeError(null); 
+    setPensionTypeError(null);
 
     const currentStepDefinition = currentSteps[activeStep];
     const currentValues = getValues();
@@ -365,19 +378,20 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
              if (!isValidPensionType) return;
         }
     }
-    
+
     const fieldsForRHFValidation: FieldPath<CaseFormDataTypeForRHF>[] =
-        currentStepDefinition.fieldsToValidate 
-            ? [...currentStepDefinition.fieldsToValidate] 
+        currentStepDefinition.fieldsToValidate
+            ? [...currentStepDefinition.fieldsToValidate]
             : [];
 
     if (currentStepDefinition.id === 'personalData') {
       if (currentValues.personal_data?.name_change_info?.old_full_name || currentValues.personal_data?.name_change_info?.date_changed) {
+          // Валидируем поля name_change_info только если они были активированы/заполнены
           fieldsForRHFValidation.push('personal_data.name_change_info.old_full_name');
           fieldsForRHFValidation.push('personal_data.name_change_info.date_changed');
       }
     }
-    
+
     if (currentStepDefinition.id === 'workExperience') {
         currentValues.work_experience.records.forEach((_record: Partial<WorkRecord>, index: number) => {
             fieldsForRHFValidation.push(`work_experience.records.${index}.organization` as FieldPath<CaseFormDataTypeForRHF>);
@@ -386,15 +400,16 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
             fieldsForRHFValidation.push(`work_experience.records.${index}.position` as FieldPath<CaseFormDataTypeForRHF>);
         });
     }
-    if (currentStepDefinition.id === 'disabilityInfo' && selectedPensionType === 'disability_social') {
-        // Поля 'disability.group' и 'disability.date' уже должны быть в fieldsToValidate из StepDefinition
-        // Можно добавить 'disability.cert_number' если он обязателен при определенных условиях
-    }
+    // Для disabilityInfo поля уже указаны в stepDefinitions.
+    // Для additionalInfo 'dependents' теперь будет валидироваться.
 
     if (fieldsForRHFValidation.length > 0) {
         const uniqueFields = Array.from(new Set(fieldsForRHFValidation));
         isValidStep = await trigger(uniqueFields);
-        console.log(`Validation for step ${currentStepDefinition.id}: ${isValidStep}`, uniqueFields);
+        console.log(`Validation for step ${currentStepDefinition.id} (${currentStepDefinition.description}): ${isValidStep}`, uniqueFields);
+        if (!isValidStep) {
+            console.log('Validation errors:', errors);
+        }
     }
 
     if (isValidStep) {
@@ -452,48 +467,65 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
 
   // --- Отображение текущего шага --- 
   const renderStepContent = () => {
-    if (!currentSteps || activeStep < 0 || activeStep >= currentSteps.length) {
-      return <Box>Ошибка: Шаг не найден или не определен.</Box>;
-    }
     const currentStepDef = currentSteps[activeStep];
-    const StepComponent = currentStepDef.component;
+    // Если currentStepDef или currentStepDef.component не определены, вернуть заглушку
+    if (!currentStepDef || !currentStepDef.component) {
+        // Можно добавить более информативное сообщение или компонент-заглушку
+        console.error('Current step definition or component is undefined', activeStep, currentSteps);
+        return <Box>Ошибка: Шаг не найден или неверно сконфигурирован.</Box>;
+    }
+    const CurrentStepComponent = currentStepDef.component;
 
     // Общие пропсы для всех шагов
     const commonProps: StepComponentProps = {
       register,
-      errors: errors as FieldErrors<CaseFormDataTypeForRHF>, // Приведение типа здесь, если необходимо
+      errors: errors as FieldErrors<CaseFormDataTypeForRHF>,
       control,
       getValues,
       setValue,
       getErrorMessage,
       watch,
+      trigger,
     };
 
-    // Дополнительные пропсы для конкретных шагов
-    let specificProps: any = {};
+    // Пропсы, специфичные для определенных шагов
+    let specificProps: any = {}; // Используем any временно для упрощения, можно уточнить тип
     if (currentStepDef.id === 'pensionType') {
       specificProps = {
         selectedValue: selectedPensionType,
         onChange: handlePensionTypeChange,
-        errorMessage: pensionTypeError || getErrorMessage('pension_type')
-      };
-    } else if (currentStepDef.id === 'workExperience') {
-      specificProps = {
-        fields,
-        append,
-        remove,
+        error: pensionTypeError
       };
     } else if (currentStepDef.id === 'summary') {
-      specificProps = { formData: getValues() };
-    } else if (currentStepDef.id === 'disabilityInfo') {
-      specificProps = { pensionType: selectedPensionType }; // Передаем тип пенсии, если это необходимо для DisabilityInfoStep
-    } else if (currentStepDef.id === 'ocrStep') {
       specificProps = {
-        trigger,
+        formData: getValues(), // Передаем все данные формы
+        onEditStep: (stepIndex: number) => setActiveStep(stepIndex), // Функция для перехода к шагу для редактирования
+        steps: currentSteps // Передаем определения шагов для навигации
       };
+    } else if (currentStepDef.id === 'ocrStep') {
+        specificProps = {
+            // setValue и getValues уже в commonProps
+            // trigger также в commonProps
+            // Если есть onOcrErrorProp, его нужно определить и передать
+            // onOcrErrorProp: (error, docType) => { /* обработка ошибки OCR в CaseForm, если нужно */ }
+        };
+    } else if (currentStepDef.id === 'workExperience') {
+        specificProps = {
+            fields,
+            append,
+            remove,
+            // control также нужен для каждого элемента массива, но он уже есть в commonProps
+        };
+    }
+    // Добавляем передачу pensionType в AdditionalInfoStep и DisabilityInfoStep
+    if (currentStepDef.id === 'additionalInfo' || currentStepDef.id === 'disabilityInfo') {
+        specificProps = {
+            ...specificProps, // Сохраняем другие specificProps, если они есть (например, от workExperience, если id совпадут, хотя это маловероятно)
+            pensionType: selectedPensionType,
+        };
     }
 
-    return <StepComponent {...commonProps} {...specificProps} />;
+    return <CurrentStepComponent {...commonProps} {...specificProps} />;
   };
   // ------------------------------------
 

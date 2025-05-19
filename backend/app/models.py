@@ -58,6 +58,7 @@ class CaseDataInput(BaseModel):
     documents: List[str] = []
     has_incorrect_document: bool = False
     disability: Optional[DisabilityInfo] = None
+    other_documents_extracted_data: Optional[List[Dict[str, Any]]] = Field(None, description="Список извлеченных данных (поля, оценка, осмысление) из дополнительных документов типа 'other'")
 
     @field_validator('pension_type')
     @classmethod
@@ -133,8 +134,6 @@ class PassportData(BaseModel):
     # Можно добавить валидаторы для форматов серии, номера, кода подразделения, если нужно
 
 PENSION_DOCUMENT_TYPES = [
-    "Паспорт гражданина РФ",
-    "СНИЛС", # Уже есть как отдельный тип, но пусть будет для полноты
     "Заявление о назначении пенсии",
     "Трудовая книжка",
     "Трудовой договор", # "Трудовые договоры"

@@ -122,6 +122,30 @@ def format_case_description_for_rag(case_data: CaseDataInput) -> str:
     if case_data.has_incorrect_document:
         parts.append("Заявлено наличие некорректно оформленных документов.")
 
+    # ДОБАВЛЕНИЕ ДАННЫХ ИЗ OTHER DOCUMENTS
+    if case_data.other_documents_extracted_data:
+        parts.append("\nСведения из дополнительных загруженных документов:")
+        for i, doc_extract in enumerate(case_data.other_documents_extracted_data):
+            parts.append(f"  Документ {i+1}:")
+            # Добавляем стандартизированный тип, если есть, иначе идентифицированный
+            doc_type_display = doc_extract.get("standardized_document_type") or doc_extract.get("identified_document_type") or "Тип не определен"
+            parts.append(f"    Тип (по данным OCR): {doc_type_display}")
+            
+            extracted_fields = doc_extract.get("extracted_fields")
+            if extracted_fields and isinstance(extracted_fields, dict) and extracted_fields:
+                parts.append("    Извлеченные поля:")
+                for key, value in extracted_fields.items():
+                    parts.append(f"      - {key}: {value}")
+            
+            multimodal_assessment = doc_extract.get("multimodal_assessment")
+            if multimodal_assessment:
+                parts.append(f"    Оценка изображения: {multimodal_assessment}")
+            
+            # text_llm_reasoning может быть очень длинным, возможно, стоит его сокращать или не включать полностью
+            text_llm_reasoning = doc_extract.get("text_llm_reasoning")
+            if text_llm_reasoning:
+                parts.append(f"    Осмысление текстовой LLM (начало): {text_llm_reasoning[:200]}...") # Пример сокращения
+
     return "\n".join(parts)
 
 def analyze_rag_for_compliance(rag_text: str) -> bool:
@@ -252,7 +276,8 @@ async def process_case(request: Request, case_data: CaseDataInput, conn: AsyncCo
             has_incorrect_document=case_data.has_incorrect_document,
             final_status=final_status,
             final_explanation=final_explanation,
-            rag_confidence=rag_confidence_score
+            rag_confidence=rag_confidence_score,
+            other_documents_extracted_data=case_data_dict_json_compatible.get("other_documents_extracted_data")
         )
         print(f"Case with ID {saved_case_id} saved successfully.")
 

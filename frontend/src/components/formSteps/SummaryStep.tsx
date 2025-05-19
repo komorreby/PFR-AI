@@ -7,13 +7,22 @@ import {
   ListItem,
   Badge,
   SimpleGrid,
-  VStack
+  VStack,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon
 } from '@chakra-ui/react';
 import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
-import { CaseFormDataType } from '../CaseForm'; // Импортируем тип
+// import { CaseFormDataType } from '../CaseForm'; // Старый импорт
+import { CaseFormDataTypeForRHF, OtherDocumentExtractedBlock } from '../../types'; // Новый импорт, используем тип для формы RHF
 
 interface SummaryStepProps {
-  formData: CaseFormDataType;
+  formData: CaseFormDataTypeForRHF; // Используем тип для RHF
+  // Добавляем пропсы для навигации, если они нужны для кнопки "Редактировать"
+  onEditStep?: (stepIndex: number) => void;
+  steps?: any[]; // TODO: типизировать массив шагов, если нужно будет искать индекс по id
 }
 
 // Вспомогательная функция для отображения списков
@@ -33,8 +42,20 @@ const renderList = (items: string[] | undefined, title: string) => {
   );
 };
 
-function SummaryStep({ formData }: SummaryStepProps) {
-  const { personal_data, work_experience, pension_points, benefits, documents, has_incorrect_document, disability, pension_type } = formData;
+function SummaryStep({ formData, onEditStep, steps }: SummaryStepProps) {
+  // Деструктурируем из formData типа CaseFormDataTypeForRHF
+  const { 
+    personal_data, 
+    dependents, // dependents теперь на верхнем уровне
+    work_experience, 
+    pension_points, 
+    benefits, 
+    documents, 
+    has_incorrect_document, 
+    disability, 
+    pension_type,
+    other_documents_extracted_data // Новое поле
+  } = formData;
 
   const pensionTypeLabel = pension_type === 'retirement_standard' ? 'Страховая по старости' :
                             pension_type === 'disability_social' ? 'Социальная по инвалидности' :
@@ -46,7 +67,6 @@ function SummaryStep({ formData }: SummaryStepProps) {
       <Text textAlign="center" fontSize="lg" color="blue.600">Тип пенсии: <strong>{pensionTypeLabel}</strong></Text>
       <Divider />
 
-      {/* Персональные данные */}
       <Box>
         <Heading size="md" mb={3}>Персональные данные</Heading>
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={2}>
@@ -54,8 +74,14 @@ function SummaryStep({ formData }: SummaryStepProps) {
           <Text><strong>Дата рождения:</strong> {personal_data.birth_date}</Text>
           <Text><strong>СНИЛС:</strong> {personal_data.snils}</Text>
           <Text><strong>Пол:</strong> {personal_data.gender === 'male' ? 'Мужской' : personal_data.gender === 'female' ? 'Женский' : 'Не указан'}</Text>
-          <Text><strong>Гражданство:</strong> {personal_data.citizenship}</Text>
-          <Text><strong>Иждивенцы:</strong> {personal_data.dependents}</Text>
+          <Text><strong>Гражданство:</strong> {personal_data.citizenship || 'Не указано'}</Text>
+          {/* Новые поля */}
+          <Text><strong>Место рождения:</strong> {personal_data.birth_place || 'Не указано'}</Text>
+          <Text><strong>Серия паспорта:</strong> {personal_data.passport_series || 'Не указано'}</Text>
+          <Text><strong>Номер паспорта:</strong> {personal_data.passport_number || 'Не указано'}</Text>
+          <Text><strong>Кем выдан:</strong> {personal_data.issuing_authority || 'Не указано'}</Text>
+          <Text><strong>Дата выдачи:</strong> {personal_data.issue_date || 'Не указано'}</Text>
+          <Text><strong>Код подразделения:</strong> {personal_data.department_code || 'Не указано'}</Text>
         </SimpleGrid>
         {personal_data.name_change_info && (
           <Box mt={2} p={2} bg="gray.50" borderRadius="md">
@@ -105,6 +131,8 @@ function SummaryStep({ formData }: SummaryStepProps) {
       {/* Дополнительная информация */}
       <Box>
         <Heading size="md" mb={3}>Дополнительная информация</Heading>
+        {/* Отображаем иждивенцев здесь */}
+        <Text mb={2}><strong>Количество иждивенцев:</strong> {dependents}</Text>
         {pension_type === 'retirement_standard' && (
             <Text mb={2}><strong>Пенсионные баллы (ИПК):</strong> {pension_points}</Text>
         )}
@@ -117,6 +145,44 @@ function SummaryStep({ formData }: SummaryStepProps) {
           }
         </Text>
       </Box>
+
+      {/* НОВЫЙ БЛОК для other_documents_extracted_data */}
+      {other_documents_extracted_data && other_documents_extracted_data.length > 0 && (
+          <Box>
+              <Divider my={4}/>
+              <Heading size="md" mb={3}>Данные из загруженных доп. документов</Heading>
+              <Accordion allowMultiple>
+                  {other_documents_extracted_data.map((docData, index) => (
+                      <AccordionItem key={index}>
+                          <h2>
+                              <AccordionButton>
+                                  <Box flex="1" textAlign="left" fontWeight="medium">
+                                      Документ {index + 1}: {docData.standardized_document_type || "Тип не определен"}
+                                  </Box>
+                                  <AccordionIcon />
+                              </AccordionButton>
+                          </h2>
+                          <AccordionPanel pb={4} bg="gray.50" _dark={{ bg: "gray.700" }}>
+                              {docData.extracted_fields && Object.keys(docData.extracted_fields).length > 0 ? (
+                                  <Box mt={2}>
+                                      <Text fontWeight="semibold" fontSize="sm">Извлеченные поля:</Text>
+                                      <List spacing={1} pl={4} fontSize="xs">
+                                          {Object.entries(docData.extracted_fields).map(([key, value]) => (
+                                              <ListItem key={key}>
+                                                  <strong>{key}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                              </ListItem>
+                                          ))}
+                                      </List>
+                                  </Box>
+                              ) : (
+                                <Text fontSize="sm" fontStyle="italic">Дополнительные извлеченные данные по этому документу отсутствуют.</Text>
+                              )}
+                          </AccordionPanel>
+                      </AccordionItem>
+                  ))}
+              </Accordion>
+          </Box>
+      )}
 
       <Divider />
       <Text textAlign="center" fontWeight="bold" color="gray.600">Пожалуйста, проверьте все данные перед отправкой.</Text>
