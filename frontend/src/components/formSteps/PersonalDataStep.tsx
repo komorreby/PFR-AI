@@ -1,5 +1,5 @@
 import React from 'react';
-import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch, UseFormSetValue, FieldPath } from 'react-hook-form';
+import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import DatePicker from "react-datepicker";
 import { parse, isValid } from 'date-fns'; // format здесь не нужен, если formatDateForInput используется
 import { IMaskInput } from 'react-imask';
@@ -12,11 +12,6 @@ import {
     Input,
     FormErrorMessage,
     Select,
-    NumberInput, // Оставим, т.к. может быть нужен в других частях или после рефакторинга
-    NumberInputField,
-    NumberInputStepper,
-    NumberIncrementStepper,
-    NumberDecrementStepper,
     Divider,
     Checkbox,
     Textarea

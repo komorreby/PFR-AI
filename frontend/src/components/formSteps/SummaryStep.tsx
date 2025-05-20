@@ -15,8 +15,7 @@ import {
   AccordionIcon
 } from '@chakra-ui/react';
 import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
-// import { CaseFormDataType } from '../CaseForm'; // Старый импорт
-import { CaseFormDataTypeForRHF, OtherDocumentExtractedBlock } from '../../types'; // Новый импорт, используем тип для формы RHF
+import { CaseFormDataTypeForRHF } from '../../types'; // Новый импорт, используем тип для формы RHF
 
 interface SummaryStepProps {
   formData: CaseFormDataTypeForRHF; // Используем тип для RHF
@@ -42,7 +41,7 @@ const renderList = (items: string[] | undefined, title: string) => {
   );
 };
 
-function SummaryStep({ formData, onEditStep, steps }: SummaryStepProps) {
+function SummaryStep({ formData }: SummaryStepProps) {
   // Деструктурируем из formData типа CaseFormDataTypeForRHF
   const { 
     personal_data, 

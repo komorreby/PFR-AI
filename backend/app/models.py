@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field, field_validator # Изменяем импорт
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field, field_validator, HttpUrl # Изменяем импорт
+from typing import List, Optional, Dict, Any, Union
 from datetime import date, datetime
 from enum import Enum
 import logging
+import re
 
 # Enum для формата документа
 class DocumentFormat(str, Enum):
@@ -71,6 +72,7 @@ class CaseDataInput(BaseModel):
 class DocumentTypeToExtract(str, Enum):
     PASSPORT = "passport"
     SNILS = "snils"
+    WORK_BOOK = "work_book" # Добавляем новый тип
     OTHER = "other" # Добавляем новый тип
 
 class ProcessOutput(BaseModel):
@@ -131,6 +133,19 @@ class PassportData(BaseModel):
     department_code: Optional[str] = None # Код подразделения (например, "770-001")
 
     # Можно добавить валидаторы для форматов серии, номера, кода подразделения, если нужно
+
+class WorkBookRecordEntry(BaseModel):
+    """Одна запись (период работы) из трудовой книжки."""
+    date_in: Optional[date] = Field(None, description="Дата приема на работу")
+    date_out: Optional[date] = Field(None, description="Дата увольнения с работы (если есть)")
+    organization: Optional[str] = Field(None, description="Наименование организации")
+    position: Optional[str] = Field(None, description="Должность (1-2 слова)")
+    # basis_document_raw: Optional[str] = Field(None, description="Необработанный текст из колонки 'На основании чего внесена запись'") # Опционально, если нужно извлекать
+
+class WorkBookData(BaseModel):
+    """Структурированные данные, извлеченные из трудовой книжки."""
+    records: List[WorkBookRecordEntry] = Field(default_factory=list, description="Список записей о трудовой деятельности")
+    calculated_total_years: Optional[float] = Field(None, description="Общий стаж, рассчитанный на основе извлеченных записей (в годах).")
 
 PENSION_DOCUMENT_TYPES = [
     "Заявление о назначении пенсии",

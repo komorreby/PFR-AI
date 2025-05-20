@@ -28,11 +28,12 @@ export interface PersonalData {
 }
 
 export interface WorkRecord {
+  id?: string; // Для useFieldArray
   organization: string;
-  start_date: string; // YYYY-MM-DD
-  end_date: string; // YYYY-MM-DD
   position: string;
-  special_conditions: boolean;
+  start_date: string; // YYYY-MM-DD для input type="date"
+  end_date: string;   // YYYY-MM-DD для input type="date"
+  special_conditions?: boolean;
 }
 
 export interface WorkExperience {
@@ -154,11 +155,23 @@ export interface OcrOtherDocumentData {
   text_llm_reasoning?: string;
 }
 
-// Тип ответа от /extract_document_data
+export interface OcrWorkBookRecordEntry {
+  date_in?: string; // Ожидаем DD.MM.YYYY или YYYY-MM-DD от OCR
+  date_out?: string; // Ожидаем DD.MM.YYYY или YYYY-MM-DD от OCR
+  organization?: string;
+  position?: string;
+}
+
+export interface OcrWorkBookData {
+  records: OcrWorkBookRecordEntry[];
+  calculated_total_years?: number;
+}
+
 export type OcrExtractionResponse =
   | { documentType: 'passport'; data: OcrPassportData }
   | { documentType: 'snils'; data: OcrSnilsData }
+  | { documentType: 'work_book'; data: OcrWorkBookData }
   | { documentType: 'other'; data: OcrOtherDocumentData }
   | { documentType: 'error'; message: string; errorDetails?: any };
 
-export type OcrDocumentType = 'passport' | 'snils' | 'other';
+export type OcrDocumentType = 'passport' | 'snils' | 'work_book' | 'other';

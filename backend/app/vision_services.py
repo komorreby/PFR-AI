@@ -12,7 +12,7 @@ from fastapi import HTTPException # <--- ДОБАВЛЕН ИМПОРТ HTTPExcep
 from pydantic import BaseModel # Убедимся, что BaseModel импортирован
 
 from .rag_core import config # Импорт конфигурации
-from .models import PassportData, SnilsData, DocumentTypeToExtract, OtherDocumentData, PENSION_DOCUMENT_TYPES # Импорт моделей данных
+from .models import PassportData, SnilsData, DocumentTypeToExtract, OtherDocumentData, WorkBookRecordEntry, WorkBookData, PENSION_DOCUMENT_TYPES # Импорт моделей данных
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ PASSPORT_EXTRACTION_PROMPT = """Извлеки, пожалуйста, всю и�
   "issue_date": "01.01.2010",
   "department_code": "770-123"
 }
-Убедись, что все поля присутствуют в ответе, даже если они пустые (null). 
+Убедись, что все поля присутствуют в ответе, даже если они пустые (null).
 **Очень важно правильно извлечь серию и номер паспорта. Ищи их в области, напечатанной вертикально красным цветом справа от фотографии.**
 **Серия паспорта (`passport_series`) - это первые 4 цифры в этой вертикальной красной надписи.** Представляй серию паспорта всегда как строку из 4 цифр. Например, если видишь на документе серию '81 23' в этой красной вертикальной области, в JSON поле `passport_series` должно быть '8123'. Если видишь '56 78', верни '5678'. Категорически не используй дефисы в значении для `passport_series`. Значение `passport_series` не должно выглядеть как код подразделения (например, '030-003' – это НЕ серия, это код подразделения). Убедись, что `passport_series` содержит именно 4-значную серию паспорта из вертикальной красной области, а не код подразделения. Код подразделения (`department_code`) ищи отдельно, он обычно расположен горизонтально.
 **Номер паспорта (`passport_number`) - это следующие 6 цифр в той же вертикальной красной надписи, после серии.** Он также должен быть представлен как строка из 6 цифр.
@@ -51,6 +51,47 @@ SNILS_EXTRACTION_PROMPT = """Извлеки, пожалуйста, всю инф
   "snils_number": "123-456-789 00"
 }
 Убедись, что все поля присутствуют в ответе, даже если они пустые (null).
+"""
+
+# WORK_BOOK_EXTRACTION_PROMPT теперь будет форматируемой строкой
+WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE = """Извлеки, пожалуйста, всю информацию о трудовой деятельности из этого изображения разворота трудовой книжки.
+Мне нужен список всех записей о работе. Каждая запись должна содержать следующую информацию:
+- 'date_in': дата приема на работу (обычно из левой части колонки 2 'Дата'). Формат ДД.ММ.ГГГГ.
+- 'date_out': дата увольнения с работы (обычно из левой части колонки 2 'Дата'). Формат ДД.ММ.ГГГГ. Если работник не уволен, это поле должно быть null.
+- 'organization': полное наименование организации (из колонки 3 'Сведения о приеме на работу, о переводах...').
+- 'position': должность. Извлеки **только название должности, стараясь уложиться в 1-2 ключевых слова** (например, "учитель математики", "бухгалтер").
+
+**Дополнительно, рассчитай общий стаж** на основе извлеченных тобой записей.
+Для расчета:
+1. Для каждой записи с 'date_in' и 'date_out', определи продолжительность в днях. Считай день увольнения рабочим днем.
+2. Просуммируй дни по всем таким периодам.
+3. Переведи общее количество дней в годы (с одним знаком после запятой), используя среднее количество дней в году 365.25.
+4. Если для последней или текущей записи 'date_out' равен null, то для расчета стажа по этой записи используй **текущую дату {current_date_placeholder}** как дату окончания. Укажи в примечании, что использована текущая дата.
+
+Представь ответ в формате JSON. В ответе должны быть два ключа:
+- "records": список объектов с информацией о работе.
+- "calculated_total_years": число, представляющее общий стаж в годах (например, 10.5), или null, если записи отсутствуют или стаж рассчитать не удалось.
+
+Пример:
+{{
+  "records": [
+    {{
+      "date_in": "01.09.1999",
+      "date_out": "31.03.2003",
+      "organization": "Долгопрудненская физмат школа №5",
+      "position": "учитель математики"
+    }},
+    {{
+      "date_in": "26.12.2003",
+      "date_out": null, // Для этой записи будет использована {current_date_placeholder} для расчета стажа
+      "organization": "МОУ 'Средняя общеобразовательная школа №5'",
+      "position": "учитель"
+    }}
+  ],
+  "calculated_total_years": null // Заполни это значение на основе расчета с учетом {current_date_placeholder}
+}}
+Убедись, что все поля ('date_in', 'date_out', 'organization', 'position') присутствуют для каждой записи.
+Если не удается четко определить даты, организацию или должность, лучше пропусти эту запись.
 """
 
 # Промпт для LLM (Другие документы)
@@ -318,7 +359,7 @@ async def extract_document_data_from_image(
     image_bytes: bytes,
     document_type: DocumentTypeToExtract,
     filename: Optional[str] = "image.png" # Используется для описания в текстовой LLM
-) -> Union[PassportData, SnilsData, OtherDocumentData, Dict[str, Any]]:
+) -> Union[PassportData, SnilsData, WorkBookData, OtherDocumentData, Dict[str, Any]]:
     """
     Извлекает данные из изображения документа с помощью мультимодальной LLM Ollama,
     обрабатывает ответ и возвращает Pydantic модель.
@@ -333,23 +374,32 @@ async def extract_document_data_from_image(
         )
 
         prompt = ""
+        logger_message_suffix = "" # Для логирования типа документа
+
         if document_type == DocumentTypeToExtract.PASSPORT:
             prompt = PASSPORT_EXTRACTION_PROMPT
-            logger.info(f"Отправка изображения в модель Ollama ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) для ПАСПОРТА.")
+            logger_message_suffix = "для ПАСПОРТА"
         elif document_type == DocumentTypeToExtract.SNILS:
             prompt = SNILS_EXTRACTION_PROMPT
-            logger.info(f"Отправка изображения в модель Ollama ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) для СНИЛС.")
+            logger_message_suffix = "для СНИЛС"
+        elif document_type == DocumentTypeToExtract.WORK_BOOK:
+            # Формируем текущую дату в нужном формате
+            current_date_str = datetime.now().strftime("%d.%m.%Y")
+            # Подставляем текущую дату в шаблон промпта
+            prompt = WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE.format(current_date_placeholder=current_date_str)
+            logger_message_suffix = f"для ТРУДОВОЙ КНИЖКИ (текущая дата для расчета: {current_date_str})"
         elif document_type == DocumentTypeToExtract.OTHER:
             prompt = OTHER_DOCUMENT_EXTRACTION_PROMPT
-            logger.info(f"Отправка изображения в модель Ollama ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) для ДРУГОГО документа.")
+            logger_message_suffix = "для ДРУГОГО документа"
         else:
             logger.error(f"Unknown document type for multimodal LLM: {document_type}")
             raise HTTPException(status_code=400, detail=f"Unknown document type: {document_type}")
 
         logger.info(
             f"Sending request to Ollama Multimodal LLM ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) "
-            f"for document type: {document_type.value}. Filename: {filename}"
+            f"{logger_message_suffix}. Filename: {filename}"
         )
+        logger.debug(f"Prompt for {document_type.value} (first 300 chars): {prompt[:300]}...") # Логируем начало промпта
         
         # Используем messages API для qwen-vl, так как он лучше работает с multimodal
         response_vision = await client.chat(
@@ -405,7 +455,53 @@ async def extract_document_data_from_image(
         elif document_type == DocumentTypeToExtract.SNILS:
             return SnilsData(
                 snils_number=_clean_snils_number(parsed_multimodal_data.get("snils_number")),
+                # Поля ФИО, пол, дата и место рождения были добавлены в промпт для СНИЛС,
+                # но модель SnilsData их не содержит. Если нужно, модель надо расширить.
+                # last_name=parsed_multimodal_data.get("last_name"),
+                # first_name=parsed_multimodal_data.get("first_name"),
+                # middle_name=parsed_multimodal_data.get("middle_name"),
+                # sex=parsed_multimodal_data.get("gender"),
+                # birth_date=parse_date_flexible(parsed_multimodal_data.get("birth_date")),
+                # birth_place=parsed_multimodal_data.get("birth_place"),
             )
+        elif document_type == DocumentTypeToExtract.WORK_BOOK:
+            extracted_records = []
+            raw_records = parsed_multimodal_data.get("records", [])
+            if isinstance(raw_records, list):
+                for raw_record in raw_records:
+                    if isinstance(raw_record, dict):
+                        try:
+                            record_entry = WorkBookRecordEntry(
+                                date_in=parse_date_flexible(raw_record.get("date_in")),
+                                date_out=parse_date_flexible(raw_record.get("date_out")),
+                                organization=raw_record.get("organization"),
+                                position=raw_record.get("position"),
+                            )
+                            extracted_records.append(record_entry)
+                        except Exception as e_rec:
+                            logger.warning(f"Could not parse a work book record: {raw_record}. Error: {e_rec}")
+            else:
+                logger.warning(f"Expected a list of records for work book, but got: {type(raw_records)}")
+
+            # Извлекаем рассчитанный стаж из ответа LLM
+            calculated_years_from_llm = parsed_multimodal_data.get("calculated_total_years")
+            final_calculated_years: Optional[float] = None
+            if isinstance(calculated_years_from_llm, (float, int)):
+                final_calculated_years = float(calculated_years_from_llm)
+            elif isinstance(calculated_years_from_llm, str):
+                try:
+                    # Попытка преобразовать строку в число, если LLM вернула строку
+                    final_calculated_years = float(calculated_years_from_llm.replace(',', '.'))
+                except ValueError:
+                    logger.warning(f"Could not convert 'calculated_total_years' string '{calculated_years_from_llm}' to float.")
+            
+            logger.info(f"Work book OCR: LLM calculated total years: {final_calculated_years}")
+
+            return WorkBookData(
+                records=extracted_records,
+                calculated_total_years=final_calculated_years # <--- ПЕРЕДАЕМ РАССЧИТАННЫЙ СТАЖ
+            )
+
         elif document_type == DocumentTypeToExtract.OTHER:
             identified_type_from_vision_llm = parsed_multimodal_data.get("identified_document_type")
             

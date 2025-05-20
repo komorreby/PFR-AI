@@ -37,8 +37,11 @@ import {
   ProcessOutput as BackendProcessOutput,
   ApiErrorDetail,
   WorkRecord,
-  PersonalData as PersonalDataModel // Импортируем оригинальный PersonalData для defaultValues
+  PersonalData as PersonalDataModel, // Импортируем оригинальный PersonalData для defaultValues
 } from '../types';
+
+// Если caseFormSchema в отдельном файле:
+// import { caseFormSchema } from '../schemas'; 
 
 // Определяем типы для данных формы, основываясь на Pydantic моделях
 type NameChangeInfoType = {
@@ -276,18 +279,9 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     }
   }, [currentSteps, activeStep, setActiveStep]);
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors, isDirty },
-    watch,
-    trigger,
-    getValues,
-    setValue,
-    reset
-  } = useForm<CaseFormDataTypeForRHF>({
-    mode: 'onBlur',
+  const methods = useForm<CaseFormDataTypeForRHF>({
+    // resolver: zodResolver(caseFormSchema), // Временно комментирую
+    mode: 'onBlur', // Добавил mode, как было в существующем коде
     defaultValues: {
       pension_type: '',
       personal_data: { // dependents здесь нет
@@ -321,13 +315,12 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     },
   });
 
-  // Указываем тип для useFieldArray более конкретно, если возможно
-  const { fields, append, remove } = useFieldArray<CaseFormDataTypeForRHF, "work_experience.records", "id">({
-    control, 
+  const { control, handleSubmit, formState: { errors, isSubmitting: formSubmitting, dirtyFields, isDirty }, getValues, setValue, trigger, watch, reset, register } = methods;
+
+  const { fields: workExperienceFields, append: appendWorkRecord, remove: removeWorkRecord } = useFieldArray<CaseFormDataTypeForRHF, "work_experience.records", "id">({
+    control,
     name: "work_experience.records"
   });
-  // Переименовал fieldArray в стандартные имена из RHF для ясности: fields, append, remove, update
-  // Это изменение потребует обновить использование fieldArray.fields, fieldArray.append и т.д. в WorkExperienceStep.tsx
 
   const onSubmit: SubmitHandler<CaseFormDataTypeForRHF> = async (data) => {
     setIsSubmitting(true);
@@ -352,7 +345,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
       const result: BackendProcessOutput = await processCase(dataToSend); 
       onSubmitSuccess(result);
       
-      reset();
+      methods.reset();
       setSelectedPensionType(null);
       setCurrentSteps(getStepsForPensionType(null));
       setActiveStep(0);
@@ -496,9 +489,6 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
       const response = await analyzeCase(dataToSend);
       setAnalysisResult(response.analysis_result);
       setConfidenceScore(response.confidence_score);
-      if (response.analysis_result) {
-        onCopy();
-      }
     } catch (error) {
       const err = error as Error & Partial<ApiErrorDetail>;
       let errorMessage = 'Не удалось выполнить RAG-анализ.';
@@ -524,19 +514,21 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
     const CurrentStepComponent = currentStepDef.component;
 
     // Общие пропсы для всех шагов
-    const commonProps: StepComponentProps = {
-      register,
-      errors: errors as FieldErrors<CaseFormDataTypeForRHF>,
+    const commonProps: any = {
       control,
+      errors,
       getValues,
       setValue,
-      getErrorMessage,
-      watch,
       trigger,
+      watch,
+      dirtyFields,
+      isDirty,
+      getErrorMessage: getErrorMessage,
+      register: register 
     };
 
     // Пропсы, специфичные для определенных шагов
-    let specificProps: any = {}; // Используем any временно для упрощения, можно уточнить тип
+    let specificProps: any = {};
     if (currentStepDef.id === 'pensionType') {
       specificProps = {
         selectedValue: selectedPensionType,
@@ -558,16 +550,15 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
         };
     } else if (currentStepDef.id === 'workExperience') {
         specificProps = {
-            fields,
-            append,
-            remove,
-            // control также нужен для каждого элемента массива, но он уже есть в commonProps
+            fields: workExperienceFields,
+            append: appendWorkRecord,
+            remove: removeWorkRecord,
         };
     }
     // Добавляем передачу pensionType в AdditionalInfoStep и DisabilityInfoStep
     if (currentStepDef.id === 'additionalInfo' || currentStepDef.id === 'disabilityInfo') {
         specificProps = {
-            ...specificProps, // Сохраняем другие specificProps, если они есть (например, от workExperience, если id совпадут, хотя это маловероятно)
+            ...specificProps,
             pensionType: selectedPensionType,
         };
     }
@@ -667,7 +658,7 @@ function CaseForm({ onSubmitSuccess, onSubmitError }: CaseFormProps) {
                          <Button
                              type="submit"
                              isLoading={isSubmitting}
-                             isDisabled={!isDirty || isSubmitting || isLoadingAnalysis}
+                             isDisabled={!dirtyFields || isSubmitting || isLoadingAnalysis}
                              colorScheme="primary"
                          >
                              Отправить на проверку
