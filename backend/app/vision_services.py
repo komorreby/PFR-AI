@@ -25,10 +25,10 @@ PASSPORT_EXTRACTION_PROMPT = """Извлеки, пожалуйста, всю и�
   "last_name": "Иванов",
   "first_name": "Иван",
   "middle_name": "Иванович",
-  "gender": "Мужской",
+  "sex": "Мужской",
   "birth_date": "01.01.1980",
   "birth_place": "г. Москва, Российская Федерация",
-  "issued_by": "ОВД 'Хорошево-Мневники' г. Москвы",
+  "issuing_authority": "ОВД 'Хорошево-Мневники' г. Москвы",
   "issue_date": "01.01.2010",
   "department_code": "770-123"
 }
@@ -61,16 +61,8 @@ WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE = """Извлеки, пожалуйста, 
 - 'organization': полное наименование организации (из колонки 3 'Сведения о приеме на работу, о переводах...').
 - 'position': должность. Извлеки **только название должности, стараясь уложиться в 1-2 ключевых слова** (например, "учитель математики", "бухгалтер").
 
-**Дополнительно, рассчитай общий стаж** на основе извлеченных тобой записей.
-Для расчета:
-1. Для каждой записи с 'date_in' и 'date_out', определи продолжительность в днях. Считай день увольнения рабочим днем.
-2. Просуммируй дни по всем таким периодам.
-3. Переведи общее количество дней в годы (с одним знаком после запятой), используя среднее количество дней в году 365.25.
-4. Если для последней или текущей записи 'date_out' равен null, то для расчета стажа по этой записи используй **текущую дату {current_date_placeholder}** как дату окончания. Укажи в примечании, что использована текущая дата.
-
-Представь ответ в формате JSON. В ответе должны быть два ключа:
-- "records": список объектов с информацией о работе.
-- "calculated_total_years": число, представляющее общий стаж в годах (например, 10.5), или null, если записи отсутствуют или стаж рассчитать не удалось.
+Представь ответ в формате JSON. В ответе должен быть ключ "records": список объектов с информацией о работе.
+Поле "calculated_total_years" НЕ НУЖНО рассчитывать или включать в ответ. Оно должно быть null или отсутствовать.
 
 Пример:
 {{
@@ -83,12 +75,12 @@ WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE = """Извлеки, пожалуйста, 
     }},
     {{
       "date_in": "26.12.2003",
-      "date_out": null, // Для этой записи будет использована {current_date_placeholder} для расчета стажа
+      "date_out": null,
       "organization": "МОУ 'Средняя общеобразовательная школа №5'",
       "position": "учитель"
     }}
   ],
-  "calculated_total_years": null // Заполни это значение на основе расчета с учетом {current_date_placeholder}
+  "calculated_total_years": null
 }}
 Убедись, что все поля ('date_in', 'date_out', 'organization', 'position') присутствуют для каждой записи.
 Если не удается четко определить даты, организацию или должность, лучше пропусти эту запись.
@@ -167,6 +159,29 @@ def parse_date_flexible(date_str: Optional[str]) -> Optional[date]:
             continue
     logger.warning(f"Не удалось распознать строку с датой '{date_str}' ни одним из форматов. Возвращено None.")
     return None
+
+def calculate_total_work_years(records: List[WorkBookRecordEntry]) -> Optional[float]:
+    if not records:
+        return None
+
+    total_days = 0
+    current_date_for_calc = date.today() # Используем текущую дату для открытых периодов
+
+    for record in records:
+        if record.date_in:
+            start_date = record.date_in
+            end_date = record.date_out if record.date_out else current_date_for_calc
+
+            if end_date >= start_date: # Проверка корректности дат
+                period_days = (end_date - start_date).days + 1
+                total_days += period_days
+            else:
+                logger.warning(f"Обнаружен некорректный период работы: {start_date} - {end_date}. Пропускается.")
+    
+    if total_days > 0:
+        total_years = total_days / 365.25
+        return round(total_years, 1)
+    return 0.0
 
 async def get_reasoning_and_standardized_type_from_text_llm(
     extracted_data_from_multimodal: Dict[str, Any], 
@@ -358,219 +373,143 @@ def _clean_snils_number(snils_number: Optional[str]) -> Optional[str]:
 async def extract_document_data_from_image(
     image_bytes: bytes,
     document_type: DocumentTypeToExtract,
-    filename: Optional[str] = "image.png" # Используется для описания в текстовой LLM
+    filename: Optional[str] = "image.png",
+    standard_document_names: Optional[List[str]] = None
 ) -> Union[PassportData, SnilsData, WorkBookData, OtherDocumentData, Dict[str, Any]]:
+    """Извлекает структурированные данные из изображения документа с помощью мультимодальной LLM.
+    Для типа 'other' дополнительно запрашивает осмысление и стандартизацию типа у текстовой LLM.
     """
-    Извлекает данные из изображения документа с помощью мультимодальной LLM Ollama,
-    обрабатывает ответ и возвращает Pydantic модель.
-    Для типа 'OTHER' дополнительно вызывает текстовую LLM для "осмысления".
-    """
+    if not image_bytes:
+        logger.error("Получены пустые байты изображения.")
+        raise HTTPException(status_code=400, detail="Файл изображения пуст.")
+
     try:
-        base64_image_string = base64.b64encode(image_bytes).decode("utf-8")
-        
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+    except Exception as e:
+        logger.error(f"Ошибка при кодировании изображения в base64: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Ошибка обработки изображения.")
+
+    if document_type == DocumentTypeToExtract.PASSPORT:
+        prompt = PASSPORT_EXTRACTION_PROMPT
+        data_model = PassportData
+    elif document_type == DocumentTypeToExtract.SNILS:
+        prompt = SNILS_EXTRACTION_PROMPT
+        data_model = SnilsData
+    elif document_type == DocumentTypeToExtract.WORK_BOOK:
+        # Форматируем промпт для трудовой книжки с текущей датой
+        current_date_str = datetime.now().strftime("%d.%m.%Y")
+        prompt = WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE.replace("{current_date_placeholder}", current_date_str)
+        data_model = WorkBookData 
+    elif document_type == DocumentTypeToExtract.OTHER:
+        prompt = OTHER_DOCUMENT_EXTRACTION_PROMPT
+        data_model = OtherDocumentData # Эта модель будет использоваться для начального извлечения
+    else:
+        logger.error(f"Неподдерживаемый тип документа для извлечения: {document_type}")
+        raise HTTPException(status_code=400, detail=f"Неподдерживаемый тип документа: {document_type}")
+
+    logger.info(f"Запрос к мультимодальной LLM ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) для документа: {filename or 'unknown'}, тип: {document_type.value}")
+    
+    try:
+        # Используем AsyncClient для асинхронных вызовов
         client = ollama.AsyncClient(
             host=config.OLLAMA_BASE_URL, 
-            timeout=config.MULTIMODAL_LLM_REQUEST_TIMEOUT
+            timeout=config.LLM_REQUEST_TIMEOUT # Устанавливаем таймаут
         )
-
-        prompt = ""
-        logger_message_suffix = "" # Для логирования типа документа
-
-        if document_type == DocumentTypeToExtract.PASSPORT:
-            prompt = PASSPORT_EXTRACTION_PROMPT
-            logger_message_suffix = "для ПАСПОРТА"
-        elif document_type == DocumentTypeToExtract.SNILS:
-            prompt = SNILS_EXTRACTION_PROMPT
-            logger_message_suffix = "для СНИЛС"
-        elif document_type == DocumentTypeToExtract.WORK_BOOK:
-            # Формируем текущую дату в нужном формате
-            current_date_str = datetime.now().strftime("%d.%m.%Y")
-            # Подставляем текущую дату в шаблон промпта
-            prompt = WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE.format(current_date_placeholder=current_date_str)
-            logger_message_suffix = f"для ТРУДОВОЙ КНИЖКИ (текущая дата для расчета: {current_date_str})"
-        elif document_type == DocumentTypeToExtract.OTHER:
-            prompt = OTHER_DOCUMENT_EXTRACTION_PROMPT
-            logger_message_suffix = "для ДРУГОГО документа"
-        else:
-            logger.error(f"Unknown document type for multimodal LLM: {document_type}")
-            raise HTTPException(status_code=400, detail=f"Unknown document type: {document_type}")
-
-        logger.info(
-            f"Sending request to Ollama Multimodal LLM ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) "
-            f"{logger_message_suffix}. Filename: {filename}"
-        )
-        logger.debug(f"Prompt for {document_type.value} (first 300 chars): {prompt[:300]}...") # Логируем начало промпта
-        
-        # Используем messages API для qwen-vl, так как он лучше работает с multimodal
-        response_vision = await client.chat(
+        response = await client.generate(
             model=config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME,
-            messages=[{
-                'role': 'user',
-                'content': prompt,
-                'images': [base64_image_string]
-            }]
+            prompt=prompt,
+            images=[image_base64],
+            format="json", # Просим JSON напрямую
+            stream=False
         )
-        
-        raw_response_text_vision = response_vision.get("message", {}).get("content", "")
-        logger.debug(f"Raw response from Ollama Multimodal LLM ({document_type.value}): {raw_response_text_vision}")
+    except httpx.ReadTimeout:
+        logger.error(f"Таймаут при запросе к Ollama ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) для {filename}. Timeout: {config.LLM_REQUEST_TIMEOUT}s")
+        raise HTTPException(status_code=504, detail=f"Таймаут от сервиса обработки документов ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}).")
+    except httpx.ConnectError:
+        logger.error(f"Ошибка соединения с Ollama ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) по адресу {config.OLLAMA_BASE_URL} для {filename}.")
+        raise HTTPException(status_code=503, detail=f"Сервис обработки документов ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) недоступен.")
+    except Exception as e:
+        logger.error(f"Неожиданная ошибка при запросе к Ollama ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) для {filename}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка при взаимодействии с сервисом обработки документов ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}).")
 
-        if not raw_response_text_vision:
-            logger.error(f"Received empty response from Ollama Multimodal LLM for {document_type.value}.")
-            raise HTTPException(
-                status_code=502,
-                detail=f"Received empty response from Ollama Multimodal LLM for {document_type.value}.",
-            )
+    raw_response_text = response.get('response')
+    if not raw_response_text:
+        logger.warning(f"Мультимодальная LLM ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) вернула пустой ответ для {filename}. Тип: {document_type.value}")
+        raise HTTPException(status_code=500, detail=f"Сервис обработки документов ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) вернул пустой ответ.")
 
-        json_content_str_vision = _extract_json_from_text(raw_response_text_vision)
-        if not json_content_str_vision:
-            logger.error(
-                f"Could not extract JSON from Ollama Multimodal LLM response for {document_type.value}: {raw_response_text_vision[:500]}..."
-            )
-            raise HTTPException(
-                status_code=502,
-                detail=f"Failed to parse JSON structure from Ollama Multimodal LLM response for {document_type.value}.",
-            )
+    logger.debug(f"Raw JSON response from {config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME} for {filename} ({document_type.value}): {raw_response_text[:500]}...")
+    
+    # JSON уже должен быть извлечен, так как мы просили format="json"
+    # Но на всякий случай, если Ollama вернет JSON внутри текстового поля
+    parsed_multimodal_data = _parse_llm_json_safely(raw_response_text, document_type.value)
 
-        parsed_multimodal_data = _parse_llm_json_safely(json_content_str_vision, document_type.value)
-        if not parsed_multimodal_data:
-            raise HTTPException(
-                status_code=502,
-                detail=f"Failed to parse JSON data from LLM response after extraction for {document_type.value}.",
-            )
+    if not parsed_multimodal_data:
+        logger.error(f"Не удалось извлечь или распарсить JSON от {config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME} для {filename}. Ответ: {raw_response_text[:500]}...")
+        raise HTTPException(status_code=500, detail=f"Ошибка обработки ответа от сервиса ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}). Невалидный JSON.")
 
+    try:
         if document_type == DocumentTypeToExtract.PASSPORT:
-            return PassportData(
-                passport_series=_clean_passport_series(parsed_multimodal_data.get("passport_series")),
-                passport_number=_clean_passport_number(parsed_multimodal_data.get("passport_number")),
-                last_name=parsed_multimodal_data.get("last_name"),
-                first_name=parsed_multimodal_data.get("first_name"),
-                middle_name=parsed_multimodal_data.get("middle_name"),
-                sex=parsed_multimodal_data.get("gender"),
-                birth_date=parse_date_flexible(parsed_multimodal_data.get("birth_date")),
-                birth_place=parsed_multimodal_data.get("birth_place"),
-                issuing_authority=parsed_multimodal_data.get("issued_by"),
-                issue_date=parse_date_flexible(parsed_multimodal_data.get("issue_date")),
-                department_code=parsed_multimodal_data.get("department_code"),
-            )
+            # Очистка серии и номера паспорта
+            parsed_multimodal_data['passport_series'] = _clean_passport_series(parsed_multimodal_data.get('passport_series'))
+            parsed_multimodal_data['passport_number'] = _clean_passport_number(parsed_multimodal_data.get('passport_number'))
+            # Преобразование дат
+            parsed_multimodal_data['birth_date'] = parse_date_flexible(parsed_multimodal_data.get('birth_date'))
+            parsed_multimodal_data['issue_date'] = parse_date_flexible(parsed_multimodal_data.get('issue_date'))
+            return PassportData(**parsed_multimodal_data)
+        
         elif document_type == DocumentTypeToExtract.SNILS:
-            return SnilsData(
-                snils_number=_clean_snils_number(parsed_multimodal_data.get("snils_number")),
-                # Поля ФИО, пол, дата и место рождения были добавлены в промпт для СНИЛС,
-                # но модель SnilsData их не содержит. Если нужно, модель надо расширить.
-                # last_name=parsed_multimodal_data.get("last_name"),
-                # first_name=parsed_multimodal_data.get("first_name"),
-                # middle_name=parsed_multimodal_data.get("middle_name"),
-                # sex=parsed_multimodal_data.get("gender"),
-                # birth_date=parse_date_flexible(parsed_multimodal_data.get("birth_date")),
-                # birth_place=parsed_multimodal_data.get("birth_place"),
-            )
+            # Очистка номера СНИЛС
+            parsed_multimodal_data['snils_number'] = _clean_snils_number(parsed_multimodal_data.get('snils_number'))
+            # Преобразование дат
+            parsed_multimodal_data['birth_date'] = parse_date_flexible(parsed_multimodal_data.get('birth_date'))
+            return SnilsData(**parsed_multimodal_data)
+        
         elif document_type == DocumentTypeToExtract.WORK_BOOK:
             extracted_records = []
             raw_records = parsed_multimodal_data.get("records", [])
             if isinstance(raw_records, list):
-                for raw_record in raw_records:
-                    if isinstance(raw_record, dict):
+                for rec_data in raw_records:
+                    if isinstance(rec_data, dict):
+                        # Преобразование дат для каждой записи
+                        rec_data['date_in'] = parse_date_flexible(rec_data.get('date_in'))
+                        rec_data['date_out'] = parse_date_flexible(rec_data.get('date_out'))
                         try:
-                            record_entry = WorkBookRecordEntry(
-                                date_in=parse_date_flexible(raw_record.get("date_in")),
-                                date_out=parse_date_flexible(raw_record.get("date_out")),
-                                organization=raw_record.get("organization"),
-                                position=raw_record.get("position"),
-                            )
-                            extracted_records.append(record_entry)
+                            extracted_records.append(WorkBookRecordEntry(**rec_data))
                         except Exception as e_rec:
-                            logger.warning(f"Could not parse a work book record: {raw_record}. Error: {e_rec}")
-            else:
-                logger.warning(f"Expected a list of records for work book, but got: {type(raw_records)}")
-
-            # Извлекаем рассчитанный стаж из ответа LLM
-            calculated_years_from_llm = parsed_multimodal_data.get("calculated_total_years")
-            final_calculated_years: Optional[float] = None
-            if isinstance(calculated_years_from_llm, (float, int)):
-                final_calculated_years = float(calculated_years_from_llm)
-            elif isinstance(calculated_years_from_llm, str):
-                try:
-                    # Попытка преобразовать строку в число, если LLM вернула строку
-                    final_calculated_years = float(calculated_years_from_llm.replace(',', '.'))
-                except ValueError:
-                    logger.warning(f"Could not convert 'calculated_total_years' string '{calculated_years_from_llm}' to float.")
+                            logger.warning(f"Ошибка валидации записи трудовой книжки: {rec_data}. Ошибка: {e_rec}")
             
-            logger.info(f"Work book OCR: LLM calculated total years: {final_calculated_years}")
+            # Рассчитываем стаж здесь с помощью Python функции
+            calculated_years_python = calculate_total_work_years(extracted_records)
+            logger.info(f"Work book OCR: Python calculated total years: {calculated_years_python}")
 
             return WorkBookData(
                 records=extracted_records,
-                calculated_total_years=final_calculated_years # <--- ПЕРЕДАЕМ РАССЧИТАННЫЙ СТАЖ
+                calculated_total_years=calculated_years_python 
             )
 
         elif document_type == DocumentTypeToExtract.OTHER:
-            identified_type_from_vision_llm = parsed_multimodal_data.get("identified_document_type")
+            # Для OTHER, сначала получаем базовые данные от мультимодальной LLM
+            initial_other_data = OtherDocumentData(**parsed_multimodal_data) 
             
-            image_description = f"Изображение документа '{filename}'"
-            if identified_type_from_vision_llm:
-                image_description += f", предварительно идентифицированного qwen-vl как '{identified_type_from_vision_llm}'"
-            
-            data_for_text_llm = {
-                "identified_document_type": identified_type_from_vision_llm,
-                "extracted_fields": parsed_multimodal_data.get("extracted_fields"),
-                "raw_text": parsed_multimodal_data.get("raw_text"),
-                "multimodal_assessment": parsed_multimodal_data.get("multimodal_assessment")
-            }
+            # Затем, если есть список стандартных документов, запрашиваем текстовую LLM
+            if standard_document_names:
+                logger.info(f"Запрос к текстовой LLM ({config.OLLAMA_LLM_MODEL_NAME}) для документа типа OTHER: {filename}")
+                document_image_description = f"Документ, загруженный пользователем как '{filename or 'файл без имени'}' с предполагаемым типом 'other'"
+                text_reasoning, standardized_type_from_text_llm = await get_reasoning_and_standardized_type_from_text_llm(
+                    extracted_data_from_multimodal=parsed_multimodal_data, 
+                    document_image_description=document_image_description,
+                    standard_document_types_list=standard_document_names # <--- Передаем список
+                )
+                initial_other_data.text_llm_reasoning = text_reasoning
+                initial_other_data.standardized_document_type = standardized_type_from_text_llm
+                logger.info(f"Текстовая LLM вернула для {filename}: стандартизированный тип='{standardized_type_from_text_llm}', осмысление (начало)='{text_reasoning[:100]}...'")
+            else:
+                logger.warning(f"Список стандартных имен документов не предоставлен для {filename}. Пропуск анализа текстовой LLM.")
+            return initial_other_data
 
-            # Вызываем обновленную функцию, которая теперь также возвращает стандартизированный тип
-            text_reasoning, standardized_type_from_text_llm = await get_reasoning_and_standardized_type_from_text_llm(
-                extracted_data_from_multimodal=data_for_text_llm,
-                document_image_description=image_description,
-                standard_document_types_list=PENSION_DOCUMENT_TYPES # Передаем список сюда
-            )
-            
-            return OtherDocumentData(
-                identified_document_type=identified_type_from_vision_llm,
-                standardized_document_type=standardized_type_from_text_llm, # <--- Тип от qwen3
-                extracted_fields=parsed_multimodal_data.get("extracted_fields"),
-                multimodal_assessment=parsed_multimodal_data.get("multimodal_assessment"),
-                text_llm_reasoning=text_reasoning
-            )
-        else: # На случай если DocumentTypeToExtract расширится без обновления этой функции
-            logger.critical(f"Необработанный DocumentTypeToExtract в конце функции: {document_type.value}")
-            raise HTTPException(status_code=500, detail="Internal server error: Unhandled document type.")
-
-    except httpx.ReadTimeout:
-        logger.error(
-            f"Ollama Multimodal LLM ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}) read timeout "
-            f"for document type: {document_type.value}"
-        )
-        raise HTTPException(
-            status_code=504, # Gateway Timeout
-            detail=f"Request to Ollama Multimodal LLM timed out for {document_type.value}.",
-        )
-    except ollama.ResponseError as e:
-        logger.error(
-            f"Ollama API ResponseError for {document_type.value} "
-            f"(model: {config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}): {e.status_code} - {e.error}",
-            exc_info=True
-        )
-        raise HTTPException(
-            status_code=502, # Bad Gateway
-            detail=f"Ollama API error for {document_type.value}: {e.error} (status {e.status_code})",
-        )
-    except ollama.RequestError as e: # Покрывает проблемы соединения и др.
-        logger.error(
-            f"Ollama API RequestError for {document_type.value} "
-            f"(model: {config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}): {e}",
-            exc_info=True
-        )
-        raise HTTPException(
-            status_code=503, # Service Unavailable
-            detail=f"Could not connect to Ollama API for {document_type.value}.",
-        )
-    except HTTPException: # Перехватываем HTTP исключения, чтобы не попасть в общий Exception
-        raise
-    except Exception as e:
-        logger.error(
-            f"Unexpected error in extract_document_data_from_image for {document_type.value}: {e}",
-            exc_info=True
-        )
-        raise HTTPException(
-            status_code=500,
-            detail=f"Unexpected error processing document {document_type.value}.",
-        ) 
+    except Exception as e: # Ловим ошибки валидации Pydantic и другие
+        logger.error(f"Ошибка при валидации данных Pydantic или другая ошибка после ответа LLM для {filename} ({document_type.value}): {e}", exc_info=True)
+        logger.debug(f"Данные, вызвавшие ошибку валидации: {parsed_multimodal_data}")
+        raise HTTPException(status_code=500, detail=f"Ошибка обработки данных, полученных от сервиса ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}). Некорректные данные.")
+    
+    return parsed_multimodal_data # Возврат по умолчанию, если ни один тип не совпал (не должно случиться) 

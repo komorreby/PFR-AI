@@ -1,193 +1,205 @@
+import React from 'react';
 import {
-  Box,
-  Heading,
-  Text,
-  Divider,
-  List,
-  ListItem,
-  Badge,
-  SimpleGrid,
-  VStack,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon
-} from '@chakra-ui/react';
-import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
-import { CaseFormDataTypeForRHF } from '../../types'; // Новый импорт, используем тип для формы RHF
+    Typography,
+    Divider,
+    List as AntList,
+    Badge as AntBadge,
+    Row,
+    Col,
+    Collapse,
+    Space,
+    Descriptions
+} from 'antd';
+import { CheckCircleOutlined, WarningOutlined, ProfileOutlined, BookOutlined, SolutionOutlined, FileTextOutlined, UserOutlined, AuditOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { CaseFormDataTypeForRHF, OtherDocumentData } from '../../types';
+import SummaryInsights from '../SummaryInsights';
+
+const { Title, Text, Paragraph } = Typography;
+const { Panel } = Collapse;
 
 interface SummaryStepProps {
-  formData: CaseFormDataTypeForRHF; // Используем тип для RHF
-  // Добавляем пропсы для навигации, если они нужны для кнопки "Редактировать"
-  onEditStep?: (stepIndex: number) => void;
-  steps?: any[]; // TODO: типизировать массив шагов, если нужно будет искать индекс по id
+  formData: CaseFormDataTypeForRHF;
+  onEditStep?: (stepIndex: number) => void; 
 }
 
-// Вспомогательная функция для отображения списков
-const renderList = (items: string[] | undefined, title: string) => {
+// Вспомогательная функция для отображения списков тегов или простых элементов
+const renderSimpleList = (itemsString: string | undefined | null, title: string) => {
+  const items = itemsString?.split(',').map(s => s.trim()).filter(Boolean);
   if (!items || items.length === 0) {
-    return <Text><em>{title}: нет</em></Text>;
+    return <Descriptions.Item label={title}>Нет</Descriptions.Item>;
   }
   return (
-    <Box mb={3}>
-      <Text fontWeight="bold">{title}:</Text>
-      <List spacing={1} pl={4}>
+    <Descriptions.Item label={title} span={2}>
+      <Space direction="vertical" size="small">
         {items.map((item, index) => (
-          <ListItem key={index}>{item}</ListItem>
+          <Text key={index}>{item}</Text>
         ))}
-      </List>
-    </Box>
+      </Space>
+    </Descriptions.Item>
   );
 };
 
-function SummaryStep({ formData }: SummaryStepProps) {
-  // Деструктурируем из formData типа CaseFormDataTypeForRHF
+const SummaryStep: React.FC<SummaryStepProps> = ({ formData, onEditStep }) => {
   const { 
-    personal_data, 
-    dependents, // dependents теперь на верхнем уровне
-    work_experience, 
-    pension_points, 
-    benefits, 
-    documents, 
-    has_incorrect_document, 
-    disability, 
+    personal_data = {}, 
+    dependents,
+    work_experience = { total_years: 0, records: [] },
+    pension_points,
+    benefits,
+    // documents, // Это поле, вероятно, было для старой структуры. В CaseFormDataTypeForRHF есть submitted_documents
+    submitted_documents,
+    has_incorrect_document,
+    disability,
     pension_type,
-    other_documents_extracted_data // Новое поле
+    other_documents_extracted_data = []
   } = formData;
 
-  const pensionTypeLabel = pension_type === 'retirement_standard' ? 'Страховая по старости' :
-                            pension_type === 'disability_social' ? 'Социальная по инвалидности' :
-                            'Неизвестный тип';
+  const pensionTypeLabel = 
+    pension_type === 'retirement_standard' ? 'Страховая по старости' :
+    pension_type === 'disability_social' ? 'Социальная по инвалидности' :
+    'Тип пенсии не выбран';
 
   return (
-    <VStack spacing={6} align="stretch">
-      <Heading size="lg" textAlign="center">Сводка данных дела</Heading>
-      <Text textAlign="center" fontSize="lg" color="blue.600">Тип пенсии: <strong>{pensionTypeLabel}</strong></Text>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Title level={3} style={{ textAlign: 'center' }}>Сводка данных дела</Title>
+      <Text style={{ textAlign: 'center', fontSize: '18px'}}>
+        Тип пенсии: <Text strong style={{color: '#1890ff'}}>{pensionTypeLabel}</Text>
+      </Text>
       <Divider />
 
-      <Box>
-        <Heading size="md" mb={3}>Персональные данные</Heading>
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={2}>
-          <Text><strong>ФИО:</strong> {[personal_data.last_name, personal_data.first_name, personal_data.middle_name].filter(Boolean).join(' ')}</Text>
-          <Text><strong>Дата рождения:</strong> {personal_data.birth_date}</Text>
-          <Text><strong>СНИЛС:</strong> {personal_data.snils}</Text>
-          <Text><strong>Пол:</strong> {personal_data.gender === 'male' ? 'Мужской' : personal_data.gender === 'female' ? 'Женский' : 'Не указан'}</Text>
-          <Text><strong>Гражданство:</strong> {personal_data.citizenship || 'Не указано'}</Text>
-          {/* Новые поля */}
-          <Text><strong>Место рождения:</strong> {personal_data.birth_place || 'Не указано'}</Text>
-          <Text><strong>Серия паспорта:</strong> {personal_data.passport_series || 'Не указано'}</Text>
-          <Text><strong>Номер паспорта:</strong> {personal_data.passport_number || 'Не указано'}</Text>
-          <Text><strong>Кем выдан:</strong> {personal_data.issuing_authority || 'Не указано'}</Text>
-          <Text><strong>Дата выдачи:</strong> {personal_data.issue_date || 'Не указано'}</Text>
-          <Text><strong>Код подразделения:</strong> {personal_data.department_code || 'Не указано'}</Text>
-        </SimpleGrid>
+      <Descriptions bordered column={{ xxl: 2, xl: 2, lg: 1, md: 1, sm: 1, xs: 1 }} title={<><UserOutlined style={{marginRight: 8}}/>Персональные данные</>}>
+        <Descriptions.Item label="ФИО">
+          {[personal_data.last_name, personal_data.first_name, personal_data.middle_name].filter(Boolean).join(' ') || 'Не указано'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Дата рождения">{personal_data.birth_date || 'Не указано'}</Descriptions.Item>
+        <Descriptions.Item label="СНИЛС">{personal_data.snils || 'Не указано'}</Descriptions.Item>
+        <Descriptions.Item label="Пол">{personal_data.gender === 'male' ? 'Мужской' : personal_data.gender === 'female' ? 'Женский' : 'Не указан'}</Descriptions.Item>
+        <Descriptions.Item label="Гражданство">{personal_data.citizenship || 'Не указано'}</Descriptions.Item>
+        <Descriptions.Item label="Место рождения">{personal_data.birth_place || 'Не указано'}</Descriptions.Item>
+        <Descriptions.Item label="Серия паспорта">{personal_data.passport_series || 'Не указано'}</Descriptions.Item>
+        <Descriptions.Item label="Номер паспорта">{personal_data.passport_number || 'Не указано'}</Descriptions.Item>
+        <Descriptions.Item label="Кем выдан">{personal_data.issuing_authority || 'Не указано'}</Descriptions.Item>
+        <Descriptions.Item label="Дата выдачи">{personal_data.passport_issue_date || 'Не указано'}</Descriptions.Item>
+        <Descriptions.Item label="Код подразделения">{personal_data.department_code || 'Не указано'}</Descriptions.Item>
         {personal_data.name_change_info && (
-          <Box mt={2} p={2} bg="gray.50" borderRadius="md">
-            <Text><strong>Смена ФИО:</strong> Да</Text>
-            <Text><em>Прежн. ФИО:</em> {personal_data.name_change_info.old_full_name}</Text>
-            <Text><em>Дата смены:</em> {personal_data.name_change_info.date_changed}</Text>
-          </Box>
+          <>
+            <Descriptions.Item label="Смена ФИО" span={2}><Text strong>Да</Text></Descriptions.Item>
+            <Descriptions.Item label="Прежнее ФИО">{personal_data.name_change_info.old_full_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Дата смены">{personal_data.name_change_info.date_changed || '-'}</Descriptions.Item>
+          </>
         )}
-      </Box>
-      <Divider />
+      </Descriptions>
 
-      {/* Трудовой стаж (только для retirement_standard) */}
       {pension_type === 'retirement_standard' && (
-        <Box>
-          <Heading size="md" mb={3}>Трудовой стаж</Heading>
-          <Text mb={2}><strong>Заявленный общий стаж:</strong> {work_experience.total_years} лет</Text>
-          {work_experience.records.length > 0 ? (
-            <List spacing={3}>
-              {work_experience.records.map((record, index) => (
-                <ListItem key={index} p={2} borderWidth="1px" borderRadius="md">
-                  <Text><strong>{index + 1}. Организация:</strong> {record.organization}</Text>
-                  <Text><em>Период:</em> {record.start_date} - {record.end_date}</Text>
-                  <Text><em>Должность:</em> {record.position}</Text>
-                  {record.special_conditions && <Badge colorScheme="orange" ml={2}>Особые условия</Badge>}
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Text><em>Записи о стаже отсутствуют.</em></Text>
-          )}
-        </Box>
+        <>
+          <Divider />
+          <Descriptions bordered column={1} title={<><ProfileOutlined style={{marginRight: 8}}/>Трудовой стаж</>}>
+            <Descriptions.Item label="Заявленный общий стаж">
+              {work_experience.total_years !== null && work_experience.total_years !== undefined ? `${work_experience.total_years} лет` : 'Не указан'}
+            </Descriptions.Item>
+            {work_experience.records && work_experience.records.length > 0 ? (
+              <Descriptions.Item label="Записи о стаже" span={1}>
+                <AntList
+                  size="small"
+                  bordered
+                  dataSource={work_experience.records}
+                  renderItem={(record, index) => (
+                    <AntList.Item>
+                      <AntList.Item.Meta
+                        title={<Text strong>{index + 1}. {record.organization}</Text>}
+                        description={`Период: ${record.start_date || '-'} - ${record.end_date || '-'}, Должность: ${record.position || '-'}`}
+                      />
+                      {record.special_conditions && <AntBadge status="warning" text="Особые условия" />}
+                    </AntList.Item>
+                  )}
+                />
+              </Descriptions.Item>
+            ) : (
+              <Descriptions.Item label="Записи о стаже">Отсутствуют</Descriptions.Item>
+            )}
+          </Descriptions>
+        </>
       )}
 
-      {/* Сведения об инвалидности (только для disability_social) */}
       {pension_type === 'disability_social' && disability && (
-        <Box>
-          <Heading size="md" mb={3}>Сведения об инвалидности</Heading>
-          <Text><strong>Группа:</strong> {disability.group === 'child' ? 'Ребенок-инвалид' : `${disability.group} группа`}</Text>
-          <Text><strong>Дата установления:</strong> {disability.date}</Text>
-          {disability.cert_number && <Text><strong>Номер справки МСЭ:</strong> {disability.cert_number}</Text>}
-        </Box>
+        <>
+          <Divider />
+          <Descriptions bordered column={1} title={<><AuditOutlined style={{marginRight: 8}}/>Сведения об инвалидности</>}>
+            <Descriptions.Item label="Группа">
+              {disability.group === 'child' ? 'Ребенок-инвалид' : disability.group ? `${disability.group} группа` : 'Не указана'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Дата установления">{disability.date || 'Не указана'}</Descriptions.Item>
+            <Descriptions.Item label="Номер справки МСЭ">{disability.cert_number || 'Не указан'}</Descriptions.Item>
+          </Descriptions>
+        </>
       )}
-
-      {/* Разделитель, если были предыдущие секции */} 
-      {(pension_type === 'retirement_standard' || (pension_type === 'disability_social' && disability)) && <Divider />}
-
-      {/* Дополнительная информация */}
-      <Box>
-        <Heading size="md" mb={3}>Дополнительная информация</Heading>
-        {/* Отображаем иждивенцев здесь */}
-        <Text mb={2}><strong>Количество иждивенцев:</strong> {dependents}</Text>
+      
+      <Divider />
+      <Descriptions bordered column={{ xxl: 2, xl: 2, lg: 1, md: 1, sm: 1, xs: 1 }} title={<><InfoCircleOutlined style={{marginRight: 8}}/>Дополнительная информация</>}>
+        <Descriptions.Item label="Количество иждивенцев">
+            {dependents !== null && dependents !== undefined ? dependents : 'Не указано'}
+        </Descriptions.Item>
         {pension_type === 'retirement_standard' && (
-            <Text mb={2}><strong>Пенсионные баллы (ИПК):</strong> {pension_points}</Text>
+            <Descriptions.Item label="Пенсионные баллы (ИПК)">
+                {pension_points !== null && pension_points !== undefined ? pension_points : 'Не указано'}
+            </Descriptions.Item>
         )}
-        {renderList(benefits?.split(',').map(s => s.trim()).filter(Boolean), 'Льготы')}
-        {renderList(documents?.split(',').map(s => s.trim()).filter(Boolean), 'Представленные документы')}
-        <Text mt={2}>
-          <strong>Корректность оформления документов:</strong> {has_incorrect_document ? 
-            <><WarningIcon color="red.500" mr={1}/> Указано наличие некорректно оформленных документов</> :
-            <><CheckCircleIcon color="green.500" mr={1}/> Проблем не указано</>
+        {renderSimpleList(benefits, 'Льготы')}
+        {renderSimpleList(submitted_documents, 'Представленные документы')}
+        <Descriptions.Item label="Корректность оформления документов" span={2}>
+          {has_incorrect_document ? 
+            <Text type="danger"><WarningOutlined style={{marginRight: 4}} /> Указано наличие некорректно оформленных документов</Text> :
+            <Text type="success"><CheckCircleOutlined style={{marginRight: 4}} /> Проблем не указано</Text>
           }
-        </Text>
-      </Box>
+        </Descriptions.Item>
+      </Descriptions>
 
-      {/* НОВЫЙ БЛОК для other_documents_extracted_data */}
       {other_documents_extracted_data && other_documents_extracted_data.length > 0 && (
-          <Box>
-              <Divider my={4}/>
-              <Heading size="md" mb={3}>Данные из загруженных доп. документов</Heading>
-              <Accordion allowMultiple>
-                  {other_documents_extracted_data.map((docData, index) => (
-                      <AccordionItem key={index}>
-                          <h2>
-                              <AccordionButton>
-                                  <Box flex="1" textAlign="left" fontWeight="medium">
-                                      Документ {index + 1}: {docData.standardized_document_type || "Тип не определен"}
-                                  </Box>
-                                  <AccordionIcon />
-                              </AccordionButton>
-                          </h2>
-                          <AccordionPanel pb={4} bg="gray.50" _dark={{ bg: "gray.700" }}>
-                              {docData.extracted_fields && Object.keys(docData.extracted_fields).length > 0 ? (
-                                  <Box mt={2}>
-                                      <Text fontWeight="semibold" fontSize="sm">Извлеченные поля:</Text>
-                                      <List spacing={1} pl={4} fontSize="xs">
-                                          {Object.entries(docData.extracted_fields).map(([key, value]) => (
-                                              <ListItem key={key}>
-                                                  <strong>{key}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                                              </ListItem>
-                                          ))}
-                                      </List>
-                                  </Box>
-                              ) : (
-                                <Text fontSize="sm" fontStyle="italic">Дополнительные извлеченные данные по этому документу отсутствуют.</Text>
-                              )}
-                          </AccordionPanel>
-                      </AccordionItem>
-                  ))}
-              </Accordion>
-          </Box>
+        <>
+          <Divider />
+          <Title level={4} style={{marginBottom: 16}}><FileTextOutlined style={{marginRight: 8}} />Данные из загруженных дополнительных документов</Title>
+          <Collapse accordion>
+            {other_documents_extracted_data.map((docData: Partial<OtherDocumentData>, index: number) => (
+              <Panel header={`Документ ${index + 1}: ${docData.standardized_document_type || "Тип не определен"}`} key={index.toString()}>
+                {docData.extracted_fields && Object.keys(docData.extracted_fields).length > 0 ? (
+                  <Descriptions bordered size="small" column={1}>
+                    {Object.entries(docData.extracted_fields).map(([key, value]) => (
+                      <Descriptions.Item label={key} key={key}>
+                        {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                      </Descriptions.Item>
+                    ))}
+                  </Descriptions>
+                ) : (
+                  <Text italic>Дополнительные извлеченные данные по этому документу отсутствуют.</Text>
+                )}
+                {docData.multimodal_assessment && (
+                    <Descriptions bordered size="small" column={1} style={{marginTop: 10}}>
+                        <Descriptions.Item label="Мультимодальная оценка">{docData.multimodal_assessment}</Descriptions.Item>
+                    </Descriptions>
+                )}
+                 {docData.text_llm_reasoning && (
+                    <Descriptions bordered size="small" column={1} style={{marginTop: 10}}>
+                        <Descriptions.Item label="Обоснование LLM (текст)">
+                            <Paragraph copyable={{ tooltips: ['Копировать', 'Скопировано!'] }} style={{whiteSpace: "pre-wrap"}}>
+                                {docData.text_llm_reasoning}
+                            </Paragraph>
+                        </Descriptions.Item>
+                    </Descriptions>
+                )}
+              </Panel>
+            ))}
+          </Collapse>
+        </>
       )}
 
       <Divider />
-      <Text textAlign="center" fontWeight="bold" color="gray.600">Пожалуйста, проверьте все данные перед отправкой.</Text>
+      <SummaryInsights formData={formData} onEditStep={onEditStep} />
 
-    </VStack>
+      <Paragraph style={{ textAlign: 'center', fontWeight: 'bold', color: 'rgba(0, 0, 0, 0.65)' }}>
+        Пожалуйста, проверьте все данные перед отправкой.
+      </Paragraph>
+    </Space>
   );
 }
 
-export default SummaryStep; 
+export default SummaryStep;

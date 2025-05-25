@@ -1,79 +1,98 @@
-import { FieldErrors, UseFormRegister, Control } from 'react-hook-form';
-// import { CaseFormDataType } from '../CaseForm'; // Старый импорт
-import { CaseFormDataTypeForRHF, DisabilityInfo } from '../../types'; // Новый импорт
-import {
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
-  FormErrorMessage,
-  VStack,
-  Heading
-} from '@chakra-ui/react';
+import React from 'react';
+import { Control, Controller, FieldErrors } from 'react-hook-form';
+import { Form, Select, DatePicker, Typography, Input } from 'antd';
+import { CaseFormDataTypeForRHF } from '../../types';
+import dayjs from 'dayjs';
 
-// Локальный тип DisabilityInfoType УДАЛЕН, используется импортированный DisabilityInfo
-// type DisabilityInfoType = {
-//     group: string;
-//     date: string;
-//     cert_number?: string;
-// };
+const { Title } = Typography;
+const { Option } = Select;
 
 interface DisabilityInfoStepProps {
-  register: UseFormRegister<CaseFormDataTypeForRHF>;
-  // Ошибки теперь для всего объекта disability, доступ через errors.disability?.group
-  // Или, если getErrorMessage используется, он должен обрабатывать 'disability.group'
-  errors: FieldErrors<CaseFormDataTypeForRHF>; 
-  control: Control<CaseFormDataTypeForRHF>; // Обновляем тип Control
-  getErrorMessage: (fieldName: keyof DisabilityInfo | `disability.${keyof DisabilityInfo}`) => string | undefined;
+  control: Control<CaseFormDataTypeForRHF>;
+  errors: FieldErrors<CaseFormDataTypeForRHF>;
 }
 
-function DisabilityInfoStep({ register, errors, getErrorMessage }: DisabilityInfoStepProps) {
+const disabilityGroups = [
+    { id: '1', name: '1 группа' },
+    { id: '2', name: '2 группа' },
+    { id: '3', name: '3 группа' },
+    { id: 'child', name: 'Ребенок-инвалид' },
+];
+
+const DisabilityInfoStep: React.FC<DisabilityInfoStepProps> = ({ control, errors }) => {
   return (
-    <VStack spacing={4} align="stretch">
-        <Heading size="md" mb={2}>Сведения об инвалидности</Heading>
+    <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+      <Title level={4} style={{ marginBottom: '24px', textAlign: 'center' }}>
+        Сведения об инвалидности
+      </Title>
 
-        <FormControl isInvalid={!!getErrorMessage('disability.group') || !!errors.disability?.group}>
-            <FormLabel htmlFor='disability.group'>Группа инвалидности</FormLabel>
-            <Select
-                id='disability.group'
-                placeholder="Выберите группу"
-                {...register('disability.group', {
-                    required: 'Пожалуйста, выберите группу инвалидности'
-                })}
-            >
-                <option value="1">I группа</option>
-                <option value="2">II группа</option>
-                <option value="3">III группа</option>
-                <option value="child">Ребенок-инвалид</option>
+      <Form.Item
+        label="Группа инвалидности"
+        name={['disability', 'group']}
+        validateStatus={errors.disability?.group ? 'error' : ''}
+        help={errors.disability?.group?.message as string | undefined}
+      >
+        <Controller
+          name="disability.group"
+          control={control}
+          rules={{ required: 'Пожалуйста, выберите группу инвалидности!'}}
+          render={({ field }) => (
+            <Select {...field} placeholder="Выберите группу" style={{ width: '100%' }}>
+              {disabilityGroups.map(group => (
+                <Option key={group.id} value={group.id}>
+                  {group.name}
+                </Option>
+              ))}
             </Select>
-            <FormErrorMessage>{getErrorMessage('disability.group') || errors.disability?.group?.message}</FormErrorMessage>
-        </FormControl>
+          )}
+        />
+      </Form.Item>
 
-        <FormControl isInvalid={!!getErrorMessage('disability.date') || !!errors.disability?.date}>
-            <FormLabel htmlFor='disability.date'>Дата установления инвалидности</FormLabel>
-            <Input
-                id='disability.date'
-                type="date" // Для нативного date picker, IMaskInput не используется здесь
-                {...register('disability.date', {
-                    required: 'Пожалуйста, укажите дату установления инвалидности'
-                    // Можно добавить валидацию, чтобы дата не была в будущем
-                })}
+      <Form.Item
+        label="Дата установления инвалидности"
+        name={['disability', 'date']} 
+        validateStatus={errors.disability?.date ? 'error' : ''}
+        help={errors.disability?.date?.message as string | undefined}
+      >
+        <Controller
+          name="disability.date"
+          control={control}
+          rules={{ required: 'Пожалуйста, укажите дату установления инвалидности!'}}
+          render={({ field }) => (
+            <DatePicker 
+              {...field}
+              style={{ width: '100%' }}
+              placeholder="Выберите дату"
+              format="DD.MM.YYYY"
+              value={field.value ? dayjs(field.value, 'YYYY-MM-DD') : null}
+              onChange={(date, _dateString) => {
+                field.onChange(date ? date.format('YYYY-MM-DD') : null);
+              }}
             />
-            <FormErrorMessage>{getErrorMessage('disability.date') || errors.disability?.date?.message}</FormErrorMessage>
-        </FormControl>
+          )}
+        />
+      </Form.Item>
 
-        <FormControl isInvalid={!!getErrorMessage('disability.cert_number') || !!errors.disability?.cert_number}>
-            <FormLabel htmlFor='disability.cert_number'>Номер справки МСЭ (если есть)</FormLabel>
-            <Input
-                id='disability.cert_number'
-                type="text"
-                {...register('disability.cert_number')}
-            />
-            <FormErrorMessage>{getErrorMessage('disability.cert_number') || errors.disability?.cert_number?.message}</FormErrorMessage>
-        </FormControl>
-
-    </VStack>
+      <Form.Item
+        label="Номер справки МСЭ (БМСЭ) (необязательно)"
+        name={['disability', 'cert_number']}
+        validateStatus={errors.disability?.cert_number ? 'error' : ''}
+        help={errors.disability?.cert_number?.message as string | undefined}
+      >
+        <Controller
+            name="disability.cert_number"
+            control={control}
+            render={({field}) => (
+                <Input 
+                    {...field} 
+                    value={field.value === null ? '' : field.value}
+                    placeholder="Введите номер справки" 
+                />
+            )}
+        />
+      </Form.Item>
+    </div>
   );
-}
+};
 
 export default DisabilityInfoStep; 

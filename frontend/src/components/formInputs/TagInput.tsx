@@ -1,36 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    Input,
-    Tag,
-    TagLabel,
-    TagCloseButton,
-    Wrap, // Используем Wrap для переноса тегов
-    WrapItem,
-    Box,
-    useColorModeValue,
-    InputProps,
-} from '@chakra-ui/react';
+import { Input, Tag, Space } from 'antd';
+import type { InputProps } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 
 interface TagInputProps extends Omit<InputProps, 'onChange' | 'value'> {
-    id: string;
+    id?: string; // id не всегда нужен, если Input не основной элемент для focus
     value?: string; // Значение от RHF (строка, разделенная запятыми)
     fieldOnChange: (value: string) => void; // RHF field.onChange
     placeholder?: string;
+    inputRef?: React.Ref<any>; // Для react-hook-form register
 }
 
 const TagInput: React.FC<TagInputProps> = ({
     id,
     value,
     fieldOnChange,
-    placeholder = "Добавьте тег и нажмите Enter",
+    placeholder = "Добавьте тег",
+    inputRef, // Получаем ref от RHF
     ...rest
 }) => {
     const [tags, setTags] = useState<string[]>([]);
     const [inputValue, setInputValue] = useState('');
-    const tagBg = useColorModeValue('blue.100', 'blue.700');
-    const tagColor = useColorModeValue('blue.800', 'blue.100');
+    const [inputVisible, setInputVisible] = useState(false);
+    const internalInputRef = React.useRef<any>(null); // Внутренний ref для фокуса на Input
 
-    // Эффект для инициализации тегов из строки value
     useEffect(() => {
         if (value) {
             setTags(value.split(',').map(tag => tag.trim()).filter(Boolean));
@@ -43,58 +36,80 @@ const TagInput: React.FC<TagInputProps> = ({
         setInputValue(e.target.value);
     };
 
-    const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && inputValue.trim() !== '') {
-            e.preventDefault(); // Предотвращаем отправку формы, если она есть
+    const handleInputConfirm = useCallback(() => {
+        if (inputValue.trim() !== '') {
             const newTag = inputValue.trim();
             if (!tags.includes(newTag)) {
                 const newTags = [...tags, newTag];
                 setTags(newTags);
-                fieldOnChange(newTags.join(',')); // Обновляем значение RHF
+                fieldOnChange(newTags.join(','));
             }
-            setInputValue(''); // Очищаем поле ввода
         }
+        setInputValue('');
+        setInputVisible(false);
     }, [inputValue, tags, fieldOnChange]);
 
     const removeTag = useCallback((tagToRemove: string) => {
         const newTags = tags.filter(tag => tag !== tagToRemove);
         setTags(newTags);
-        fieldOnChange(newTags.join(',')); // Обновляем значение RHF
+        fieldOnChange(newTags.join(','));
     }, [tags, fieldOnChange]);
 
+    const showInput = () => {
+        setInputVisible(true);
+    };
+
+    useEffect(() => {
+        if (inputVisible) {
+            internalInputRef.current?.focus();
+        }
+    }, [inputVisible]);
+
+    // Объединяем ref от RHF с внутренним ref
+    const mergedRefs = useCallback((node: any) => {
+        internalInputRef.current = node;
+        if (typeof inputRef === 'function') {
+            inputRef(node);
+        } else if (inputRef) {
+            (inputRef as React.MutableRefObject<any>).current = node;
+        }
+    }, [inputRef]);
+
     return (
-        <Box borderWidth="1px" borderRadius="md" p={2} onClick={() => document.getElementById(id)?.focus()} cursor="text" borderColor="inherit" _hover={{ borderColor: "gray.300" }} _focusWithin={{ zIndex: 1, borderColor: "primary", boxShadow: `0 0 0 1px var(--chakra-colors-primary)` }}>
-            <Wrap spacing={2} align="center">
-                {tags.map((tag) => (
-                    <WrapItem key={tag}>
-                        <Tag size="md" borderRadius="full" variant="subtle" bg={tagBg} color={tagColor}>
-                            <TagLabel>{tag}</TagLabel>
-                            <TagCloseButton onClick={(e) => {
-                                e.stopPropagation(); // Предотвращаем фокус на Input при клике
-                                removeTag(tag)
-                            }} />
-                        </Tag>
-                    </WrapItem>
-                ))}
-                <WrapItem flexGrow={1}>
-                    <Input
-                        id={id}
-                        variant="unstyled" // Убираем стандартные стили Input
-                        value={inputValue}
-                        onChange={handleInputChange}
-                        onKeyDown={handleInputKeyDown}
-                        placeholder={placeholder}
-                        size="sm"
-                        {...rest}
-                        // Убираем явные стили, чтобы наследовались от Box
-                        // borderColor="transparent"
-                        // boxShadow="none"
-                        // _focus={{ boxShadow: "none" }}
-                        // minWidth="100px" // Минимальная ширина для поля ввода
-                    />
-                </WrapItem>
-            </Wrap>
-        </Box>
+        <Space wrap size={[0, 8]} style={{ width: '100%', border: '1px solid #d9d9d9', borderRadius: '2px', padding: '4px 7px', cursor: 'text'}} onClick={() => inputVisible ? internalInputRef.current?.focus() : showInput()}>
+            {tags.map((tag) => (
+                <Tag
+                    key={tag}
+                    closable
+                    onClose={(e) => {
+                        e.preventDefault(); // Предотвращаем срабатывание onClick на Space
+                        removeTag(tag);
+                    }}
+                    style={{ marginRight: 3 }}
+                >
+                    {tag}
+                </Tag>
+            ))}
+            {inputVisible ? (
+                <Input
+                    ref={mergedRefs} // Используем объединенный ref
+                    type="text"
+                    size="small"
+                    style={{ width: '78px' }} // Можно настроить
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    onBlur={handleInputConfirm}
+                    onPressEnter={handleInputConfirm}
+                    placeholder={placeholder}
+                    id={id} // id привязываем к видимому Input
+                    {...rest} // Передаем остальные пропсы от RHF (например, onBlur)
+                />
+            ) : (
+                <Tag onClick={showInput} style={{ background: '#fff', borderStyle: 'dashed', cursor: 'pointer' }}>
+                    <PlusOutlined /> {placeholder || 'Новый тег'}
+                </Tag>
+            )}
+        </Space>
     );
 };
 

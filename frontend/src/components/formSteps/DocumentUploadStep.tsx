@@ -1,160 +1,278 @@
-import React, { useState, useCallback } from 'react';
-import { Box, Heading, Text, VStack, FormControl, FormLabel, CheckboxGroup, Checkbox, Divider } from '@chakra-ui/react';
-import DocumentUpload from '../formInputs/DocumentUpload';
-import { useDropzone } from 'react-dropzone';
-import { parse, isValid, format } from 'date-fns';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Typography, Button, List, message as antdMessage, Space, Divider, Descriptions, Alert } from 'antd';
+import { Control, UseFormSetValue, FieldErrors, UseFormTrigger } from 'react-hook-form';
+import OcrUploader from '../formInputs/OcrUploader';
+import { 
+    OcrResultData, 
+    PassportData, 
+    SnilsData, 
+    WorkBookData, 
+    DocumentTypeToExtract,
+    WorkBookRecordEntry,
+    CaseFormDataTypeForRHF
+} from '../../types';
 
-export const ALL_POSSIBLE_DOCUMENT_IDS: { id: string, name: string }[] = [
-    { id: "application", name: "Заявление о назначении пенсии" },
-    { id: "snils", name: "СНИЛС (общий, для пенсии по старости/инвалидности)" },
-    { id: "work_book", name: "Трудовая книжка (общая)" },
-    { id: "mse_certificate", name: "Справка МСЭ" },
-    { id: "birth_certificate_children", name: "Свидетельство о рождении ребенка (детей)"},
-    { id: "military_id", name: "Военный билет"},
-    { id: "marriage_certificate", name: "Свидетельство о браке/расторжении/смене имени"},
-    { id: "salary_certificate_2002", name: "Справка о заработке за 60 месяцев до 01.01.2002"},
-    { id: "special_work_conditions_proof", name: "Справка, уточняющая особый характер работы или условий труда"},
-    { id: "residence_proof", name: "Документ, подтверждающий постоянное проживание в РФ"},
-    { id: "applicant_snils", name: "СНИЛС заявителя (для пенсии по потере кормильца)" },
-    { id: "death_certificate", name: "Свидетельство о смерти кормильца" },
-    { id: "relationship_proof", name: "Документы, подтверждающие родственные отношения с умершим" },
-    { id: "deceased_work_book", name: "Трудовая книжка умершего кормильца" },
-    { id: "deceased_snils", name: "СНИЛС умершего кормильца" },
-    { id: "dependency_proof", name: "Документы, подтверждающие нахождение на иждивении" },
-];
+const { Title, Text, Paragraph } = Typography;
+
+type DocumentProcessStatus = {
+    attempted: boolean;
+    processing: boolean;
+    error: boolean;
+    success: boolean;
+};
+
+const initialDocStatus: DocumentProcessStatus = {
+    attempted: false,
+    processing: false,
+    error: false,
+    success: false,
+};
 
 interface DocumentUploadStepProps {
-  setValue: (name: string, value: any, options?: { shouldValidate?: boolean, shouldDirty?: boolean }) => void;
-  initialPassportFile?: File | null;
-  initialSelectedDocs?: string[];
+    setValue: UseFormSetValue<CaseFormDataTypeForRHF>;
+    control: Control<CaseFormDataTypeForRHF>; 
+    errors: FieldErrors<CaseFormDataTypeForRHF>; 
+    trigger: UseFormTrigger<CaseFormDataTypeForRHF>;
+    onOcrStepNextButtonDisabledStateChange?: (isDisabled: boolean) => void;
 }
 
 const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ 
     setValue, 
-    initialPassportFile = null,
-    initialSelectedDocs = [] 
+    control, 
+    trigger, 
+    onOcrStepNextButtonDisabledStateChange 
 }) => {
+    const [passportData, setPassportData] = useState<PassportData | null>(null);
+    const [snilsData, setSnilsData] = useState<SnilsData | null>(null);
+    const [workBookData, setWorkBookData] = useState<WorkBookData | null>(null);
+    const [ocrGlobalError, setOcrGlobalError] = useState<string | null>(null);
 
-  const [passportFileForCheck, setPassportFileForCheck] = useState<File | null>(initialPassportFile);
-  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>(initialSelectedDocs);
+    const [passportStatus, setPassportStatus] = useState<DocumentProcessStatus>(initialDocStatus);
+    const [snilsStatus, setSnilsStatus] = useState<DocumentProcessStatus>(initialDocStatus);
+    const [workBookStatus, setWorkBookStatus] = useState<DocumentProcessStatus>(initialDocStatus);
 
-  const handleOcrDocumentProcessed = (data: {
-    extracted_text: string;
-    extracted_fields: Record<string, string>;
-  }) => {
-    if (data.extracted_fields) {
-      const { last_name, first_name, middle_name, birth_date, snils, gender, passport_series, passport_number, issue_date, issued_by, department_code, birth_place } = data.extracted_fields;
-      
-      if (last_name) setValue('personal_data.last_name', last_name, {shouldDirty: true});
-      if (first_name) setValue('personal_data.first_name', first_name, {shouldDirty: true});
-      if (middle_name) setValue('personal_data.middle_name', middle_name, {shouldDirty: true});
-      
-      if (birth_date) {
-        const parsedDate = parse(birth_date, 'dd.MM.yyyy', new Date());
-        if (isValid(parsedDate)) {
-          setValue('personal_data.birth_date', format(parsedDate, 'yyyy-MM-dd'), {shouldDirty: true});
-        } else {
-          const parsedDateAlt = parse(birth_date, 'yyyy-MM-dd', new Date());
-          if (isValid(parsedDateAlt)){
-            setValue('personal_data.birth_date', format(parsedDateAlt, 'yyyy-MM-dd'), {shouldDirty: true});
-          } else {
-            console.warn(`OCR: Не удалось распознать формат даты рождения: ${birth_date}. Устанавливаем как есть.`);
-            setValue('personal_data.birth_date', birth_date, {shouldDirty: true});
-          }
+    useEffect(() => {
+        if (onOcrStepNextButtonDisabledStateChange) {
+            const statuses = [passportStatus, snilsStatus, workBookStatus];
+            let shouldBeDisabled = false;
+
+            for (const status of statuses) {
+                if (status.attempted && (status.processing || status.error)) {
+                    shouldBeDisabled = true;
+                    break;
+                }
+            }
+            onOcrStepNextButtonDisabledStateChange(shouldBeDisabled);
         }
-      }
+    }, [passportStatus, snilsStatus, workBookStatus, onOcrStepNextButtonDisabledStateChange]);
 
-      if (snils) setValue('personal_data.snils', snils, {shouldDirty: true});
-      if (gender) setValue('personal_data.gender', gender.toLowerCase() === 'муж' ? 'male' : (gender.toLowerCase() === 'жен' ? 'female' : ''), {shouldDirty: true});
-    }
-  };
+    const handleProcessingStart = useCallback((docType: DocumentTypeToExtract) => {
+        setOcrGlobalError(null);
+        if (docType === 'passport') {
+            setPassportStatus({ attempted: true, processing: true, error: false, success: false });
+        } else if (docType === 'snils') {
+            setSnilsStatus({ attempted: true, processing: true, error: false, success: false });
+        } else if (docType === 'work_book') {
+            setWorkBookStatus({ attempted: true, processing: true, error: false, success: false });
+        }
+    }, []);
 
-  const onPassportFileDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      setPassportFileForCheck(file);
-      setValue('passport_file_for_check', file, {shouldDirty: true});
-    }
-  }, [setValue]);
+    const handleOcrSuccess = (data: OcrResultData, docType: DocumentTypeToExtract) => {
+        setOcrGlobalError(null);
+        let updateMessage = "";
+        let fieldsSet = false;
 
-  const { getRootProps: getPassportRootProps, getInputProps: getPassportInputProps, isDragActive: isPassportDragActive } = useDropzone({
-    onDrop: onPassportFileDrop,
-    accept: {
-      'image/png': ['.png'],
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'application/pdf': ['.pdf'],
-    },
-    maxFiles: 1,
-  });
+        const capitalizeField = (text: string | null | undefined): string | undefined => {
+            if (!text) return undefined;
+            return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+        };
 
-  const handleCheckboxChange = (selectedIds: (string | number)[]) => {
-    const stringIds = selectedIds.map(String);
-    setSelectedDocumentIds(stringIds);
-    setValue('uploaded_document_ids_for_check', stringIds, {shouldDirty: true});
-  };
+        if (docType === 'passport' && data) {
+            const passData = data as PassportData;
+            setPassportData(passData);
+            setPassportStatus({ attempted: true, processing: false, error: false, success: true });
+            
+            setValue('personal_data.first_name', capitalizeField(passData.first_name), { shouldValidate: true, shouldDirty: true });
+            setValue('personal_data.last_name', capitalizeField(passData.last_name), { shouldValidate: true, shouldDirty: true });
+            setValue('personal_data.middle_name', capitalizeField(passData.middle_name), { shouldValidate: true, shouldDirty: true });
+            setValue('personal_data.birth_date', passData.birth_date || undefined, { shouldValidate: true, shouldDirty: true });
+            setValue('personal_data.birth_place', passData.birth_place || undefined, { shouldValidate: true, shouldDirty: true });
+            
+            const genderFromOcr = passData.sex;
+            let mappedGender: 'male' | 'female' | undefined = undefined;
+            if (genderFromOcr) {
+                if (genderFromOcr.toLowerCase().startsWith('муж')) mappedGender = 'male';
+                else if (genderFromOcr.toLowerCase().startsWith('жен')) mappedGender = 'female';
+            }
+            setValue('personal_data.gender', mappedGender, { shouldValidate: true, shouldDirty: true });
 
-  return (
-    <VStack spacing={8} align="stretch">
-      <Box>
-        <Heading size="md" mb={2}>1. OCR документа для автозаполнения (Паспорт)</Heading>
-        <Text color="gray.600" fontSize="sm">
-          Загрузите скан паспорта. Данные из него (ФИО, дата рождения и др.) попробуем считать автоматически 
-          для предзаполнения полей на следующих шагах. Этот файл НЕ будет отправлен для проверки комплекта.
-        </Text>
-        <DocumentUpload onDocumentProcessed={handleOcrDocumentProcessed} />
-      </Box>
+            setValue('personal_data.passport_series', passData.passport_series || undefined, { shouldValidate: true, shouldDirty: true });
+            setValue('personal_data.passport_number', passData.passport_number || undefined, { shouldValidate: true, shouldDirty: true });
+            setValue('personal_data.passport_issue_date', passData.issue_date || undefined, { shouldValidate: true, shouldDirty: true });
+            setValue('personal_data.issuing_authority', passData.issuing_authority || undefined, { shouldValidate: true, shouldDirty: true });
+            setValue('personal_data.department_code', passData.department_code || undefined, { shouldValidate: true, shouldDirty: true });
+            
+            updateMessage = "Данные паспорта обновлены.";
+            fieldsSet = true;
+        } else if (docType === 'snils' && data) {
+            const snlsData = data as SnilsData;
+            setSnilsData(snlsData);
+            setSnilsStatus({ attempted: true, processing: false, error: false, success: true });
+            setValue('personal_data.snils', snlsData.snils_number || undefined, { shouldValidate: true, shouldDirty: true });
+            updateMessage = "Номер СНИЛС обновлен.";
+            fieldsSet = true;
+        } else if (docType === 'work_book' && data) {
+            const wbData = data as WorkBookData;
+            setWorkBookData(wbData);
+            setWorkBookStatus({ attempted: true, processing: false, error: false, success: true });
+            
+            if (wbData.records && wbData.records.length > 0) {
+                const mappedRecords = wbData.records.map(ocrRecord => ({
+                    organization: ocrRecord.organization || 'Не указано',
+                    position: ocrRecord.position || 'Не указано',
+                    start_date: ocrRecord.date_in || '',
+                    end_date: ocrRecord.date_out || '',
+                    special_conditions: null,
+                }));
+                setValue('work_experience.records', mappedRecords, { shouldValidate: true, shouldDirty: true });
+            }
+            if (wbData.calculated_total_years !== null && wbData.calculated_total_years !== undefined) {
+                setValue('work_experience.total_years', wbData.calculated_total_years, { shouldValidate: true, shouldDirty: true });
+            }
+            trigger('work_experience.records');
+            trigger('work_experience.total_years');
 
-      <Divider />
+            updateMessage = "Данные трудовой книжки обновлены и добавлены в форму.";
+        }
 
-      <Box>
-        <Heading size="md" mb={2}>2. Файл паспорта (для проверки комплекта)</Heading>
-        <Text color="gray.600" fontSize="sm">
-            Этот файл паспорта будет отправлен на сервер для финальной проверки комплекта документов. 
-            Пожалуйста, убедитесь, что это тот же документ, что и для OCR, или актуальный.
-        </Text>
-        <Box
-          {...getPassportRootProps()}
-          p={6}
-          mt={2}
-          border="2px dashed"
-          borderColor={isPassportDragActive ? 'blue.400' : 'gray.200'}
-          borderRadius="md"
-          textAlign="center"
-          cursor="pointer"
-          _hover={{ borderColor: 'blue.400' }}
-        >
-          <input {...getPassportInputProps()} />
-          {passportFileForCheck ? (
-            <Text>Выбран файл: {passportFileForCheck.name}</Text>
-          ) : isPassportDragActive ? (
-            <Text>Отпустите файл паспорта здесь...</Text>
-          ) : (
-            <Text>Перетащите файл паспорта сюда или нажмите для выбора (PNG, JPG, PDF)</Text>
-          )}
-        </Box>
-      </Box>
-      
-      <Divider />
+        if (fieldsSet) { 
+            trigger('personal_data.first_name');
+            trigger('personal_data.last_name');
+            trigger('personal_data.birth_date');
+            trigger('personal_data.snils');
+        }
 
-      <Box>
-        <Heading size="md" mb={2}>3. Другие предоставленные документы</Heading>
-        <Text color="gray.600" fontSize="sm">
-            Отметьте другие документы, которые вы предоставляете вместе с заявлением. 
-            Паспорт отмечать не нужно, если вы загрузили его в предыдущем пункте.
-        </Text>
-        <FormControl mt={2}>
-            <FormLabel srOnly>Другие предоставленные документы (отметьте)</FormLabel>
-            <CheckboxGroup colorScheme="blue" onChange={handleCheckboxChange} value={selectedDocumentIds}>
-                <VStack align="start" spacing={1} maxHeight="300px" overflowY="auto" borderWidth="1px" borderRadius="md" p={3}>
-                    {ALL_POSSIBLE_DOCUMENT_IDS.map(doc => (
-                        <Checkbox key={doc.id} value={doc.id}>{doc.name}</Checkbox>
-                    ))}
-                </VStack>
-            </CheckboxGroup>
-        </FormControl>
-      </Box>
-    </VStack>
-  );
+        const docTypeRussian: Record<string, string> = {
+            passport: "Паспорт РФ",
+            snils: "СНИЛС",
+            work_book: "Трудовая книжка",
+            other: "Другой документ"
+        };
+        const docNameToAdd = docTypeRussian[docType] || docType.toString();
+        
+        const currentDocsString = control._getWatch('documents') || '';
+        const currentDocuments = currentDocsString.split(',').map((s: string) => s.trim()).filter(Boolean);
+        
+        if (!currentDocuments.includes(docNameToAdd)) {
+            currentDocuments.push(docNameToAdd);
+            setValue('documents', currentDocuments.join(', '), { shouldDirty: true });
+            trigger('documents'); 
+        }
+        antdMessage.success(updateMessage || "Документ обработан.");
+    };
+
+    const handleOcrError = (message: string, docType: DocumentTypeToExtract) => {
+        setOcrGlobalError(`Ошибка OCR (${docType}): ${message}`);
+        antdMessage.error(`Ошибка OCR (${docType}): ${message}`);
+        if (docType === 'passport') {
+            setPassportData(null);
+            setPassportStatus({ attempted: true, processing: false, error: true, success: false });
+        } else if (docType === 'snils') {
+            setSnilsData(null);
+            setSnilsStatus({ attempted: true, processing: false, error: true, success: false });
+        } else if (docType === 'work_book') {
+            setWorkBookData(null);
+            setWorkBookStatus({ attempted: true, processing: false, error: true, success: false });
+        }
+    };
+
+    const renderPassportData = (data: PassportData) => (
+        <Descriptions bordered column={1} size="small" title="Данные паспорта">
+            <Descriptions.Item label="ФИО">{`${data.last_name || ''} ${data.first_name || ''} ${data.middle_name || ''}`.trim()}</Descriptions.Item>
+            <Descriptions.Item label="Дата рождения">{data.birth_date}</Descriptions.Item>
+            <Descriptions.Item label="Пол">{data.sex}</Descriptions.Item>
+            <Descriptions.Item label="Серия">{data.passport_series}</Descriptions.Item>
+            <Descriptions.Item label="Номер">{data.passport_number}</Descriptions.Item>
+            {data.issue_date && <Descriptions.Item label="Дата выдачи">{data.issue_date}</Descriptions.Item>}
+            {data.issuing_authority && <Descriptions.Item label="Кем выдан">{data.issuing_authority}</Descriptions.Item>}
+            {data.department_code && <Descriptions.Item label="Код подразделения">{data.department_code}</Descriptions.Item>}
+            {data.birth_place && <Descriptions.Item label="Место рождения">{data.birth_place}</Descriptions.Item>}
+        </Descriptions>
+    );
+
+    const renderSnilsData = (data: SnilsData) => (
+        <Descriptions bordered column={1} size="small" title="Данные СНИЛС">
+            <Descriptions.Item label="Номер СНИЛС">{data.snils_number}</Descriptions.Item>
+        </Descriptions>
+    );
+
+    const renderWorkBookData = (data: WorkBookData) => (
+        <Descriptions bordered column={1} size="small" title="Данные трудовой книжки">
+            {data.calculated_total_years !== null && <Descriptions.Item label="Рассчитанный стаж (лет)">{data.calculated_total_years}</Descriptions.Item>}
+            <Descriptions.Item label="Записи">
+                {data.records && data.records.length > 0 ? (
+                    <List
+                        size="small"
+                        bordered
+                        dataSource={data.records}
+                        renderItem={(item: WorkBookRecordEntry, index: number) => (
+                            <List.Item>
+                                <Text strong>{`Запись ${index + 1}:`}</Text> {item.organization} (c {item.date_in} по {item.date_out || 'н.в.'}) - {item.position}
+                            </List.Item>
+                        )}
+                    />
+                ) : <Text type="secondary">Записи отсутствуют</Text>}
+            </Descriptions.Item>
+        </Descriptions>
+    );
+
+    return (
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+            <Title level={4} style={{ marginBottom: '16px', textAlign: 'center' }}>Загрузка основных документов</Title>
+            <Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: '24px' }}>
+                Загрузите сканы паспорта, СНИЛС и трудовой книжки. Данные будут автоматически извлечены. 
+                Кнопка "Далее" станет активна, когда все успешно загруженные документы будут обработаны или если вы не загружали документы.
+            </Paragraph>
+
+            {ocrGlobalError && <Alert message={ocrGlobalError} type="error" showIcon style={{ marginBottom: '16px' }} />}
+
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <OcrUploader
+                    documentType="passport"
+                    onOcrSuccess={handleOcrSuccess}
+                    onOcrError={handleOcrError}
+                    onProcessingStart={handleProcessingStart}
+                    uploaderTitle="Загрузить скан паспорта (разворот с фото)"
+                />
+                {passportStatus.success && passportData && renderPassportData(passportData)}
+                {passportStatus.error && <Alert message="Ошибка обработки паспорта. Попробуйте загрузить другой файл." type="warning" showIcon />}
+
+                <Divider />
+
+                <OcrUploader
+                    documentType="snils"
+                    onOcrSuccess={handleOcrSuccess}
+                    onOcrError={handleOcrError}
+                    onProcessingStart={handleProcessingStart}
+                    uploaderTitle="Загрузить скан СНИЛС"
+                />
+                {snilsStatus.success && snilsData && renderSnilsData(snilsData)}
+                {snilsStatus.error && <Alert message="Ошибка обработки СНИЛС. Попробуйте загрузить другой файл." type="warning" showIcon />}
+
+                <Divider />
+
+                <OcrUploader
+                    documentType="work_book"
+                    onOcrSuccess={handleOcrSuccess}
+                    onOcrError={handleOcrError}
+                    onProcessingStart={handleProcessingStart}
+                    uploaderTitle="Загрузить скан трудовой книжки (все страницы)"
+                />
+                {workBookStatus.success && workBookData && renderWorkBookData(workBookData)}
+                {workBookStatus.error && <Alert message="Ошибка обработки трудовой книжки. Попробуйте загрузить другой файл." type="warning" showIcon />}
+            </Space>
+        </div>
+    );
 };
 
 export default DocumentUploadStep; 

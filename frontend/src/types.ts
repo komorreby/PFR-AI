@@ -1,177 +1,289 @@
 // src/types.ts
 
-// На основе backend/app/models.py
+// 6. Основные Сущности (Модели Данных)
 
 export interface NameChangeInfo {
-  old_full_name: string;
-  date_changed: string; // YYYY-MM-DD
+  old_full_name: string | null;
+  date_changed: string | null; // YYYY-MM-DD
 }
 
 export interface PersonalData {
   last_name: string;
   first_name: string;
-  middle_name?: string;
+  middle_name: string | null;
   birth_date: string; // YYYY-MM-DD
   snils: string;
-  gender: string; // 'male' | 'female'
+  gender: string; // "Мужской", "Женский" - как в API, или предусмотреть маппинг
   citizenship: string;
   name_change_info: NameChangeInfo | null;
-  dependents: number; // <-- Оставляем здесь, так как бэкенд ожидает его внутри personal_data
-
-  // Новые необязательные поля из OCR паспорта
-  birth_place?: string;
-  passport_series?: string;
-  passport_number?: string;
-  issue_date?: string; // YYYY-MM-DD
-  issuing_authority?: string;
-  department_code?: string;
+  dependents: number;
 }
 
-export interface WorkRecord {
-  id?: string; // Для useFieldArray
+export interface DisabilityInfo {
+  group: "1" | "2" | "3" | "child";
+  date: string; // YYYY-MM-DD
+  cert_number: string | null;
+}
+
+export interface WorkExperienceRecord {
   organization: string;
   position: string;
-  start_date: string; // YYYY-MM-DD для input type="date"
-  end_date: string;   // YYYY-MM-DD для input type="date"
-  special_conditions?: boolean;
+  start_date: string; // YYYY-MM-DD
+  end_date: string; // YYYY-MM-DD
+  special_conditions: boolean | null;
 }
 
 export interface WorkExperience {
   total_years: number;
-  records: WorkRecord[];
+  records: WorkExperienceRecord[] | null;
 }
 
-export interface DisabilityInfo {
-  group: string; // "1", "2", "3", "child"
-  date: string; // YYYY-MM-DD
-  cert_number?: string;
+export interface OtherDocumentData {
+  identified_document_type: string | null;
+  standardized_document_type: string | null;
+  extracted_fields: Record<string, any> | null; // object | null
+  multimodal_assessment: string | null;
+  text_llm_reasoning: string | null;
 }
 
-// Интерфейс для одного элемента other_documents_extracted_data
-export interface OtherDocumentExtractedBlock {
-  standardized_document_type?: string;
-  extracted_fields?: Record<string, any>;
-  // Можно добавить имя файла или какой-то идентификатор, если нужно будет их связывать с загруженными файлами
-  // original_filename?: string; 
+export interface CaseDataInput {
+  personal_data: PersonalData;
+  pension_type: string; // ID из /api/v1/pension_types
+  disability: DisabilityInfo | null;
+  work_experience: WorkExperience | null;
+  pension_points: number | null;
+  benefits: string[] | null;
+  submitted_documents: string[] | null; // ID из /api/v1/pension_documents/{pension_type_id}
+  has_incorrect_document: boolean | null;
+  other_documents_extracted_data: OtherDocumentData[] | null;
 }
 
-// Соответствует CaseDataInput с бэкенда
-export interface CaseFormData {
-  pension_type: string;
-  personal_data: PersonalData; // dependents будут здесь при отправке на API
-  work_experience: WorkExperience;
-  pension_points: number;
-  benefits: string[];
-  documents: string[];
-  has_incorrect_document: boolean;
-  disability?: DisabilityInfo;
-  other_documents_extracted_data?: OtherDocumentExtractedBlock[]; // НОВОЕ ПОЛЕ
+export interface ErrorDetail {
+  code: string | null;
+  message: string | null;
+  source: string | null;
+  details: Record<string, any> | null; // object | null
 }
 
-// Для формы React Hook Form, где benefits и documents - строки
-// И поле dependents вынесено на верхний уровень для UI
-export interface CaseFormDataTypeForRHF extends Omit<CaseFormData, 'benefits' | 'documents' | 'personal_data' | 'other_documents_extracted_data'> {
-  pension_type: string;
-  personal_data: Omit<PersonalData, 'dependents'>; // dependents здесь не будет
-  dependents: number; // dependents на верхнем уровне для формы
-  work_experience: WorkExperience;
-  pension_points: number;
-  benefits: string;
-  documents: string;
-  has_incorrect_document: boolean;
-  disability?: DisabilityInfo;
-  other_documents_extracted_data?: OtherDocumentExtractedBlock[]; // НОВОЕ ПОЛЕ
-}
-
-
-// Соответствует ProcessOutput с бэкенда
 export interface ProcessOutput {
   case_id: number;
-  final_status: string; // 'СООТВЕТСТВУЕТ' | 'НЕ СООТВЕТСТВУЕТ' (или другие от бэка)
-  explanation: string;
-  confidence_score: number;
-  // errors?: ApiError[]; // Если ProcessOutput будет возвращать ошибки
+  final_status: string; // "PROCESSING", "COMPLETED", "FAILED", "ERROR_PROCESSING", "СООТВЕТСТВУЕТ", "НЕ СООТВЕТСТВУЕТ", "UNKNOWN"
+  explanation: string | null;
+  confidence_score: number | null;
+  department_code: string | null;
+  error_info: ErrorDetail | null;
 }
 
-// Соответствует CaseHistoryEntry с бэкенда (или то, что реально приходит от /history)
-export interface HistoryEntry {
+export interface CaseHistoryEntry {
   id: number;
-  created_at: string; // "YYYY-MM-DD" или полный ISO datetime
+  created_at: string; // datetime, ISO 8601
   pension_type: string;
   final_status: string;
-  final_explanation?: string;
-  rag_confidence?: number;
-  personal_data?: PersonalData; // Полный PersonalData, а не урезанный
+  final_explanation: string | null;
+  rag_confidence: number | null;
+  personal_data: PersonalData | null;
 }
 
-// Для ответа от /api/v1/analyze_case
-export interface RagAnalysisResponse {
-  analysis_result: string;
-  confidence_score: number;
+export interface FullCaseData extends CaseDataInput {
+  id: number;
+  created_at: string; // datetime, ISO 8601
+  updated_at: string | null; // datetime, ISO 8601
+  errors: Record<string, any>[] | null; // Array<object>
+  final_status: string | null;
+  final_explanation: string | null;
+  rag_confidence: number | null;
+  // Поля из CaseDataInput здесь уже есть через extends,
+  // они могут быть null, если данные не были предоставлены или ошибки парсинга
 }
 
-// Новый тип для стандартизированной ошибки API
-export interface ApiErrorDetail {
+export interface PassportData {
+  last_name: string | null;
+  first_name: string | null;
+  middle_name: string | null;
+  birth_date: string | null; // YYYY-MM-DD
+  sex: string | null; // "МУЖ.", "ЖЕН."
+  birth_place: string | null;
+  passport_series: string | null;
+  passport_number: string | null;
+  issue_date: string | null; // YYYY-MM-DD
+  issuing_authority: string | null;
+  department_code: string | null;
+}
+
+export interface SnilsData {
+  snils_number: string | null;
+  last_name: string | null;
+  first_name: string | null;
+  middle_name: string | null;
+  gender: string | null;
+  birth_date: string | null; // YYYY-MM-DD
+  birth_place: string | null;
+}
+
+export interface WorkBookRecordEntry {
+  date_in: string | null; // YYYY-MM-DD
+  date_out: string | null; // YYYY-MM-DD
+  organization: string | null;
+  position: string | null;
+}
+
+export interface WorkBookData {
+  records: WorkBookRecordEntry[]; // По умолчанию пустой массив []
+  calculated_total_years: number | null;
+}
+
+export interface OcrTaskSubmitResponse {
+  task_id: string; // UUID
+  status: "PROCESSING";
   message: string;
-  status?: number;
-  details?: unknown; // Дополнительные детали из ответа бэкенда
 }
 
-// --- OCR Types ---
+export type OcrTaskStatus = "PROCESSING" | "COMPLETED" | "FAILED";
 
-// Соответствует PassportData с бэкенда
-export interface OcrPassportData {
-  last_name?: string;
-  first_name?: string;
-  middle_name?: string;
-  birth_date?: string; // Ожидаемый формат: YYYY-MM-DD или DD.MM.YYYY (требует обработки)
-  sex?: string; // На бэке gender, здесь sex из OCR
-  birth_place?: string;
-  passport_series?: string;
-  passport_number?: string;
-  issue_date?: string; // Ожидаемый формат: YYYY-MM-DD или DD.MM.YYYY (требует обработки)
-  issuing_authority?: string;
-  department_code?: string;
+export type OcrResultData = PassportData | SnilsData | WorkBookData | OtherDocumentData;
+
+export interface OcrTaskStatusResponse {
+  task_id: string;
+  status: OcrTaskStatus;
+  data: OcrResultData | null; // Структура зависит от document_type при создании задачи
+  error: {
+    detail: string;
+    type: string; // ИмяОшибки
+  } | null;
 }
 
-// Соответствует SnilsData с бэкенда
-export interface OcrSnilsData {
-  // Поля из примера ответа OCR СНИЛС
-  last_name?: string;
-  first_name?: string;
-  middle_name?: string;
-  gender?: string;
-  birth_date?: string;
-  birth_place?: string; // Место рождения может быть и в СНИЛС
-  snils_number?: string;
+export interface TasksStatsResponse {
+  total: number;
+  pending: number;
+  expired_processing: number;
+  status_specific_counts: {
+    PROCESSING: number;
+    COMPLETED: number;
+    FAILED: number;
+    [key: string]: number; // Для возможных других статусов
+  };
 }
 
-// Соответствует OtherDocumentData с бэкенда
-export interface OcrOtherDocumentData {
-  identified_document_type?: string;
-  standardized_document_type?: string;
-  extracted_fields?: Record<string, any>;
-  multimodal_assessment?: string;
-  text_llm_reasoning?: string;
+export interface DocumentDetail {
+  id: string;
+  name: string;
+  description: string;
+  is_critical: boolean;
+  condition_text: string | null;
+  ocr_type: "passport" | "snils" | "work_book" | "other" | null;
 }
 
-export interface OcrWorkBookRecordEntry {
-  date_in?: string; // Ожидаем DD.MM.YYYY или YYYY-MM-DD от OCR
-  date_out?: string; // Ожидаем DD.MM.YYYY или YYYY-MM-DD от OCR
-  organization?: string;
-  position?: string;
+export interface DependencyStatus {
+  name: string; // "database", "Ollama_LLM", "Ollama_Vision", "neo4j"
+  status: "ok" | "error" | "skipped";
+  message: string | null;
 }
 
-export interface OcrWorkBookData {
-  records: OcrWorkBookRecordEntry[];
-  calculated_total_years?: number;
+export interface HealthCheckResponse {
+  overall_status: "healthy" | "unhealthy";
+  timestamp: string; // datetime, ISO 8601
+  dependencies: DependencyStatus[];
 }
 
-export type OcrExtractionResponse =
-  | { documentType: 'passport'; data: OcrPassportData }
-  | { documentType: 'snils'; data: OcrSnilsData }
-  | { documentType: 'work_book'; data: OcrWorkBookData }
-  | { documentType: 'other'; data: OcrOtherDocumentData }
-  | { documentType: 'error'; message: string; errorDetails?: any };
+// Типы для эндпоинтов конфигурации
 
-export type OcrDocumentType = 'passport' | 'snils' | 'work_book' | 'other';
+export interface PensionTypeInfo {
+  id: string;
+  display_name: string;
+  description: string;
+}
+
+// Типы для пользователя, согласно API документации
+export interface User {
+  id: number;
+  username: string;
+  role: "admin" | "manager";
+  is_active: boolean;
+}
+
+// Тип для ответа от эндпоинта /token, согласно API документации
+export interface TokenResponse {
+  access_token: string;
+  token_type: "bearer";
+}
+
+// Типы для параметров запросов и тел
+
+// Для POST /api/v1/document_extractions
+export type DocumentTypeToExtract = "passport" | "snils" | "work_book" | "other";
+
+export interface DocumentExtractionParams {
+  document_type: DocumentTypeToExtract;
+  image: File;
+  ttl_hours?: number; // 1-168
+}
+
+// Для GET /api/v1/cases/{case_id}/document
+export type DocumentFormat = "pdf" | "docx";
+
+// Стандартизированный формат ошибки (из раздела 5)
+export interface StandardErrorResponse {
+    error_code: string;
+    message: string;
+    details?: any; // Может быть объектом или массивом
+}
+
+// Детали ошибки валидации (из раздела 5)
+export interface ValidationErrorDetailItem {
+    loc: (string | number)[];
+    msg: string;
+    type: string;
+}
+export interface HttpValidationError {
+    detail: ValidationErrorDetailItem[];
+}
+
+// Для стандартизированных ошибок (новый формат)
+export interface StandardizedValidationErrorDetail {
+    field: string; // "body.personal_data.snils"
+    message: string;
+    type: string; // "value_error"
+}
+export interface StandardizedValidationErrorResponse {
+    error_code: "VALIDATION_ERROR";
+    message: string;
+    details: StandardizedValidationErrorDetail[];
+}
+
+// Общий тип для ошибки API, который будет использоваться в API клиенте
+export interface ApiError {
+  status: number;
+  message: string; // Человекочитаемое сообщение
+  errorCode?: string; // Код ошибки из StandardErrorResponse
+  validationDetails?: StandardizedValidationErrorDetail[] | ValidationErrorDetailItem[]; // Детали валидации
+  rawError?: any; // Исходный объект ошибки от сервера
+}
+
+// Тип для данных формы React Hook Form (RHF)
+// Основан на CaseDataInput, но с учетом того, что поля могут быть частично заполнены
+// или иметь немного другую структуру на стороне UI перед отправкой.
+export interface CaseFormDataTypeForRHF {
+  pension_type?: string; // ID из /api/v1/pension_types
+  personal_data?: Partial<PersonalData> & { 
+    name_change_info_checkbox?: boolean; // Вспомогательное поле для UI
+    // Поля паспорта, которые могут быть отдельными в UI, но часть PersonalData в API
+    passport_series?: string;
+    passport_number?: string;
+    passport_issue_date?: string; 
+    issuing_authority?: string;
+    department_code?: string;
+    birth_place?: string;
+  };
+  disability?: Partial<DisabilityInfo> | null;
+  work_experience?: Partial<WorkExperience> & {
+    // Если есть специфичные для UI поля в work_experience, добавляем сюда
+  };
+  pension_points?: number | null;
+  benefits?: string; // В RHF может храниться как строка тегов
+  submitted_documents?: string; // В RHF может храниться как строка тегов
+  has_incorrect_document?: boolean;
+  other_documents_extracted_data?: Partial<OtherDocumentData>[]; // Массив частично заполненных данных
+  
+  // Могут быть и другие поля, специфичные для UI или временные
+  [key: string]: any; // Для гибкости, если есть другие поля в RHF
+}

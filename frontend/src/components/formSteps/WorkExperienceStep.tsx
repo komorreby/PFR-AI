@@ -1,175 +1,209 @@
 import React from 'react';
 import { Control, Controller, FieldErrors, UseFormRegister, UseFormGetValues, UseFieldArrayAppend, UseFieldArrayRemove, FieldArrayWithId } from 'react-hook-form';
-import DatePicker from "react-datepicker";
-import { parse } from 'date-fns';
+import dayjs from 'dayjs';
 import {
-    VStack,
-    Heading,
-    SimpleGrid,
-    FormControl,
-    FormLabel,
+    Form,
     Input,
-    FormErrorMessage,
-    NumberInput,
-    NumberInputField,
-    NumberInputStepper,
-    NumberIncrementStepper,
-    NumberDecrementStepper,
-    Divider,
+    InputNumber,
+    DatePicker as AntDatePicker,
     Checkbox,
-    Box,
-    HStack,
-    IconButton,
-    Button
-} from '@chakra-ui/react';
-import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
-import { CaseFormDataTypeForRHF, WorkRecord } from '../../types';
-import CustomDateInput from '../formInputs/CustomDateInput';
-import { formatDateForInput } from '../../utils';
+    Button,
+    Row,
+    Col,
+    Typography,
+    Divider as AntDivider,
+    Space,
+    Card
+} from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { CaseFormDataTypeForRHF, WorkExperienceRecord } from '../../types';
+
+const { Title, Text } = Typography;
 
 interface WorkExperienceStepProps {
     control: Control<CaseFormDataTypeForRHF>;
-    register: UseFormRegister<CaseFormDataTypeForRHF>;
     errors: FieldErrors<CaseFormDataTypeForRHF>;
     fields: FieldArrayWithId<CaseFormDataTypeForRHF, "work_experience.records", "id">[];
     append: UseFieldArrayAppend<CaseFormDataTypeForRHF, "work_experience.records">;
     remove: UseFieldArrayRemove;
-    getErrorMessage: (name: string) => string | undefined;
     getValues: UseFormGetValues<CaseFormDataTypeForRHF>;
+    form: any;
 }
 
 const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({ 
-    control, register, fields, append, remove, getErrorMessage, getValues
+    control, fields, append, remove, getValues, form
 }) => {
+    const today = new Date();
+
     return (
-        <VStack spacing={4} align="stretch">
-            <Heading size="md" mb={4}>Трудовой стаж</Heading>
-            <FormControl isInvalid={!!getErrorMessage('work_experience.total_years')}>
-              <FormLabel htmlFor="total_years">Общий подтвержденный стаж (лет)</FormLabel>
-              <Controller
-                name="work_experience.total_years"
-                control={control}
-                rules={{ 
-                    required: "Общий стаж обязателен", 
-                    min: { value: 0, message: "Стаж не может быть отрицательным" },
-                    validate: value => typeof value === 'number' || "Значение должно быть числом"
-                }}
-                render={({ field }) => (
-                    <NumberInput 
-                        id="total_years" 
-                        min={0} 
-                        precision={1} 
-                        step={0.5}
-                        value={field.value === undefined || field.value === null ? '' : String(field.value)}
-                        onChange={(_valueAsString, valueAsNumber) => field.onChange(valueAsNumber)}
-                        onBlur={field.onBlur}
-                    >
-                        <NumberInputField ref={field.ref} />
-                        <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
-                    </NumberInput>
-                )}
-              />
-               <FormErrorMessage>{getErrorMessage('work_experience.total_years')}</FormErrorMessage>
-            </FormControl>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+            <Title level={4} style={{ marginBottom: '24px', textAlign: 'center' }}>Трудовой стаж</Title>
+            <Form.Item
+                label="Общий подтвержденный стаж (лет)"
+                name={["work_experience", "total_years"]}
+                rules={[
+                    { required: true, message: "Общий стаж обязателен" },
+                    { type: 'number', min: 0, message: "Стаж не может быть отрицательным" },
+                ]}
+            >
+                <Controller
+                    name="work_experience.total_years"
+                    control={control}
+                    render={({ field }) => (
+                        <InputNumber 
+                            {...field}
+                            min={0} 
+                            precision={1} 
+                            step={0.5}
+                            style={{ width: '100%' }}
+                            onChange={(value) => field.onChange(value)}
+                        />
+                    )}
+                />
+            </Form.Item>
 
-             <Divider my={4} />
-             <Heading size="sm" mb={2}>Записи о трудовой деятельности</Heading>
+            <AntDivider style={{ margin: '24px 0' }}/>
+            <Title level={5} style={{ marginBottom: '16px' }}>Записи о трудовой деятельности</Title>
 
-             <VStack spacing={4} align="stretch">
-                {fields.map((item, index) => (
-                  <Box key={item.id} p={4} borderWidth="1px" borderRadius="md" borderColor="gray.200">
-                     <Heading size="xs" mb={3}>Место работы #{index + 1}</Heading>
-                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                          <FormControl isInvalid={!!getErrorMessage(`work_experience.records.${index}.organization`)}>
-                              <FormLabel htmlFor={`work_experience.records.${index}.organization`}>Организация</FormLabel>
-                              <Input 
-                                id={`work_experience.records.${index}.organization`} 
-                                {...register(`work_experience.records.${index}.organization` as const, { required: "Организация обязательна" })} 
-                              />
-                               <FormErrorMessage>{getErrorMessage(`work_experience.records.${index}.organization`)}</FormErrorMessage>
-                           </FormControl>
-                           <FormControl isInvalid={!!getErrorMessage(`work_experience.records.${index}.position`)}>
-                              <FormLabel htmlFor={`work_experience.records.${index}.position`}>Должность</FormLabel>
-                              <Input 
-                                id={`work_experience.records.${index}.position`} 
-                                {...register(`work_experience.records.${index}.position` as const, { required: "Должность обязательна" })} 
-                              />
-                               <FormErrorMessage>{getErrorMessage(`work_experience.records.${index}.position`)}</FormErrorMessage>
-                           </FormControl>
-                            <FormControl isInvalid={!!getErrorMessage(`work_experience.records.${index}.start_date`)}>
-                               <FormLabel htmlFor={`work_experience.records.${index}.start_date`}>Дата начала</FormLabel>
-                               <Controller
-                                   name={`work_experience.records.${index}.start_date` as const}
-                                   control={control}
-                                   rules={{ required: "Дата начала обязательна" }}
-                                   render={({ field }) => (
-                                       <DatePicker
-                                          selected={field.value ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
-                                          onChange={(date: Date | null) => field.onChange(formatDateForInput(date))}
-                                          locale="ru"
-                                          showYearDropdown scrollableYearDropdown yearDropdownItemNumber={100}
-                                          maxDate={new Date()}
-                                          customInput={ <CustomDateInput id={field.name} fieldOnChange={field.onChange} maxDate={new Date()} /> }
-                                          dateFormat="dd.MM.yyyy" placeholderText="ДД.ММ.ГГГГ" autoComplete="off" shouldCloseOnSelect={true}
-                                        />
-                                   )}
-                               />
-                                <FormErrorMessage>{getErrorMessage(`work_experience.records.${index}.start_date`)}</FormErrorMessage>
-                            </FormControl>
-                            <FormControl isInvalid={!!getErrorMessage(`work_experience.records.${index}.end_date`)}>
-                               <FormLabel htmlFor={`work_experience.records.${index}.end_date`}>Дата окончания</FormLabel>
+            {fields.map((item, index) => (
+                <Card key={item.id} style={{ marginBottom: '16px' }} bodyStyle={{padding: '16px'}}>
+                    <Title level={5} style={{marginTop: 0, marginBottom: '12px'}}>
+                        Место работы #{index + 1}
+                        <Button 
+                            type="text" 
+                            danger 
+                            icon={<DeleteOutlined />} 
+                            onClick={() => remove(index)} 
+                            style={{ float: 'right'}}
+                            size="small"
+                        />
+                    </Title>
+                    <Row gutter={[16,0]}>
+                        <Col xs={24} md={12}>
+                            <Form.Item
+                                label="Организация"
+                                name={[`work_experience`, `records`, index, `organization`]}
+                                rules={[{ required: true, message: "Организация обязательна" }]}
+                            >
                                 <Controller
-                                   name={`work_experience.records.${index}.end_date` as const}
-                                   control={control}
-                                   rules={{ 
-                                       required: "Дата окончания обязательна",
-                                       validate: value => {
-                                           const startDate = getValues(`work_experience.records.${index}.start_date`);
-                                           if (startDate && value && parse(value, 'yyyy-MM-dd', new Date()) < parse(startDate, 'yyyy-MM-dd', new Date())) {
-                                               return "Дата окончания не может быть раньше даты начала";
-                                           }
-                                           return true;
-                                       }
-                                    }}
-                                   render={({ field }) => (
-                                       <DatePicker
-                                          selected={field.value ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
-                                          onChange={(date: Date | null) => field.onChange(formatDateForInput(date))}
-                                          locale="ru"
-                                          showYearDropdown scrollableYearDropdown yearDropdownItemNumber={100}
-                                          minDate={getValues(`work_experience.records.${index}.start_date`) ? parse(getValues(`work_experience.records.${index}.start_date`), 'yyyy-MM-dd', new Date()) : undefined}
-                                          maxDate={new Date()}
-                                          customInput={ <CustomDateInput id={field.name} fieldOnChange={field.onChange} maxDate={new Date()} /> }
-                                          dateFormat="dd.MM.yyyy" placeholderText="ДД.ММ.ГГГГ" autoComplete="off" shouldCloseOnSelect={true}
-                                       />
-                                   )}
-                               />
-                               <FormErrorMessage>{getErrorMessage(`work_experience.records.${index}.end_date`)}</FormErrorMessage>
-                            </FormControl>
-                       </SimpleGrid>
-                       <HStack mt={4} justify="space-between">
-                          <FormControl display="flex" alignItems="center" width="auto">
-                              <Checkbox 
-                                id={`work_experience.records.${index}.special_conditions`} 
-                                {...register(`work_experience.records.${index}.special_conditions` as const)} 
-                                mr={2} 
-                              />
-                              <FormLabel htmlFor={`work_experience.records.${index}.special_conditions`} mb="0">Особые условия труда</FormLabel>
-                           </FormControl>
-                           <IconButton aria-label="Удалить место работы" icon={<DeleteIcon />} colorScheme="red" variant="ghost" size="sm" onClick={() => remove(index)} />
-                        </HStack>
-                   </Box>
-                ))}
-             </VStack>
+                                    name={`work_experience.records.${index}.organization` as const}
+                                    control={control}
+                                    render={({ field }) => <Input {...field} />}
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                            <Form.Item
+                                label="Должность"
+                                name={[`work_experience`, `records`, index, `position`]}
+                                rules={[{ required: true, message: "Должность обязательна" }]}
+                            >
+                                <Controller
+                                    name={`work_experience.records.${index}.position` as const}
+                                    control={control}
+                                    render={({ field }) => <Input {...field} />}
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                            <Form.Item
+                                label="Дата начала"
+                                name={[`work_experience`, `records`, index, `start_date`]}
+                                rules={[{ required: true, message: "Дата начала обязательна" }]}
+                            >
+                                <Controller
+                                    name={`work_experience.records.${index}.start_date` as const}
+                                    control={control}
+                                    render={({ field }) => (
+                                        <AntDatePicker
+                                            {...field}
+                                            style={{ width: '100%' }}
+                                            placeholder="ДД.ММ.ГГГГ"
+                                            format="DD.MM.YYYY"
+                                            value={field.value && dayjs(field.value, 'YYYY-MM-DD').isValid() ? dayjs(field.value, 'YYYY-MM-DD') : null}
+                                            onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : null)}
+                                            disabledDate={(current) => current && current.valueOf() > today.valueOf()}
+                                            showToday={false}
+                                        />
+                                    )}
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                            <Form.Item
+                                label="Дата окончания"
+                                name={[`work_experience`, `records`, index, `end_date`]}
+                                rules={[
+                                    { required: true, message: "Дата окончания обязательна" },
+                                    {
+                                        validator: async (_, value) => {
+                                            const startDateStr = getValues(`work_experience.records.${index}.start_date`);
+                                            if (startDateStr && value) {
+                                                const startDate = dayjs(startDateStr, 'YYYY-MM-DD');
+                                                const endDate = dayjs(value, 'YYYY-MM-DD');
+                                                if (startDate.isValid() && endDate.isValid() && endDate.isBefore(startDate)) {
+                                                    return Promise.reject(new Error("Дата окончания не может быть раньше даты начала"));
+                                                }
+                                            }
+                                            return Promise.resolve();
+                                        }
+                                    }
+                                ]}
+                            >
+                                <Controller
+                                    name={`work_experience.records.${index}.end_date` as const}
+                                    control={control}
+                                    render={({ field }) => (
+                                        <AntDatePicker
+                                            {...field}
+                                            style={{ width: '100%' }}
+                                            placeholder="ДД.ММ.ГГГГ"
+                                            format="DD.MM.YYYY"
+                                            value={field.value && dayjs(field.value, 'YYYY-MM-DD').isValid() ? dayjs(field.value, 'YYYY-MM-DD') : null}
+                                            onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : null)}
+                                            disabledDate={(current) => {
+                                                const startDateStr = getValues(`work_experience.records.${index}.start_date`);
+                                                const startDate = startDateStr && dayjs(startDateStr, 'YYYY-MM-DD').isValid() 
+                                                                  ? dayjs(startDateStr, 'YYYY-MM-DD') 
+                                                                  : null;
+                                                if (startDate && current && current.valueOf() < startDate.valueOf()) return true;
+                                                return current && current.valueOf() > today.valueOf();
+                                            }}
+                                            showToday={false}
+                                        />
+                                    )}
+                                />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Form.Item 
+                        name={[`work_experience`, `records`, index, `special_conditions`]} 
+                        valuePropName="checked"
+                        style={{marginBottom: 0, marginTop: '8px'}}
+                    >
+                        <Controller
+                             name={`work_experience.records.${index}.special_conditions` as const}
+                             control={control}
+                             defaultValue={false}
+                             render={({ field }) => (
+                                <Checkbox {...field} checked={!!field.value}>
+                                    Особые условия труда
+                                </Checkbox>
+                             )}
+                        />
+                    </Form.Item>
+                </Card>
+            ))}
 
-             <Button
-                leftIcon={<AddIcon />}
-                onClick={() => append({ organization: '', start_date: '', end_date: '', position: '', special_conditions: false } as WorkRecord) }
-                variant="outline" colorScheme="green" size="sm" mt={4}
-             >
+            <Button
+                type="dashed"
+                onClick={() => append({ organization: '', start_date: '', end_date: '', position: '', special_conditions: false } as WorkExperienceRecord)}
+                icon={<PlusOutlined />}
+                style={{ width: '100%', marginTop: fields.length > 0 ? '0px' : '16px'}}
+            >
                Добавить место работы
-             </Button>
-        </VStack>
+            </Button>
+        </div>
     );
 };
 

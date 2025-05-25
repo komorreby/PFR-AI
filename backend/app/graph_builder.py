@@ -1,6 +1,7 @@
 import logging
 from typing import List, Dict, Any, Optional
 from neo4j import GraphDatabase, Driver, Session, Transaction
+import re # <--- Убедимся, что re импортирован
 # Предполагаем, что Document и extract_graph_data_from_document будут импортированы
 # из соответствующего модуля RAG core, когда мы его подключим.
 # from llama_index.core import Document # Placeholder
@@ -73,33 +74,18 @@ class KnowledgeGraphBuilder:
             if not node_id or not node_label:
                 logger.warning(f"Skipping node due to missing id or label: {node_data}")
                 continue
-            
-            # Формируем Cypher запрос. Используем $id_param для MERGE,
-            # а остальные properties устанавливаем через SET.
-            # Лейбл устанавливается динамически (но это безопасно, т.к. мы его контролируем).
-            # Убедимся, что node_label не содержит вредоносного кода (хотя он должен быть из нашего списка).
-            # ВАЖНО: Динамическое формирование лейбла требует осторожности.
-            # Neo4j не позволяет параметризовать лейблы напрямую в Cypher.
-            # Мы должны убедиться, что node_label безопасен.
-            # Можно использовать список разрешенных лейблов.
-            # Для свойства ID создаем отдельный параметр, чтобы индекс по нему работал.
-            
-            # Свойства для SET (исключая 'id', если он там есть, т.к. он используется в MERGE)
-            # и добавляем сам id в properties узла, если он еще не там (для удобства запросов)
             props_to_set = properties.copy()
             if 'id' not in props_to_set and 'node_id' not in props_to_set : # Добавляем id, если его нет
                  props_to_set['id'] = node_id # или props_to_set[node_label.lower() + '_id'] = node_id
 
-            # Если это узел Article, добавляем ему свойство article_id равное его node_id (который и есть canonical_article_id)
             if node_label == "Article":
                 props_to_set['article_id'] = node_id
 
             query = (
-                f"MERGE (n:{node_label} {{id: $id_param}})\n"
-                f"SET n = $props_to_set \n" # Перезаписывает все свойства, включая id
+                f"MERGE (n:{node_label} {{id: $id_param}})\\n"
+                f"SET n = $props_to_set \\n" # Перезаписывает все свойства, включая id
                 f"SET n.id = $id_param" # Убеждаемся, что id остается $id_param
             )
-            #logger.debug(f"Executing node query: {query} with params: id_param={node_id}, props_to_set={props_to_set}")
             tx.run(query, id_param=node_id, props_to_set=props_to_set)
         logger.info(f"Processed {len(nodes)} nodes.")
 
@@ -136,22 +122,22 @@ class KnowledgeGraphBuilder:
             # ВАЖНО: Динамическое формирование типа ребра требует осторожности.
             # Убедимся, что edge_type безопасен (из нашего списка разрешенных типов).
             query = (
-                f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}})\n"
-                f"MERGE (a)-[r:{edge_type}]->(b)\n" # MERGE для ребра (без свойств пока)
+                f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}})\\n"
+                f"MERGE (a)-[r:{edge_type}]->(b)\\n" # MERGE для ребра (без свойств пока)
                 # Если нужно установить/обновить свойства ребра:
                 # f"SET r = $props" 
             )
             #logger.debug(f"Executing edge query: {query} with params: source_id={source_id}, target_id={target_id}, props={properties}")
             if properties: # Если есть свойства у ребра
-                 query_with_props = query.replace("MERGE (a)-[r", f"MERGE (a)-[r:{edge_type}]->(b)\nSET r = $props\nMERGE (a)-[r") # Грязновато, но для примера
+                 query_with_props = query.replace("MERGE (a)-[r", f"MERGE (a)-[r:{edge_type}]->(b)\\nSET r = $props\\nMERGE (a)-[r") # Грязновато, но для примера
                  # Более чистый способ - разделить MERGE для структуры и SET для свойств, или использовать APOC.
                  # Для простоты пилота, если свойства ребер не меняются часто, можно просто SET r = $props после MERGE.
                  # Если свойства ребер важны для уникальности ребра, их надо включать в MERGE.
                  # Пока что для простоты будем считать, что ребра уникальны по (source)-[type]->(target)
                  # и свойства можно просто перезаписать, если они есть.
                  final_query = (
-                    f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}})\n"
-                    f"MERGE (a)-[r:{edge_type}]->(b)\n"
+                    f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}})\\n"
+                    f"MERGE (a)-[r:{edge_type}]->(b)\\n"
                     f"SET r = $props"
                  )
                  tx.run(final_query, source_id=source_id, target_id=target_id, props=properties)
@@ -238,232 +224,67 @@ class KnowledgeGraphBuilder:
             logger.error(f"Error querying graph for article enrichment data (article_id: {article_id}): {e}", exc_info=True)
             return None
 
-# TODO: Заменить Document на актуальный тип из LlamaIndex, если он будет использоваться
-# class Document: # Placeholder
-#     def __init__(self, text: str, metadata: Dict = None):
-#         self.text = text
-#         self.metadata = metadata or {}
-
-# def extract_graph_data_from_document(doc: Document, pension_type_map: Dict, pension_type_filters: Dict) -> Tuple[List[Dict], List[Dict]]:
-#     # Это заглушка, реальная функция находится в document_parser.py
-#     logger.warning("Using MOCK extract_graph_data_from_document in graph_builder.py")
-#     # Пример возвращаемых данных
-#     file_name = doc.metadata.get("file_name", "unknown.pdf")
-#     law_id = file_name.replace(".pdf", "")
-#     nodes = [
-#         {"id": law_id, "label": "Law", "properties": {"law_id": law_id, "title": f"Закон {law_id}"}},
-#         {"id": f"{law_id}_Ст1", "label": "Article", "properties": {"article_id": f"{law_id}_Ст1", "number_text": "Статья 1"}},
-#         {"id": "пенсия_по_старости", "label": "PensionType", "properties": {"pension_type_id": "пенсия_по_старости", "name": "Страховая пенсия по старости"}}
-#     ]
-#     edges = [
-#         {"source_id": law_id, "target_id": f"{law_id}_Ст1", "type": "CONTAINS_ARTICLE", "properties": {}},
-#         {"source_id": f"{law_id}_Ст1", "target_id": "пенсия_по_старости", "type": "RELATES_TO_PENSION_TYPE", "properties": {}}
-#     ]
-#     return nodes, edges
-
-
-# def build_graph_from_documents(
-#     documents: List[Document], # Список документов LlamaIndex 
-#     pension_type_map: Dict[str, str], 
-#     pension_type_filters: Dict[str, Dict[str, Any]],
-#     neo4j_uri: str = NEO4J_URI, 
-#     neo4j_user: str = NEO4J_USER, 
-#     neo4j_password: str = NEO4J_PASSWORD
-# ):
-#     """
-#     Основная функция для извлечения данных из документов и построения графа.
-#     1. Инициализирует KnowledgeGraphBuilder.
-#     2. Итерирует по документам:
-#         - Вызывает extract_graph_data_from_document.
-#         - Добавляет узлы и ребра в Neo4j.
-#     3. Закрывает соединение.
-#     """
-#     builder = None
-#     try:
-#         builder = KnowledgeGraphBuilder(uri=neo4j_uri, user=neo4j_user, password=neo4j_password)
-#         
-#         all_extracted_nodes = []
-#         all_extracted_edges = []
-
-#         for doc in documents:
-#             logger.info(f"Processing document: {doc.metadata.get('file_name', 'N/A')} for graph building.")
-#             # В реальном сценарии здесь будет вызов функции из document_parser
-#             # nodes, edges = extract_graph_data_from_document(doc, pension_type_map, pension_type_filters)
+    def get_articles_for_pension_types(self, pension_types: List[str], limit: int = 10) -> List[str]:
+        """
+        Получает список ID статей, связанных с указанными типами пенсий.
+        Сортирует по убыванию уверенности связи (свойства 'confidence' ребра).
+        
+        Args:
+            pension_types: Список идентификаторов типов пенсий (должны быть их ID, например, 'retirement_standard')
+            limit: Максимальное количество статей для возврата
             
-#             # Используем заглушку для примера работы builder.add_nodes_and_edges
-#             # Это нужно будет заменить на реальный вызов extract_graph_data_from_document
-#             # из backend.app.rag_core.document_parser
-#             # Для этого нужно будет правильно настроить импорты.
+        Returns:
+            Список canonical_article_id статей, связанных с указанными типами пенсий
+        """
+        if not self._driver: # Проверка инициализации драйвера
+            logger.error("KnowledgeGraphBuilder: Neo4j driver not available or not properly initialized for get_articles_for_pension_types.")
+            return []
             
-#             # Пока что, чтобы этот файл был синтаксически корректен и можно было показать структуру,
-#             # закомментируем прямое использование extract_graph_data_from_document, так как
-#             # импорт из rag_core может потребовать дополнительной настройки путей или структуры проекта.
+        if not pension_types:
+            logger.debug("KnowledgeGraphBuilder: No pension types provided to get_articles_for_pension_types.")
+            return []
             
-#             # Имитация вызова (замените это реальным вызовом, когда импорты настроены):
-#             # nodes, edges = extract_graph_data_from_document(doc, pension_type_map, pension_type_filters)
-#             # logger.info(f"Extracted {len(nodes)} nodes and {len(edges)} edges from {doc.metadata.get('file_name')}.")
-#             # builder.add_nodes_and_edges(nodes, edges)
+        # Убедимся, что pension_types это список строк
+        if not all(isinstance(pt, str) for pt in pension_types):
+            logger.error(f"KnowledgeGraphBuilder: pension_types должен быть списком строк, получено: {pension_types}")
+            return []
+
+        try:
+            # Используем self._db_name, который устанавливается в __init__
+            db_name_to_use = self._db_name 
             
-#             # Для демонстрации, можно добавить тестовые данные напрямую, если extract_graph_data_from_document не импортирован
-#             mock_nodes, mock_edges = extract_graph_data_from_document(doc, pension_type_map, pension_type_filters) # Используем заглушку
-#             logger.info(f"Extracted (mock) {len(mock_nodes)} nodes and {len(mock_edges)} edges from {doc.metadata.get('file_name')}.")
-#             if mock_nodes or mock_edges: # Добавляем, только если что-то извлечено
-#                 builder.add_nodes_and_edges(mock_nodes, mock_edges)
+            with self._driver.session(database=db_name_to_use) as session:
+                # Очистка: оставляем только буквенно-цифровые символы, '_' и '-'
+                # Это для формирования строки $pension_types_param, а не для самого параметра $pension_types_param
+                cleaned_pension_types_for_log = [re.sub(r'[^\w-]', '', pt) for pt in pension_types if pt]
+                
+                # Используем параметризацию для списка типов пенсий
+                # Используем правильный тип связи 'RELATES_TO_PENSION_TYPE'
+                # и сортируем по свойству 'confidence' ребра, если оно есть
+                query = """
+                MATCH (pt:PensionType)-[r:RELATES_TO_PENSION_TYPE]-(a:Article)
+                WHERE pt.id IN $pension_types_param 
+                RETURN DISTINCT a.id AS article_id, 
+                                COALESCE(r.confidence, 0.0) AS relevance_score 
+                ORDER BY relevance_score DESC
+                LIMIT $limit_param
+                """
+                # Используем COALESCE(r.confidence, 0.0) на случай, если у некоторых связей нет свойства confidence
+                
+                # Передаем сам список pension_types (не cleaned_pension_types_for_log) как параметр.
+                # Neo4j драйвер должен корректно обработать список строк для оператора IN.
+                params = {"pension_types_param": pension_types, "limit_param": limit}
+                logger.debug(f"Executing Cypher query in KnowledgeGraphBuilder: {query} with params: {params}")
+                
+                result = session.run(query, params)
+                articles = [record["article_id"] for record in result]
+                
+                logger.info(f"KnowledgeGraphBuilder: Found {len(articles)} articles related to pension types: {pension_types} (limit: {limit})")
+                return articles
+        except Exception as e:
+            logger.error(f"KnowledgeGraphBuilder: Error retrieving articles for pension types {pension_types}: {e}", exc_info=True)
+            return []
 
-
-#         logger.info("Graph building process completed for all documents.")
-
-#     except Exception as e:
-#         logger.error(f"An error occurred during graph building: {e}", exc_info=True)
-#     finally:
-#         if builder:
-#             builder.close()
 
 if __name__ == '__main__':
-    # Пример использования (требует настройки LlamaIndex Document и карты типов пенсий)
-    # Это для локального тестирования модуля, если потребуется.
-    
-    # Настройка логирования для примера
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    # 1. Замените это на реальные импорты и данные
-    # from llama_index.core import Document # Нужен LlamaIndex
-    # from .rag_core.config import PENSION_TYPE_MAP, PENSION_TYPE_FILTERS # Нужен ваш config.py
-    
-    # Мок-объект документа (должен соответствовать структуре LlamaIndex Document)
-    class Document: 
-        def __init__(self, text: str, metadata: Dict = None):
-            self.text = text # Используем text вместо get_content() для мока
-            self.metadata = metadata if metadata is not None else {}
-
-        def get_content(self): # Добавим метод для совместимости, если он где-то ожидается
-            return self.text
-    
-    # Мок-версия функции извлечения данных (упрощенная)
-    def extract_graph_data_from_document_mock(doc: Document, pension_type_map: Dict, pension_type_filters: Dict) -> tuple[List[Dict], List[Dict]]:
-        nodes = []
-        edges = []
-        
-        # Предполагаем, что doc.metadata содержит file_name и другие данные, как в document_parser
-        file_name = doc.metadata.get("file_name", "unknown.pdf")
-        doc_id = doc.metadata.get("doc_id", file_name) # doc_id должен быть уникальным для документа
-
-        # 1. Создаем узел для документа (Law)
-        law_node_id = f"law_{doc_id}"
-        nodes.append({
-            "id": law_node_id,
-            "label": "Law",
-            "properties": {"name": file_name, "source_file": file_name, "doc_id": doc_id}
-        })
-        
-        # Пример: извлечение "Статьи 8" из ФЗ-400 (очень упрощенно)
-        if "ФЗ-400" in file_name and "Статья 8" in doc.text:
-            article_8_text_content = "Текст Статьи 8... условия назначения..."
-            article_8_id = "ФЗ-400-ФЗ-28_12_2013_Ст_8" # Это canonical_article_id
-            nodes.append({
-                "id": article_8_id,
-                "label": "Article",
-                "properties": {
-                    "number_text": "Статья 8", 
-                    "title": "Условия назначения страховой пенсии по старости", 
-                    "text_content_summary": article_8_text_content[:100],
-                    "canonical_article_id": article_8_id # Добавляем для консистентности
-                }
-            })
-            edges.append({"source_id": law_node_id, "target_id": article_8_id, "type": "CONTAINS_ARTICLE"})
-
-            # Mock RELATES_TO_PENSION_TYPE based on filters
-            # ID типа пенсии из PENSION_TYPE_FILTERS_EXAMPLE для "Страховая по старости (общий случай)"
-            target_pension_type_code = "retirement_standard" 
-
-            if target_pension_type_code in pension_type_filters:
-                filter_config_for_type = pension_type_filters[target_pension_type_code]
-                applies = True # Флаг, что все условия фильтра выполнены
-                
-                # Проверяем, соответствует ли текущий документ и статья условиям фильтра
-                for rule in filter_config_for_type.get("filters", []):
-                    metadata_value_to_check = None
-                    if rule["key"] == "file_name":
-                        metadata_value_to_check = file_name
-                    elif rule["key"] == "canonical_article_id": # Используем canonical_article_id
-                        metadata_value_to_check = article_8_id # В нашем моке это article_8_id
-                    # Можно добавить другие проверки ключей, если они есть в фильтрах
-                    
-                    if metadata_value_to_check is None or rule["value"] != metadata_value_to_check:
-                        applies = False
-                        break
-                
-                if applies:
-                    # Создаем узел PensionType, если его еще нет (для мока)
-                    # В реальной системе они должны быть предопределены или создаваться отдельно
-                    if not any(n["id"] == target_pension_type_code and n["label"] == "PensionType" for n in nodes):
-                        nodes.append({
-                            "id": target_pension_type_code,
-                            "label": "PensionType",
-                            "properties": {"name": pension_type_map.get(target_pension_type_code, target_pension_type_code)}
-                        })
-                    edges.append({"source_id": article_8_id, "target_id": target_pension_type_code, "type": "RELATES_TO_PENSION_TYPE"})
-                    logger.info(f"[MOCK] Создана связь RELATES_TO_PENSION_TYPE для {article_8_id} и {target_pension_type_code}")
-                else:
-                    logger.info(f"[MOCK] Фильтры для {target_pension_type_code} не применились к {article_8_id} / {file_name}")
-            else:
-                logger.warning(f"[MOCK] Конфигурация фильтра для типа пенсии {target_pension_type_code} не найдена.")
-
-        return nodes, edges
-
-    # Функция-обертка для вызова из __main__
-    def build_graph_from_documents_main(
-        documents: List[Document], 
-        pension_type_map: Dict[str, str], 
-        pension_type_filters: Dict[str, Dict[str, Any]],
-        neo4j_uri: str = NEO4J_URI, 
-        neo4j_user: str = NEO4J_USER, 
-        neo4j_password: str = NEO4J_PASSWORD
-    ):
-        builder = None
-        try:
-            builder = KnowledgeGraphBuilder(uri=neo4j_uri, user=neo4j_user, password=neo4j_password)
-            
-            for doc_idx, doc_obj in enumerate(documents):
-                logger.info(f"Processing document {doc_idx + 1}/{len(documents)}: {doc_obj.metadata.get('file_name', 'N/A')}")
-                
-                # Используем extract_graph_data_from_document_MOCK для этого примера
-                nodes_to_add, edges_to_add = extract_graph_data_from_document_mock(doc_obj, pension_type_map, pension_type_filters)
-                
-                if nodes_to_add or edges_to_add:
-                    logger.info(f"Extracted {len(nodes_to_add)} nodes and {len(edges_to_add)} edges.")
-                    builder.add_nodes_and_edges(nodes_to_add, edges_to_add)
-                else:
-                    logger.info("No graph data extracted from this document.")
-
-            logger.info("Graph building process completed for all documents.")
-
-        except Exception as e:
-            logger.error(f"An error occurred during graph building: {e}", exc_info=True)
-        finally:
-            if builder:
-                builder.close()
-
-    logger.info("Starting Neo4j graph builder example script.")
-    
-    # Пример создания документов (замените на реальную загрузку)
-    example_docs = [
-        Document(text="Текст закона ФЗ-400... Статья 8...", metadata={"file_name": "ФЗ-400-ФЗ-28_12_2013.pdf"}),
-        Document(text="Текст закона ФЗ-166...", metadata={"file_name": "ФЗ-166-ФЗ-15_12_2001.pdf"})
-    ]
-
-    # Проверка соединения с Neo4j (убедитесь, что Neo4j запущен и доступен)
-    try:
-        # Передаем параметры конфигурации явно
-        build_graph_from_documents_main(
-            example_docs, 
-            PENSION_TYPE_MAP_EXAMPLE, 
-            PENSION_TYPE_FILTERS_EXAMPLE,
-            neo4j_uri=NEO4J_URI,
-            neo4j_user=NEO4J_USER,
-            neo4j_password=NEO4J_PASSWORD # Убедитесь, что пароль правильный
-        )
-        logger.info("Neo4j graph builder example script finished.")
-    except Exception as main_e:
-        logger.error(f"Failed to run graph builder example: {main_e}", exc_info=True)
-        logger.info("Please ensure Neo4j is running and credentials (NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD) are correct.") 
+     pass

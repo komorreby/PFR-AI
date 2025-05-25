@@ -1,0 +1,454 @@
+{
+  "retirement_standard": {
+    "documents": [
+      {
+        "id": "doc_application_pension",
+        "name": "Заявление о назначении страховой пенсии по старости",
+        "description": "Заявление установленной формы о назначении пенсии.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "application_form"
+      },
+      {
+        "id": "doc_passport_rf",
+        "name": "Паспорт гражданина РФ",
+        "description": "Основной документ, удостоверяющий личность, возраст, гражданство.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "passport"
+      },
+      {
+        "id": "doc_snils",
+        "name": "СНИЛС",
+        "description": "Страховой номер индивидуального лицевого счета.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "snils"
+      },
+      {
+        "id": "doc_work_book_or_equivalent",
+        "name": "Трудовая книжка и/или сведения о трудовой деятельности (форма СТД-Р/СТД-ПФР)",
+        "description": "Документы, подтверждающие периоды работы и иные периоды, засчитываемые в страховой стаж.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "work_book_page"
+      },
+      {
+        "id": "doc_salary_certificate_before_2002",
+        "name": "Справка о среднемесячном заработке за любые 60 месяцев подряд до 01.01.2002",
+        "description": "Представляется по желанию для возможного увеличения размера пенсии при наличии стажа до 2002 года.",
+        "is_critical": false,
+        "condition_text": "При наличии трудового стажа до 01.01.2002",
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_name_change_proof",
+        "name": "Документы о смене фамилии, имени, отчества",
+        "description": "Свидетельство о браке, о расторжении брака, о перемене имени и т.п.",
+        "is_critical": false,
+        "condition_text": "При смене ФИО",
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_birth_certificate_children",
+        "name": "Свидетельства о рождении детей",
+        "description": "Для учета нестраховых периодов ухода за детьми до 1,5 лет в стаж (максимум 6 лет в общей сложности).",
+        "is_critical": false,
+        "condition_text": "Для женщин, имеющих детей, для возможного учета периодов ухода.",
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_military_id",
+        "name": "Военный билет",
+        "description": "Для учета периода военной службы и другой приравненной к ней службы в стаж.",
+        "is_critical": false,
+        "condition_text": "Для лиц, проходивших военную службу.",
+        "ocr_type": "other"
+      }
+    ]
+  },
+  "retirement_early": {
+    "documents": [
+      {
+        "id": "doc_application_pension",
+        "name": "Заявление о назначении досрочной страховой пенсии по старости",
+        "description": "Заявление установленной формы о назначении пенсии.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "application_form"
+      },
+      {
+        "id": "doc_passport_rf",
+        "name": "Паспорт гражданина РФ",
+        "description": "Основной документ, удостоверяющий личность, возраст, гражданство.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "passport"
+      },
+      {
+        "id": "doc_snils",
+        "name": "СНИЛС",
+        "description": "Страховой номер индивидуального лицевого счета.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "snils"
+      },
+      {
+        "id": "doc_work_book_or_equivalent",
+        "name": "Трудовая книжка и/или сведения о трудовой деятельности",
+        "description": "Подтверждение общего страхового стажа.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "work_book_page"
+      },
+      {
+        "id": "doc_special_work_proof",
+        "name": "Документы, подтверждающие стаж на соответствующих видах работ (льготный стаж)",
+        "description": "Уточняющие справки от работодателей, выписки из приказов, архивные справки, подтверждающие характер и условия работы, дающие право на досрочное назначение пенсии.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "other"
+      }
+    ]
+  },
+  "disability_insurance": {
+    "documents": [
+      {
+        "id": "doc_application_pension",
+        "name": "Заявление о назначении страховой пенсии по инвалидности",
+        "description": "Заявление установленной формы.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "application_form"
+      },
+      {
+        "id": "doc_passport_rf",
+        "name": "Паспорт гражданина РФ",
+        "description": "Основной документ, удостоверяющий личность.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "passport"
+      },
+      {
+        "id": "doc_snils",
+        "name": "СНИЛС",
+        "description": "Страховой номер индивидуального лицевого счета.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "snils"
+      },
+      {
+        "id": "doc_mse_certificate",
+        "name": "Справка медико-социальной экспертизы (МСЭ)",
+        "description": "Документ, подтверждающий установление группы инвалидности.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "mse_certificate"
+      },
+      {
+        "id": "doc_work_book_or_equivalent_optional",
+        "name": "Трудовая книжка и/или сведения о трудовой деятельности (при наличии)",
+        "description": "Для подтверждения наличия хотя бы одного дня страхового стажа.",
+        "is_critical": false,
+        "condition_text": "При наличии, для подтверждения факта стажа.",
+        "ocr_type": "work_book_page"
+      }
+    ]
+  },
+  "survivors_insurance": {
+    "documents": [
+      {
+        "id": "doc_application_pension",
+        "name": "Заявление о назначении страховой пенсии по случаю потери кормильца",
+        "description": "Заявление установленной формы.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "application_form"
+      },
+      {
+        "id": "doc_passport_applicant",
+        "name": "Паспорт РФ заявителя (получателя пенсии)",
+        "description": "Документ, удостоверяющий личность заявителя.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "passport"
+      },
+      {
+        "id": "doc_snils_applicant",
+        "name": "СНИЛС заявителя (получателя пенсии)",
+        "description": "СНИЛС лица, обращающегося за пенсией.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "snils"
+      },
+      {
+        "id": "doc_death_certificate_provider",
+        "name": "Свидетельство о смерти кормильца",
+        "description": "Документ, подтверждающий факт смерти кормильца.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_relationship_proof",
+        "name": "Документы, подтверждающие родственные отношения с умершим кормильцем",
+        "description": "Свидетельство о рождении (для детей), свидетельство о браке (для супруга), иные документы.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_work_book_provider_or_equivalent",
+        "name": "Трудовая книжка умершего кормильца и/или сведения о его трудовой деятельности",
+        "description": "Для подтверждения страхового стажа умершего кормильца.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "work_book_page"
+      },
+      {
+        "id": "doc_snils_provider",
+        "name": "СНИЛС умершего кормильца",
+        "description": "СНИЛС умершего кормильца.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "snils"
+      },
+      {
+        "id": "doc_dependency_proof",
+        "name": "Документы, подтверждающие нахождение на иждивении умершего кормильца",
+        "description": "Справка о составе семьи, документы о доходах и др., если иждивение не предполагается (например, для родителей).",
+        "is_critical": false,
+        "condition_text": "Если иждивение не очевидно и не предполагается по закону (например, для родителей, супруга).",
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_study_certificate_dependent_over_18",
+        "name": "Справка об очном обучении для иждивенца старше 18 лет",
+        "description": "Для детей, братьев, сестер, внуков умершего кормильца в возрасте от 18 до 23 лет, обучающихся по очной форме.",
+        "is_critical": true,
+        "condition_text": "Для иждивенцев от 18 до 23 лет, обучающихся очно.",
+        "ocr_type": "other"
+      }
+    ]
+  },
+  "service_pension_civil_servant": {
+    "documents": [
+      {
+        "id": "doc_application_pension",
+        "name": "Заявление о назначении пенсии за выслугу лет",
+        "description": "Заявление установленной формы.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "application_form"
+      },
+      {
+        "id": "doc_passport_rf",
+        "name": "Паспорт гражданина РФ",
+        "is_critical": true,
+        "description": "...",
+        "condition_text": null,
+        "ocr_type": "passport"
+      },
+      {
+        "id": "doc_snils",
+        "name": "СНИЛС",
+        "is_critical": true,
+        "description": "...",
+        "condition_text": null,
+        "ocr_type": "snils"
+      },
+      {
+        "id": "doc_work_book_gov_service",
+        "name": "Трудовая книжка и/или сведения о трудовой деятельности с подтверждением стажа госслужбы",
+        "description": "Подтверждение стажа государственной гражданской службы.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "work_book_page"
+      },
+      {
+        "id": "doc_salary_certificate_gov_servant",
+        "name": "Справка о среднемесячном заработке федерального госслужащего",
+        "description": "За установленный период для расчета размера пенсии.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_dismissal_reason_gov_service",
+        "name": "Справка (выписка из приказа) об основании и дате увольнения с госслужбы",
+        "description": "Подтверждение увольнения по основаниям, дающим право на пенсию за выслугу лет.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "other"
+      }
+    ]
+  },
+  "service_pension_cosmonaut": {
+    "documents": [
+      { "id": "doc_application_pension", "name": "Заявление...", "is_critical": true, "ocr_type": "application_form", "description":"...","condition_text":null},
+      { "id": "doc_passport_rf", "name": "Паспорт РФ", "is_critical": true, "ocr_type": "passport", "description":"...","condition_text":null},
+      { "id": "doc_snils", "name": "СНИЛС", "is_critical": true, "ocr_type": "snils", "description":"...","condition_text":null},
+      {
+        "id": "doc_cosmonaut_service_proof",
+        "name": "Документы, подтверждающие выслугу лет в качестве космонавта",
+        "description": "Трудовая книжка, справки из отряда космонавтов, выписки из приказов.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "other"
+      }
+    ]
+  },
+  "state_pension_disability_military_conscript": {
+    "documents": [
+      { "id": "doc_application_pension", "name": "Заявление...", "is_critical": true, "ocr_type": "application_form", "description":"...","condition_text":null},
+      { "id": "doc_passport_rf", "name": "Паспорт РФ", "is_critical": true, "ocr_type": "passport", "description":"...","condition_text":null},
+      { "id": "doc_snils", "name": "СНИЛС", "is_critical": true, "ocr_type": "snils", "description":"...","condition_text":null},
+      {
+        "id": "doc_military_id_conscript",
+        "name": "Военный билет (для проходивших службу по призыву)",
+        "description": "Подтверждение прохождения военной службы по призыву.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_mse_certificate_military_trauma",
+        "name": "Справка МСЭ с указанием причины инвалидности (военная травма или заболевание в период службы)",
+        "description": "Подтверждение группы и причины инвалидности.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "mse_certificate"
+      }
+    ]
+  },
+  "state_pension_old_age_radiation": {
+    "documents": [
+      { "id": "doc_application_pension", "name": "Заявление...", "is_critical": true, "ocr_type": "application_form", "description":"...","condition_text":null},
+      { "id": "doc_passport_rf", "name": "Паспорт РФ", "is_critical": true, "ocr_type": "passport", "description":"...","condition_text":null},
+      { "id": "doc_snils", "name": "СНИЛС", "is_critical": true, "ocr_type": "snils", "description":"...","condition_text":null},
+      {
+        "id": "doc_radiation_affected_status",
+        "name": "Удостоверение пострадавшего от радиационной/техногенной катастрофы",
+        "description": "Или иные документы, подтверждающие соответствующий статус.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_work_book_or_equivalent",
+        "name": "Трудовая книжка и/или сведения о трудовой деятельности",
+        "description": "Для подтверждения необходимого трудового стажа (если требуется по категории).",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "work_book_page"
+      }
+
+    ]
+  },
+  "social_pension_disability": {
+    "documents": [
+      { "id": "doc_application_pension", "name": "Заявление о назначении социальной пенсии по инвалидности", "is_critical": true, "ocr_type": "application_form", "description":"...","condition_text":null},
+      { "id": "doc_passport_rf", "name": "Паспорт РФ (или свидетельство о рождении для ребенка-инвалида до 14 лет)", "is_critical": true, "ocr_type": "passport", "description":"...","condition_text":null},
+      { "id": "doc_snils", "name": "СНИЛС", "is_critical": true, "ocr_type": "snils", "description":"...","condition_text":null},
+      {
+        "id": "doc_mse_certificate_social",
+        "name": "Справка МСЭ об установлении инвалидности",
+        "description": "Подтверждение группы инвалидности или категории 'ребенок-инвалид'.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "mse_certificate"
+      },
+      {
+        "id": "doc_residence_proof_rf",
+        "name": "Документ, подтверждающий постоянное проживание в РФ",
+        "description": "Требуется, если не очевидно из паспорта (например, для лиц без гражданства).",
+        "is_critical": false,
+        "condition_text": "Если факт постоянного проживания в РФ не подтверждается паспортом.",
+        "ocr_type": "other"
+      }
+    ]
+  },
+  "social_pension_old_age": {
+    "documents": [
+      { "id": "doc_application_pension", "name": "Заявление...", "is_critical": true, "ocr_type": "application_form", "description":"...","condition_text":null},
+      { "id": "doc_passport_rf", "name": "Паспорт РФ", "is_critical": true, "ocr_type": "passport", "description":"...","condition_text":null},
+      { "id": "doc_snils", "name": "СНИЛС", "is_critical": true, "ocr_type": "snils", "description":"...","condition_text":null},
+      {
+        "id": "doc_indigenous_status_north",
+        "name": "Документ, подтверждающий принадлежность к малочисленным народам Севера",
+        "description": "Свидетельство о рождении или иной документ.",
+        "is_critical": true,
+        "condition_text": "Для граждан из числа малочисленных народов Севера.",
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_residence_proof_north_area",
+        "name": "Документ, подтверждающий постоянное проживание в районах проживания малочисленных народов Севера",
+        "description": "Например, справка о регистрации по месту жительства.",
+        "is_critical": true,
+        "condition_text": "Для граждан из числа малочисленных народов Севера.",
+        "ocr_type": "other"
+      }
+    ]
+  },
+  "old_age_state": {
+    "documents": [
+      {
+        "id": "doc_application_state_pension_old_age",
+        "name": "Заявление о назначении государственной пенсии по старости",
+        "description": "Заявление установленной формы для государственной пенсии по старости.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "application_form"
+      },
+      {
+        "id": "doc_passport_rf",
+        "name": "Паспорт гражданина РФ",
+        "description": "Основной документ, удостоверяющий личность.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "passport"
+      },
+      {
+        "id": "doc_snils",
+        "name": "СНИЛС",
+        "description": "Страховой номер индивидуального лицевого счета.",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "snils"
+      },
+      {
+        "id": "doc_disaster_participation_proof",
+        "name": "Удостоверение или справка, подтверждающая статус пострадавшего от радиационной/техногенной катастрофы",
+        "description": "Документ, подтверждающий право на государственную пенсию по старости по данному основанию (например, удостоверение участника ликвидации последствий катастрофы на ЧАЭС, удостоверение эвакуированного и т.п.).",
+        "is_critical": true,
+        "condition_text": null,
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_work_book_or_equivalent_optional",
+        "name": "Трудовая книжка и/или сведения о трудовой деятельности (при необходимости)",
+        "description": "Может потребоваться для подтверждения отдельных периодов работы или проживания на загрязненных территориях, если это влияет на условия назначения пенсии.",
+        "is_critical": false,
+        "condition_text": "Если требуется для подтверждения специфических условий.",
+        "ocr_type": "work_book_page"
+      },
+      {
+        "id": "doc_residence_proof_contaminated_area",
+        "name": "Документы, подтверждающие проживание/работу в зонах радиоактивного загрязнения",
+        "description": "Справки о проживании, выписки из домовых книг, трудовые договоры и др., подтверждающие периоды проживания или работы на территориях, подвергшихся радиоактивному загрязнению.",
+        "is_critical": false,
+        "condition_text": "Если это основание для назначения или влияет на размер пенсии.",
+        "ocr_type": "other"
+      },
+      {
+        "id": "doc_disability_proof_if_applicable_state",
+        "name": "Справка МСЭ об инвалидности (если применимо и влияет на условия)",
+        "description": "Если инвалидность связана с катастрофой и влияет на условия назначения государственной пенсии.",
+        "is_critical": false,
+        "condition_text": "Если инвалидность является дополнительным фактором.",
+        "ocr_type": "mse_certificate"
+      }
+    ]
+  }
+}

@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  FormControl,
-  FormLabel,
-  Select,
-  Text,
-  VStack,
-  useToast,
-  Spinner,
-} from '@chakra-ui/react';
-import { useDropzone } from 'react-dropzone';
+import { Upload, Button, Select, Typography, Spin, message as antdMessage, Form } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import type { UploadProps, RcFile } from 'antd/es/upload';
+
+const { Text } = Typography;
+const { Option } = Select;
 
 interface DocumentUploadProps {
   onDocumentProcessed: (data: {
@@ -21,104 +16,68 @@ interface DocumentUploadProps {
 const DocumentUpload: React.FC<DocumentUploadProps> = ({ onDocumentProcessed }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [documentType, setDocumentType] = useState('passport');
-  const toast = useToast();
 
-  const onDrop = async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
-
-    // Проверяем тип файла
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Ошибка',
-        description: 'Пожалуйста, загрузите изображение',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('document_type', documentType);
-
-      const response = await fetch('http://localhost:8000/api/v1/ocr/upload_document', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Ошибка при обработке документа');
+  const props: UploadProps = {
+    name: 'file',
+    multiple: false,
+    action: 'http://localhost:8000/api/v1/ocr/upload_document',
+    data: { document_type: documentType },
+    beforeUpload: (file: RcFile) => {
+      const isImage = file.type.startsWith('image/');
+      if (!isImage) {
+        antdMessage.error('Вы можете загружать только изображения!');
       }
-
-      const data = await response.json();
-      onDocumentProcessed(data);
-
-      toast({
-        title: 'Успех',
-        description: 'Документ успешно обработан',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: error instanceof Error ? error.message : 'Произошла ошибка при обработке документа',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isLt10M) {
+        antdMessage.error('Изображение должно быть меньше 10MB!');
+      }
+      return isImage && isLt10M;
+    },
+    onChange: (info) => {
+      if (info.file.status === 'uploading') {
+        setIsLoading(true);
+        return;
+      }
+      if (info.file.status === 'done') {
+        setIsLoading(false);
+        antdMessage.success(`${info.file.name} успешно загружен и обработан.`);
+        onDocumentProcessed(info.file.response);
+      } else if (info.file.status === 'error') {
+        setIsLoading(false);
+        antdMessage.error(`Ошибка загрузки ${info.file.name}.`);
+        console.error("Upload Error Response:", info.file.response);
+      }
+    },
+    showUploadList: true,
+    maxCount: 1,
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.tiff']
-    },
-    maxFiles: 1,
-  });
-
   return (
-    <VStack spacing={4} align="stretch">
-      <FormControl>
-        <FormLabel>Тип документа</FormLabel>
-        <Select
-          value={documentType}
-          onChange={(e) => setDocumentType(e.target.value)}
-        >
-          <option value="passport">Паспорт</option>
-          {/* Можно добавить другие типы документов */}
-        </Select>
-      </FormControl>
-
-      <Box
-        {...getRootProps()}
-        p={6}
-        border="2px dashed"
-        borderColor={isDragActive ? 'blue.400' : 'gray.200'}
-        borderRadius="md"
-        textAlign="center"
-        cursor="pointer"
-        _hover={{ borderColor: 'blue.400' }}
-      >
-        <input {...getInputProps()} />
-        {isLoading ? (
-          <Spinner size="xl" />
-        ) : isDragActive ? (
-          <Text>Отпустите файл здесь...</Text>
-        ) : (
-          <Text>Перетащите изображение документа сюда или нажмите для выбора</Text>
-        )}
-      </Box>
-    </VStack>
+    <Spin spinning={isLoading} tip="Обработка документа...">
+      <Form layout="vertical">
+        <Form.Item label="Тип документа">
+          <Select
+            value={documentType}
+            onChange={(value) => setDocumentType(value)}
+            style={{ width: '100%' }}
+          >
+            <Option value="passport">Паспорт</Option>
+          </Select>
+        </Form.Item>
+        
+        <Form.Item>
+          <Upload.Dragger {...props}>
+            <p className="ant-upload-drag-icon">
+              <UploadOutlined />
+            </p>
+            <p className="ant-upload-text">Нажмите или перетащите файл в эту область для загрузки</p>
+            <p className="ant-upload-hint">
+              Поддерживаются изображения (PNG, JPG, TIFF). Максимальный размер: 10MB.
+            </p>
+          </Upload.Dragger>
+        </Form.Item>
+      </Form>
+    </Spin>
   );
 };
 

@@ -12,7 +12,9 @@ from sqlalchemy import (
     Float, # Добавлено
     Boolean, # Добавлено
     DateTime, # <--- Добавлено
-    func # <--- Добавлено
+    func, # <--- Добавлено
+    JSON, # Добавлено
+    ForeignKey # Добавлено
 )
 
 # Определяем путь к файлу БД относительно текущего файла (database.py)
@@ -48,7 +50,35 @@ cases_table = Table(
     Column("final_explanation", Text, nullable=True),    # Итоговое объяснение от RAG + ML
     Column("rag_confidence", Float, nullable=True), # Новое поле
     Column("created_at", DateTime, server_default=func.now(), nullable=False), # <--- Добавлена колонка
+    Column("updated_at", DateTime, onupdate=func.now(), nullable=True), # Дата обновления записи
     Column("other_documents_extracted_data", Text, nullable=True) # Будем хранить как JSON строку
+)
+
+# Новая таблица для задач OCR
+ocr_tasks_table = Table(
+    "ocr_tasks",
+    metadata,
+    Column("id", String(50), primary_key=True), # UUID задачи в виде строки
+    Column("document_type", String(20), nullable=False), # Тип документа (passport, snils, work_book, other)
+    Column("status", String(20), nullable=False), # Статус задачи (PROCESSING, COMPLETED, FAILED)
+    Column("created_at", DateTime(timezone=True), server_default=func.now()), # Дата создания задачи
+    Column("updated_at", DateTime(timezone=True), onupdate=func.now(), nullable=True), # Дата обновления задачи
+    Column("data", Text, nullable=True), # JSON-строка с результатами OCR
+    Column("error", Text, nullable=True), # JSON-строка с информацией об ошибке, если она произошла
+    Column("filename", String(255), nullable=True), # Оригинальное имя файла
+    Column("expire_at", DateTime(timezone=True), nullable=False) # Время, когда задача должна быть удалена (TTL)
+)
+
+# Новая таблица для пользователей
+users_table = Table(
+    "users",
+    metadata,
+    Column("id", Integer, primary_key=True, index=True),
+    Column("username", String, unique=True, index=True, nullable=False),
+    Column("hashed_password", String, nullable=False),
+    Column("role", String, nullable=False), # "admin" или "manager"
+    Column("is_active", Boolean, default=True, nullable=False),
+    Column("created_at", DateTime, server_default=func.now(), nullable=False),
 )
 
 # --- Функция для создания таблицы при старте (если не существует) ---

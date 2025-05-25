@@ -9,6 +9,8 @@ from llama_index.core.node_parser import SimpleNodeParser
 
 # Импортируем конфиг для доступа к параметрам парсинга
 from . import config
+# Импортируем Pydantic модели для типизации конфигурации
+from ..config_models.config_models import PensionTypeInfo
 
 logger = logging.getLogger(__name__)
 
@@ -337,10 +339,10 @@ def find_pension_type_keywords(text: str, pension_type_map: Dict[str, str],
     return unique_results
 
 def extract_graph_data_from_document(
-    parsed_nodes: List[TextNode], # <--- ИЗМЕНЕНО: Принимаем список TextNode
-    doc_metadata: Dict[str, Any], # <--- ДОБАВЛЕНО: Метаданные исходного документа (file_name, file_path)
-    pension_type_map: Dict[str, str], 
-    pension_type_filters: Dict[str, Dict[str, Any]]
+    parsed_nodes: List[TextNode], 
+    doc_metadata: Dict[str, Any], 
+    pension_keyword_map: Dict[str, str], # <--- Переименовано и используется как Keyword Map
+    pension_types_config_list: List[PensionTypeInfo] # <--- Новый аргумент
 ) -> Tuple[List[Dict], List[Dict]]:
     """
     Извлекает узлы и ребра для графа знаний из списка распарсенных TextNode документа.
@@ -350,8 +352,8 @@ def extract_graph_data_from_document(
     Args:
         parsed_nodes: Список TextNode, полученный от parse_document_hierarchical.
         doc_metadata: Метаданные исходного LlamaIndex Document (содержит file_name, file_path).
-        pension_type_map: Маппинг ключевых слов на канонические ID типов пенсий.
-        pension_type_filters: Фильтры для дополнительной логики.
+        pension_keyword_map: Маппинг ключевых слов на канонические ID типов пенсий.
+        pension_types_config_list: Список объектов PensionTypeInfo из загруженной конфигурации.
 
     Returns:
         Кортеж из двух списков: список словарей для узлов и список словарей для ребер.
@@ -383,39 +385,25 @@ def extract_graph_data_from_document(
         processed_graph_node_ids.add(law_id_simple)
 
     # 2. Создаем/проверяем узлы Типов Пенсий.
-    # pension_type_map здесь это PENSION_KEYWORD_MAP из конфига (keyword -> pt_id)
-    # config.PENSION_TYPE_MAP это pt_id -> human_readable_name
+    # Используем pension_types_config_list для создания узлов PensionType.
     
-    all_known_pension_type_ids = set(config.PENSION_TYPE_MAP.keys()) # Из карты id -> имя
-    for pt_id_filter in config.PENSION_TYPE_FILTERS.keys(): # Из конфигурации фильтров
-        all_known_pension_type_ids.add(pt_id_filter)
-    # Также добавим ID из PENSION_KEYWORD_MAP, если они там есть и еще не учтены
-    for pt_id_from_keyword_map in pension_type_map.values():
-        all_known_pension_type_ids.add(pt_id_from_keyword_map)
-        
-    for pt_id in all_known_pension_type_ids:
-        if pt_id not in processed_graph_node_ids:
-            # Сначала берем имя из PENSION_TYPE_MAP (id -> human_readable_name)
-            pt_name = config.PENSION_TYPE_MAP.get(pt_id)
-            # Если нет, пытаемся взять из описания фильтра
-            if not pt_name and pt_id in pension_type_filters:
-                pt_name = pension_type_filters[pt_id].get('description', pt_id)
-            # Если имени все еще нет, используем сам ID как имя (крайний случай)
-            if not pt_name:
-                pt_name = pt_id
-            
-            nodes.append({
-                "id": pt_id,
-                "label": "PensionType", 
-                "properties": {
-                    "pension_type_id": pt_id,
-                    "name": pt_name, # Человекочитаемое имя
-                    "id": pt_id
-                }
-            })
-            processed_graph_node_ids.add(pt_id)
-            logger.debug(f"Ensured PensionType node exists: {pt_id} with name '{pt_name}'")
-
+    if pension_types_config_list:
+        for pt_info in pension_types_config_list:
+            if pt_info.id not in processed_graph_node_ids:
+                nodes.append({
+                    "id": pt_info.id,
+                    "label": "PensionType", 
+                    "properties": {
+                        "pension_type_id": pt_info.id,
+                        "name": pt_info.display_name, 
+                        "description": pt_info.description,
+                        "id": pt_info.id # Дублируем ID для простоты запросов Neo4j, если нужно
+                    }
+                })
+                processed_graph_node_ids.add(pt_info.id)
+                logger.debug(f"Ensured PensionType node exists: {pt_info.id} with name '{pt_info.display_name}'")
+    else:
+        logger.warning("pension_types_config_list is empty or None. No PensionType nodes will be created from it.")
 
     # Переменная для хранения ID статьи, к которой будет привязано демо-условие
     target_article_id_for_demo_condition = f"{law_id_simple}_Ст_8" # Пример для Статьи 8 ФЗ-400
@@ -512,7 +500,7 @@ def extract_graph_data_from_document(
             # УЛУЧШЕНИЕ: Используем новую функцию для более точного поиска ключевых слов
             pension_type_matches = find_pension_type_keywords(
                 chunk_text, 
-                pension_type_map=pension_type_map, # Это уже PENSION_KEYWORD_MAP, переданный в функцию
+                pension_type_map=pension_keyword_map, # Передаем pension_keyword_map (бывший pension_type_map)
                 log_results=True
             )
             
@@ -542,7 +530,7 @@ def extract_graph_data_from_document(
             
             # Если не нашли соответствия по новому методу, используем старый для совместимости
             if not pension_type_matches:
-                for keyword, pension_type_id_mapped in pension_type_map.items(): # pension_type_map это PENSION_KEYWORD_MAP
+                for keyword, pension_type_id_mapped in pension_keyword_map.items(): # Используем pension_keyword_map
                     logger.debug(f"Article {current_canonical_article_id}: Searching for keyword '{keyword}' (maps to PensionType ID: {pension_type_id_mapped})")
                     # Используем r'\b' для поиска целых слов, чтобы избежать частичных совпадений
                     if re.search(r'\b' + re.escape(keyword) + r'\b', chunk_text, re.IGNORECASE):

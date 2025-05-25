@@ -1,165 +1,164 @@
 import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-import {
-  Box,
-  VStack,
-  Text,
-  Button,
-  Spinner,
-  Alert,
-  AlertIcon,
-  Image,
-} from '@chakra-ui/react';
-import { extractDocumentData } from '../../services/client';
-import type { OcrExtractionResponse, OcrDocumentType } from '../../types';
+import { Upload, Button, Typography, Spin, Alert, Image as AntImage, message as antdMessage, Space } from 'antd';
+import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { RcFile, UploadFile, UploadProps } from 'antd/es/upload';
+import { submitOcrTask, getOcrTaskStatus } from '../../services/apiClient';
+import type { OcrTaskStatusResponse, DocumentTypeToExtract, OcrResultData, OcrTaskSubmitResponse } from '../../types';
+
+const { Text } = Typography;
 
 interface OcrUploaderProps {
-  documentType: OcrDocumentType;
-  onOcrSuccess: (data: OcrExtractionResponse, docType: OcrDocumentType) => void;
-  onOcrError: (message: string, docType: OcrDocumentType) => void;
+  documentType: DocumentTypeToExtract;
+  onOcrSuccess: (data: OcrResultData, docType: DocumentTypeToExtract) => void;
+  onOcrError: (message: string, docType: DocumentTypeToExtract) => void;
   uploaderTitle?: string;
+  onProcessingStart?: (docType: DocumentTypeToExtract) => void;
 }
 
-const OcrUploader = ({
+const OcrUploader: React.FC<OcrUploaderProps> = ({
   documentType,
   onOcrSuccess,
   onOcrError,
-  uploaderTitle = 'Загрузите документ'
-}: OcrUploaderProps) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
+  uploaderTitle = 'Загрузите документ',
+  onProcessingStart,
+}) => {
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      const acceptedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-      if (!acceptedMimeTypes.includes(file.type)) {
-        setError(`Неподдерживаемый тип файла: ${file.type}. Пожалуйста, загрузите PNG, JPG или PDF.`);
-        setSelectedFile(null);
-        setFilePreview(null);
-        return;
+  const pollOcrStatus = async (taskId: string, fileName: string) => {
+    try {
+      const statusResponse = await getOcrTaskStatus(taskId);
+      if (statusResponse.status === 'COMPLETED') {
+        setIsLoading(false);
+        if (statusResponse.data) {
+          onOcrSuccess(statusResponse.data, documentType);
+          antdMessage.success(`Документ ${fileName} успешно обработан.`);
+        } else {
+          onOcrError('Данные не были возвращены после завершения обработки.', documentType);
+          antdMessage.error('Ошибка: Данные не были возвращены от сервера.');
+        }
+        setFileList([]);
+      } else if (statusResponse.status === 'FAILED') {
+        setIsLoading(false);
+        const errorMessage = statusResponse.error?.detail || 'Ошибка обработки документа на сервере.';
+        onOcrError(errorMessage, documentType);
+        antdMessage.error(errorMessage);
+        setFileList([]);
+      } else {
+        setTimeout(() => pollOcrStatus(taskId, fileName), 3000);
       }
-      setError(null);
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFilePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    } catch (e: any) {
+      setIsLoading(false);
+      const errorMessage = e.message || 'Ошибка при проверке статуса обработки документа.';
+      onOcrError(errorMessage, documentType);
+      antdMessage.error(errorMessage);
+      setFileList([]);
     }
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/png': ['.png'],
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'application/pdf': ['.pdf'],
-    },
-    maxFiles: 1,
-    multiple: false,
-  });
+  };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
+    if (fileList.length === 0 || !fileList[0].originFileObj) {
       setError('Пожалуйста, выберите файл для загрузки.');
+      antdMessage.error('Пожалуйста, выберите файл для загрузки.');
       return;
     }
+    const fileToUpload = fileList[0].originFileObj as RcFile;
+    const fileName = fileToUpload.name;
+
     setIsLoading(true);
     setError(null);
     try {
-      const result = await extractDocumentData(selectedFile, documentType);
-      console.log(`Raw OCR Result for ${documentType} from backend:`, JSON.stringify(result, null, 2));
-      
-      if (result.documentType === 'error') {
-        const errorMessage = result.message || 'Ошибка OCR: Не удалось обработать документ.';
-        console.error('OCR Error from backend:', result.errorDetails || errorMessage);
-        setError(errorMessage);
-        onOcrError(errorMessage, documentType);
-      } else {
-        onOcrSuccess(result, documentType);
+      if (onProcessingStart) {
+        onProcessingStart(documentType);
       }
+      const submitResponse: OcrTaskSubmitResponse = await submitOcrTask({
+        image: fileToUpload,
+        document_type: documentType,
+      });
+      
+      antdMessage.info(`Документ ${fileName} отправлен на обработку. ID задачи: ${submitResponse.task_id}`);
+      pollOcrStatus(submitResponse.task_id, fileName);
+
     } catch (e: any) {
-      const errorMessage = e.message || 'Произошла неизвестная ошибка при обработке документа.';
-      console.error('OCR Upload Error:', e);
-      setError(errorMessage);
-      onOcrError(errorMessage, documentType);
-    } finally {
       setIsLoading(false);
+      const errorMessage = e.message || 'Произошла неизвестная ошибка при отправке документа на обработку.';
+      console.error('OCR Submit Error:', e);
+      onOcrError(errorMessage, documentType);
+      antdMessage.error(errorMessage);
     }
   };
 
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    setFilePreview(null);
-    setError(null);
+  const uploadProps: UploadProps = {
+    onRemove: (file) => {
+      const index = fileList.indexOf(file);
+      const newFileList = fileList.slice();
+      newFileList.splice(index, 1);
+      setFileList(newFileList);
+      setError(null);
+      return true;
+    },
+    beforeUpload: (file: RcFile) => {
+      const acceptedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+      const fileType = file.type || '';
+      if (!acceptedMimeTypes.includes(fileType)) {
+        const errorMsg = `Неподдерживаемый тип файла: ${fileType || 'неизвестный'}. Загрузите PNG, JPG или PDF.`;
+        setError(errorMsg);
+        antdMessage.error(errorMsg);
+        return Upload.LIST_IGNORE;
+      }
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isLt10M) {
+        const errorMsg = 'Файл должен быть меньше 10MB!';
+        setError(errorMsg);
+        antdMessage.error(errorMsg);
+        return Upload.LIST_IGNORE;
+      }
+
+      setError(null);
+      const uploadFileObject: UploadFile = {
+        uid: file.uid,
+        name: file.name,
+        status: 'done',
+        originFileObj: file,
+        type: file.type
+      };
+      setFileList([uploadFileObject]);
+      return false;
+    },
+    fileList,
+    maxCount: 1,
+    accept: 'image/png,image/jpeg,application/pdf',
+    listType: 'picture',
   };
 
   return (
-    <VStack spacing={3} align="stretch" borderWidth="1px" borderRadius="md" p={4} bg="gray.50" _dark={{bg: "gray.700"}}>
-      <Text fontWeight="medium" textAlign="center" mb={2}>{uploaderTitle}</Text>
-      
-      <Box
-        {...getRootProps()}
-        p={5}
-        border="2px dashed"
-        borderColor={isDragActive ? 'blue.400' : (error ? 'red.400' : 'gray.300')}
-        borderRadius="md"
-        textAlign="center"
-        cursor="pointer"
-        _hover={{ borderColor: 'blue.300' }}
-        bg={isDragActive ? 'blue.50' : 'transparent'}
-        minH="120px"
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <input {...getInputProps()} />
-        {isDragActive ? (
-          <Text>Отпустите файл здесь ...</Text>
-        ) : selectedFile ? (
-          <VStack spacing={1}>
-            <Text fontSize="sm">Файл: {selectedFile.name}</Text>
-            {filePreview && selectedFile.type.startsWith('image/') && (
-              <Image src={filePreview} alt="Предпросмотр" boxSize="80px" objectFit="contain" my={1} />
-            )}
-            {filePreview && selectedFile.type === 'application/pdf' && (
-                <Text fontSize="xs" color="gray.500">(Предпросмотр для PDF не отображается)</Text>
-            )}
-          </VStack>
-        ) : (
-          <Text fontSize="sm">Перетащите файл или нажмите для выбора (PNG, JPG, PDF)</Text>
+    <Spin spinning={isLoading} tip="Обработка документа...">
+      <div style={{ border: '1px solid #d9d9d9', borderRadius: '2px', padding: '16px' }}>
+        <Text strong style={{ display: 'block', textAlign: 'center', marginBottom: '12px' }}>{uploaderTitle}</Text>
+        
+        <Upload.Dragger {...uploadProps}>
+          <p className="ant-upload-drag-icon">
+            <UploadOutlined />
+          </p>
+          <p className="ant-upload-text">Нажмите или перетащите файл</p>
+          <p className="ant-upload-hint">PNG, JPG или PDF. Макс. 1 файл, до 10MB.</p>
+        </Upload.Dragger>
+
+        {error && !isLoading && (
+          <Alert message={error} type="error" showIcon style={{ marginTop: '10px' }} />
         )}
-      </Box>
-      
-      {selectedFile && !isLoading && (
-        <Button onClick={handleRemoveFile} colorScheme="red" variant="outline" size="xs" mt={1}>
-          Удалить файл
+
+        <Button
+          type="primary"
+          onClick={handleUpload}
+          disabled={fileList.length === 0 || isLoading}
+          style={{ marginTop: '16px', width: '100%' }}
+        >
+          {isLoading ? 'Отправлено...' : 'Распознать и обработать'}
         </Button>
-      )}
-
-      {error && (
-        <Alert status="error" mt={2} fontSize="sm">
-          <AlertIcon />
-          {error}
-        </Alert>
-      )}
-
-      <Button
-        onClick={handleUpload}
-        isLoading={isLoading}
-        isDisabled={!selectedFile || isLoading}
-        colorScheme="primary"
-        size="sm"
-      >
-        {isLoading ? <Spinner size="xs" /> : 'Распознать'}
-      </Button>
-      
-      {isLoading && <Text textAlign="center" fontSize="xs" color="gray.500">Обработка...</Text>}
-    </VStack>
+      </div>
+    </Spin>
   );
 };
 

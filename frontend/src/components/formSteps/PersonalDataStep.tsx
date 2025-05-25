@@ -1,25 +1,26 @@
-import React from 'react';
-import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch, UseFormSetValue } from 'react-hook-form';
-import DatePicker from "react-datepicker";
-import { parse, isValid } from 'date-fns'; // format здесь не нужен, если formatDateForInput используется
+import React, { useEffect } from 'react';
+import { Control, Controller, FieldErrors, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import { IMaskInput } from 'react-imask';
+import dayjs from 'dayjs'; // Импортируем dayjs
 import {
-    VStack,
-    Heading,
-    SimpleGrid,
-    FormControl,
-    FormLabel,
+    Form,
     Input,
-    FormErrorMessage,
     Select,
-    Divider,
     Checkbox,
-    Textarea
-} from '@chakra-ui/react';
-// Используем типы из центрального файла
+    DatePicker as AntDatePicker, // Используем Ant Design DatePicker
+    Row,
+    Col,
+    Typography,
+    Divider as AntDivider, // Используем Ant Design Divider
+    InputNumber,
+} from 'antd';
+
 import { CaseFormDataTypeForRHF, PersonalData as PersonalDataModel, NameChangeInfo as NameChangeInfoModel } from '../../types'; 
-import CustomDateInput from '../formInputs/CustomDateInput';
-import { formatDateForInput } from '../../utils';
+import CustomDateInput from '../formInputs/CustomDateInput'; // Этот компонент уже адаптирован
+// import { formatDateForInput } from '../../utils'; // formatDateForInput не нужен, AntD DatePicker возвращает Dayjs объекты
+
+const { Title } = Typography;
+const { Option } = Select;
 
 // Список стран СНГ
 const cisCountries = [
@@ -27,256 +28,453 @@ const cisCountries = [
     "Кыргызстан", "Молдова", "Таджикистан", "Узбекистан", "Другое"
 ];
 
-// Обновляем тип для getErrorMessage, используя PersonalDataModel и NameChangeInfoModel для большей точности
-type PersonalDataStepFieldName = 
-  | `personal_data.${keyof Omit<PersonalDataModel, 'name_change_info' | 'dependents'>}` 
-  | `personal_data.name_change_info.${keyof NameChangeInfoModel}`;
-
-
 interface PersonalDataStepProps {
     control: Control<CaseFormDataTypeForRHF>;
-    register: UseFormRegister<CaseFormDataTypeForRHF>;
-    errors: FieldErrors<CaseFormDataTypeForRHF['personal_data']>;
     watch: UseFormWatch<CaseFormDataTypeForRHF>;
     setValue: UseFormSetValue<CaseFormDataTypeForRHF>;
-    getErrorMessage: (name: PersonalDataStepFieldName) => string | undefined;
+    form: any; // Экземпляр формы Ant Design для доступа к ошибкам, если потребуется нестандартная логика
+    errors: FieldErrors<CaseFormDataTypeForRHF>; // Добавляем errors
+    onValidationStateChange?: (isValid: boolean) => void; // Новый коллбэк
 }
 
 const PersonalDataStep: React.FC<PersonalDataStepProps> = ({ 
-    control, register, errors, watch, setValue, getErrorMessage 
+    control, watch, setValue, form, errors, onValidationStateChange
 }) => {
-    // watchHasNameChangeInfo теперь смотрит на personal_data.name_change_info
-    // !! приведение к boolean, если name_change_info может быть null/undefined
-    const watchHasNameChangeInfo = !!watch("personal_data.name_change_info");
+    const nameChangeChecked = watch('personal_data.name_change_info_checkbox');
+
+    useEffect(() => {
+        if (onValidationStateChange) {
+            const personalDataErrors = errors.personal_data || {};
+            let isStepValid = Object.keys(personalDataErrors).length === 0;
+
+            if (nameChangeChecked) {
+                const nameInfoErrors = errors.personal_data?.name_change_info;
+                if (nameInfoErrors && Object.keys(nameInfoErrors).length > 0) {
+                    isStepValid = false;
+                }
+                // Дополнительная проверка на наличие значений, если RHF правила не покрывают это при динамическом отображении
+                const nameInfoValues = watch('personal_data.name_change_info');
+                if (!nameInfoValues?.old_full_name?.trim() || !nameInfoValues?.date_changed) {
+                    // Если правила RHF (required: nameChangeChecked) не срабатывают до первого взаимодействия,
+                    // эта проверка может быть нужна. Но обычно RHF должен это отловить.
+                    // isStepValid = false; 
+                }
+            }
+            onValidationStateChange(isStepValid);
+        }
+    }, [errors, nameChangeChecked, onValidationStateChange, watch]);
+        
+    const today = new Date();
 
     return (
-        <VStack spacing={4} align="stretch">
-            <Heading size="md" mb={4}>Личные данные</Heading>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                {/* Фамилия */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.last_name') || !!errors?.last_name}>
-                    <FormLabel htmlFor="personal_data.last_name">Фамилия</FormLabel>
-                    <Input id="personal_data.last_name" {...register("personal_data.last_name", { required: "Фамилия обязательна" })} />
-                    <FormErrorMessage>{getErrorMessage('personal_data.last_name') || errors?.last_name?.message}</FormErrorMessage>
-                </FormControl>
-
-                {/* Имя */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.first_name') || !!errors?.first_name}>
-                    <FormLabel htmlFor="personal_data.first_name">Имя</FormLabel>
-                    <Input id="personal_data.first_name" {...register("personal_data.first_name", { required: "Имя обязательно" })} />
-                    <FormErrorMessage>{getErrorMessage('personal_data.first_name') || errors?.first_name?.message}</FormErrorMessage>
-                </FormControl>
-
-                {/* Отчество */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.middle_name') || !!errors?.middle_name}>
-                    <FormLabel htmlFor="personal_data.middle_name">Отчество (при наличии)</FormLabel>
-                    <Input id="personal_data.middle_name" {...register("personal_data.middle_name")} />
-                    <FormErrorMessage>{getErrorMessage('personal_data.middle_name') || errors?.middle_name?.message}</FormErrorMessage>
-                </FormControl>
-
-                {/* Дата рождения */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.birth_date') || !!errors?.birth_date}>
-                    <FormLabel htmlFor="personal_data.birth_date">Дата рождения</FormLabel>
-                    <Controller
-                        name="personal_data.birth_date"
-                        control={control}
-                        rules={{ required: "Дата рождения обязательна" }}
-                        render={({ field }) => (
-                            <DatePicker
-                                selected={field.value && isValid(parse(field.value, 'yyyy-MM-dd', new Date())) ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
-                                onChange={(date: Date | null) => field.onChange(formatDateForInput(date))}
-                                customInput={
-                                    <CustomDateInput
-                                        id={field.name} // field.name будет "personal_data.birth_date"
-                                        fieldOnChange={field.onChange} // CustomDateInput вернет 'yyyy-MM-dd'
-                                        maxDate={new Date()}
-                                    />
-                                }
-                                locale="ru"
-                                showYearDropdown scrollableYearDropdown yearDropdownItemNumber={100}
-                                maxDate={new Date()}
-                                dateFormat="dd.MM.yyyy" 
-                                placeholderText="ДД.ММ.ГГГГ" 
-                                autoComplete="off" 
-                                shouldCloseOnSelect={true}
-                            />
-                        )}
-                    />
-                    <FormErrorMessage>{getErrorMessage('personal_data.birth_date') || errors?.birth_date?.message}</FormErrorMessage>
-                </FormControl>
-
-                {/* СНИЛС */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.snils') || !!errors?.snils}>
-                    <FormLabel htmlFor="personal_data.snils">СНИЛС</FormLabel>
-                    <Controller
-                        name="personal_data.snils"
-                        control={control}
-                        rules={{ 
-                            required: "СНИЛС обязателен", 
-                            pattern: { 
-                                value: /^\d{3}-\d{3}-\d{3}\s\d{2}$/,  // Пробел теперь \s
-                                message: "Неверный формат СНИЛС (XXX-XXX-XXX YY)" 
-                            } 
-                        }}
-                        render={({ field }) => (
-                            <Input 
-                                as={IMaskInput} 
-                                mask="000-000-000 00" 
-                                value={field.value || ''} 
-                                onAccept={(value: string) => field.onChange(value)} 
-                                placeholder="XXX-XXX-XXX XX" 
-                                id="personal_data.snils" // Соответствует field.name
-                                bg="cardBackground" // Используем семантический токен
-                                borderColor="inherit" 
-                                _hover={{ borderColor: "gray.300" }} 
-                                _focus={{ zIndex: 1, borderColor: "primary", boxShadow: `0 0 0 1px var(--chakra-colors-primary)` }} 
-                            />
-                        )}
-                    />
-                    <FormErrorMessage>{getErrorMessage('personal_data.snils') || errors?.snils?.message}</FormErrorMessage>
-                </FormControl>
-
-                {/* Пол */}
-                <FormControl isInvalid={!!getErrorMessage('personal_data.gender') || !!errors?.gender}>
-                    <FormLabel htmlFor="personal_data.gender">Пол</FormLabel>
-                    <Select 
-                        id="personal_data.gender" 
-                        placeholder="Выберите пол" 
-                        {...register("personal_data.gender", { required: "Пол обязателен" })}
-                        bg="cardBackground"
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+            <Title level={4} style={{ marginBottom: '24px', textAlign: 'center' }}>Личные данные</Title>
+            <Row gutter={[16, 0]}> {/* gutter: [horizontal, vertical] */}
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'last_name']}
+                        label="Фамилия"
+                        validateStatus={errors.personal_data?.last_name ? 'error' : ''}
+                        help={errors.personal_data?.last_name?.message as string}
                     >
-                        <option value="male">Мужской</option>
-                        <option value="female">Женский</option>
-                    </Select>
-                    <FormErrorMessage>{getErrorMessage('personal_data.gender') || errors?.gender?.message}</FormErrorMessage>
-                </FormControl>
-            </SimpleGrid>
-
-            <FormControl isInvalid={!!getErrorMessage('personal_data.birth_place') || !!errors?.birth_place}>
-                <FormLabel htmlFor="personal_data.birth_place">Место рождения</FormLabel>
-                <Textarea id="personal_data.birth_place" {...register("personal_data.birth_place")} placeholder="Например: г. Москва, Российская Федерация" />
-                <FormErrorMessage>{getErrorMessage('personal_data.birth_place') || errors?.birth_place?.message}</FormErrorMessage>
-            </FormControl>
-            
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mt={4}>
-                 <FormControl isInvalid={!!getErrorMessage('personal_data.citizenship') || !!errors?.citizenship}>
-                    <FormLabel htmlFor="personal_data.citizenship">Гражданство</FormLabel>
-                    <Select
-                        id="personal_data.citizenship"
-                        placeholder="Выберите страну"
-                        {...register("personal_data.citizenship", { required: "Гражданство обязательно" })}
-                        bg="cardBackground"
-                    >
-                        {cisCountries.map(country => (
-                            <option key={country} value={country}>{country}</option>
-                        ))}
-                    </Select>
-                    <FormErrorMessage>{getErrorMessage('personal_data.citizenship') || errors?.citizenship?.message}</FormErrorMessage>
-                </FormControl>
-
-                <FormControl isInvalid={!!getErrorMessage('personal_data.passport_series') || !!errors?.passport_series}>
-                    <FormLabel htmlFor="personal_data.passport_series">Серия паспорта</FormLabel>
-                    <Input id="personal_data.passport_series" {...register("personal_data.passport_series")} placeholder="XXXX"/>
-                    <FormErrorMessage>{getErrorMessage('personal_data.passport_series') || errors?.passport_series?.message}</FormErrorMessage>
-                </FormControl>
-
-                <FormControl isInvalid={!!getErrorMessage('personal_data.passport_number') || !!errors?.passport_number}>
-                    <FormLabel htmlFor="personal_data.passport_number">Номер паспорта</FormLabel>
-                    <Input id="personal_data.passport_number" {...register("personal_data.passport_number")} placeholder="XXXXXX"/>
-                    <FormErrorMessage>{getErrorMessage('personal_data.passport_number') || errors?.passport_number?.message}</FormErrorMessage>
-                </FormControl>
-            </SimpleGrid>
-
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mt={4}>
-                 <FormControl isInvalid={!!getErrorMessage('personal_data.issuing_authority') || !!errors?.issuing_authority}>
-                    <FormLabel htmlFor="personal_data.issuing_authority">Кем выдан паспорт</FormLabel>
-                    <Input id="personal_data.issuing_authority" {...register("personal_data.issuing_authority")} />
-                    <FormErrorMessage>{getErrorMessage('personal_data.issuing_authority') || errors?.issuing_authority?.message}</FormErrorMessage>
-                </FormControl>
-
-                <FormControl isInvalid={!!getErrorMessage('personal_data.issue_date') || !!errors?.issue_date}>
-                    <FormLabel htmlFor="personal_data.issue_date">Дата выдачи паспорта</FormLabel>
-                     <Controller
-                        name="personal_data.issue_date"
-                        control={control}
-                        render={({ field }) => (
-                            <DatePicker
-                                selected={field.value && isValid(parse(field.value, 'yyyy-MM-dd', new Date())) ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
-                                onChange={(date: Date | null) => field.onChange(formatDateForInput(date))}
-                                customInput={<CustomDateInput id={field.name} fieldOnChange={field.onChange} maxDate={new Date()} />}
-                                locale="ru" showYearDropdown scrollableYearDropdown yearDropdownItemNumber={100}
-                                maxDate={new Date()} dateFormat="dd.MM.yyyy" placeholderText="ДД.ММ.ГГГГ"
-                                autoComplete="off" shouldCloseOnSelect={true}
-                            />
-                        )}
-                    />
-                    <FormErrorMessage>{getErrorMessage('personal_data.issue_date') || errors?.issue_date?.message}</FormErrorMessage>
-                </FormControl>
-
-                <FormControl isInvalid={!!getErrorMessage('personal_data.department_code') || !!errors?.department_code}>
-                    <FormLabel htmlFor="personal_data.department_code">Код подразделения</FormLabel>
-                    <Input id="personal_data.department_code" {...register("personal_data.department_code")} placeholder="XXX-XXX"/>
-                    <FormErrorMessage>{getErrorMessage('personal_data.department_code') || errors?.department_code?.message}</FormErrorMessage>
-                </FormControl>
-            </SimpleGrid>
-
-            <Divider my={4} />
-
-            <Checkbox
-                isChecked={watchHasNameChangeInfo}
-                onChange={(e) => {
-                    setValue('personal_data.name_change_info', e.target.checked ? { old_full_name: '', date_changed: '' } : null, { shouldValidate: false });
-                }}
-                id="hasNameChangeInfoCheckbox" // Добавил id для лучшей практики
-            >
-                Была смена ФИО?
-            </Checkbox>
-
-            {watchHasNameChangeInfo && (
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
-                    <FormControl isInvalid={!!getErrorMessage('personal_data.name_change_info.old_full_name') || !!errors?.name_change_info?.old_full_name}>
-                        <FormLabel htmlFor="personal_data.name_change_info.old_full_name">Предыдущее ФИО</FormLabel>
-                        <Input 
-                            id="personal_data.name_change_info.old_full_name" 
-                            {...register("personal_data.name_change_info.old_full_name", { 
-                                required: watchHasNameChangeInfo ? "Предыдущее ФИО обязательно" : false 
-                            })} 
-                        />
-                        <FormErrorMessage>{getErrorMessage('personal_data.name_change_info.old_full_name') || errors?.name_change_info?.old_full_name?.message}</FormErrorMessage>
-                    </FormControl>
-
-                    <FormControl isInvalid={!!getErrorMessage('personal_data.name_change_info.date_changed') || !!errors?.name_change_info?.date_changed}>
-                        <FormLabel htmlFor="personal_data.name_change_info.date_changed">Дата смены ФИО</FormLabel>
                         <Controller
-                            name="personal_data.name_change_info.date_changed"
+                            name="personal_data.last_name"
                             control={control}
-                            rules={{ required: watchHasNameChangeInfo ? "Дата смены обязательна" : false }}
+                            rules={{ required: "Фамилия обязательна" }}
+                            render={({ field }) => <Input {...field} placeholder="Иванов" />}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'first_name']}
+                        label="Имя"
+                        validateStatus={errors.personal_data?.first_name ? 'error' : ''}
+                        help={errors.personal_data?.first_name?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.first_name"
+                            control={control}
+                            rules={{ required: "Имя обязательно" }}
+                            render={({ field }) => <Input {...field} placeholder="Иван" />}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'middle_name']}
+                        label="Отчество (при наличии)"
+                        validateStatus={errors.personal_data?.middle_name ? 'error' : ''}
+                        help={errors.personal_data?.middle_name?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.middle_name"
+                            control={control}
+                            render={({ field }) => <Input {...field} placeholder="Иванович" value={field.value === null ? '' : field.value} />}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'birth_date']}
+                        label="Дата рождения"
+                        validateStatus={errors.personal_data?.birth_date ? 'error' : ''}
+                        help={errors.personal_data?.birth_date?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.birth_date"
+                            control={control}
+                            rules={{ required: "Дата рождения обязательна" }}
                             render={({ field }) => (
-                                <DatePicker
-                                    selected={field.value && isValid(parse(field.value, 'yyyy-MM-dd', new Date())) ? parse(field.value, 'yyyy-MM-dd', new Date()) : null}
-                                    onChange={(date: Date | null) => field.onChange(formatDateForInput(date))}
-                                    customInput={
-                                        <CustomDateInput
-                                            id={field.name}
-                                            fieldOnChange={field.onChange}
-                                            maxDate={new Date()}
-                                        />
-                                    }
-                                    locale="ru"
-                                    showYearDropdown scrollableYearDropdown yearDropdownItemNumber={100}
-                                    maxDate={new Date()}
-                                    dateFormat="dd.MM.yyyy" 
-                                    placeholderText="ДД.ММ.ГГГГ" 
-                                    autoComplete="off" 
-                                    shouldCloseOnSelect={true}
+                                <AntDatePicker
+                                    {...field}
+                                    style={{ width: '100%' }}
+                                    placeholder="ДД.ММ.ГГГГ"
+                                    format="DD.MM.YYYY" // Формат отображения
+                                    value={field.value && dayjs(field.value, 'YYYY-MM-DD').isValid() ? dayjs(field.value, 'YYYY-MM-DD') : null}
+                                    onChange={(date) => {
+                                        field.onChange(date ? date.format('YYYY-MM-DD') : null);
+                                    }}
+                                    disabledDate={(current) => current && current.valueOf() > today.valueOf()}
+                                    showToday={false}
+                                    inputReadOnly={true}
                                 />
                             )}
                         />
-                        <FormErrorMessage>{getErrorMessage('personal_data.name_change_info.date_changed') || errors?.name_change_info?.date_changed?.message}</FormErrorMessage>
-                    </FormControl>
-                </SimpleGrid>
+                    </Form.Item>
+                </Col>
+                
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'snils']}
+                        label="СНИЛС"
+                        validateStatus={errors.personal_data?.snils ? 'error' : ''}
+                        help={errors.personal_data?.snils?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.snils"
+                            control={control}
+                            rules={{
+                                required: "СНИЛС обязателен",
+                                pattern: {
+                                    value: /^\d{3}-\d{3}-\d{3}\s\d{2}$/,
+                                    message: "Неверный формат СНИЛС (XXX-XXX-XXX YY)"
+                                }
+                            }}
+                            render={({ field: { onChange, onBlur, value, ref } }) => (
+                                <IMaskInput
+                                    mask="000-000-000 00"
+                                    value={value || ''}
+                                    onAccept={(acceptedValue: any) => onChange(acceptedValue)}
+                                    placeholder="XXX-XXX-XXX XX"
+                                    className="ant-input"
+                                    inputRef={ref}
+                                    onBlur={onBlur}
+                                    overwrite={true}
+                                />
+                            )}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'gender']}
+                        label="Пол"
+                        validateStatus={errors.personal_data?.gender ? 'error' : ''}
+                        help={errors.personal_data?.gender?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.gender"
+                            control={control}
+                            rules={{ required: "Пол обязателен" }}
+                            render={({ field }) => (
+                                <Select {...field} placeholder="Выберите пол" style={{ width: '100%' }}>
+                                    <Option value="male">Мужской</Option>
+                                    <Option value="female">Женский</Option>
+                                </Select>
+                            )}
+                        />
+                    </Form.Item>
+                </Col>
+            </Row>
+
+            <Form.Item
+                name={['personal_data', 'birth_place']}
+                label="Место рождения"
+                validateStatus={errors.personal_data?.birth_place ? 'error' : ''}
+                help={errors.personal_data?.birth_place?.message as string}
+            >
+                <Controller
+                    name="personal_data.birth_place"
+                    control={control}
+                    render={({ field }) => <Input.TextArea {...field} placeholder="Например: г. Москва, Российская Федерация" value={field.value === null ? '' : field.value} />}
+                />
+            </Form.Item>
+            
+            <Row gutter={[16, 0]} style={{marginTop: '16px'}}>
+                 <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'citizenship']}
+                        label="Гражданство"
+                        validateStatus={errors.personal_data?.citizenship ? 'error' : ''}
+                        help={errors.personal_data?.citizenship?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.citizenship"
+                            control={control}
+                            rules={{ required: "Гражданство обязательно" }}
+                            defaultValue="Россия" // TODO: Consider moving to useForm defaultValues
+                            render={({ field }) => (
+                                <Select {...field} placeholder="Выберите страну" style={{ width: '100%' }}>
+                                    {cisCountries.map(country => (
+                                        <Option key={country} value={country}>{country}</Option>
+                                    ))}
+                                </Select>
+                            )}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'passport_series']}
+                        label="Серия паспорта"
+                        validateStatus={errors.personal_data?.passport_series ? 'error' : ''}
+                        help={errors.personal_data?.passport_series?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.passport_series"
+                            control={control}
+                            rules={{ pattern: {value: /^\d{4}$/, message: "Серия - 4 цифры"} }}
+                            render={({ field: { onChange, onBlur, value, ref } }) => (
+                                <IMaskInput
+                                    mask="0000"
+                                    value={value || ''}
+                                    onAccept={(acceptedValue: any) => onChange(acceptedValue)}
+                                    placeholder="XXXX"
+                                    className="ant-input"
+                                    inputRef={ref}
+                                    onBlur={onBlur}
+                                    overwrite={true}
+                                />
+                            )}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'passport_number']}
+                        label="Номер паспорта"
+                        validateStatus={errors.personal_data?.passport_number ? 'error' : ''}
+                        help={errors.personal_data?.passport_number?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.passport_number"
+                            control={control}
+                            rules={{ pattern: {value: /^\d{6}$/, message: "Номер - 6 цифр"} }}
+                            render={({ field: { onChange, onBlur, value, ref } }) => (
+                                <IMaskInput
+                                    mask="000000"
+                                    value={value || ''}
+                                    onAccept={(acceptedValue: any) => onChange(acceptedValue)}
+                                    placeholder="XXXXXX"
+                                    className="ant-input"
+                                    inputRef={ref}
+                                    onBlur={onBlur}
+                                    overwrite={true}
+                                />
+                            )}
+                        />
+                    </Form.Item>
+                </Col>
+            </Row>
+
+            <Row gutter={[16, 0]} style={{marginTop: '16px'}}>
+                 <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'issuing_authority']}
+                        label="Кем выдан паспорт"
+                        validateStatus={errors.personal_data?.issuing_authority ? 'error' : ''}
+                        help={errors.personal_data?.issuing_authority?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.issuing_authority"
+                            control={control}
+                            render={({ field }) => <Input {...field} value={field.value === null ? '' : field.value} />}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'passport_issue_date']}
+                        label="Дата выдачи паспорта"
+                        validateStatus={errors.personal_data?.passport_issue_date ? 'error' : ''}
+                        help={errors.personal_data?.passport_issue_date?.message as string}
+                    >
+                         <Controller
+                            name="personal_data.passport_issue_date"
+                            control={control}
+                            render={({ field }) => (
+                                <AntDatePicker
+                                    {...field}
+                                    style={{ width: '100%' }}
+                                    placeholder="ДД.ММ.ГГГГ"
+                                    format="DD.MM.YYYY"
+                                    value={field.value && dayjs(field.value, 'YYYY-MM-DD').isValid() ? dayjs(field.value, 'YYYY-MM-DD') : null}
+                                    onChange={(date) => {
+                                        field.onChange(date ? date.format('YYYY-MM-DD') : null);
+                                    }}
+                                    disabledDate={(current) => current && current.valueOf() > today.valueOf()}
+                                    showToday={false}
+                                    inputReadOnly={true} 
+                                />
+                            )}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'department_code']}
+                        label="Код подразделения"
+                        validateStatus={errors.personal_data?.department_code ? 'error' : ''}
+                        help={errors.personal_data?.department_code?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.department_code"
+                            control={control}
+                            rules={{ pattern: {value: /^\d{3}-\d{3}$/, message: "Код XXX-XXX"} }}
+                            render={({ field: { onChange, onBlur, value, ref } }) => (
+                                <IMaskInput
+                                    mask="000-000"
+                                    value={value || ''}
+                                    onAccept={(acceptedValue: any) => onChange(acceptedValue)}
+                                    placeholder="XXX-XXX"
+                                    className="ant-input"
+                                    inputRef={ref}
+                                    onBlur={onBlur}
+                                    overwrite={true}
+                                />
+                            )}
+                        />
+                    </Form.Item>
+                </Col>
+            </Row>
+
+            <Row gutter={[16, 0]} style={{marginTop: '16px'}}>
+                <Col xs={24} sm={12} md={8}>
+                    <Form.Item
+                        name={['personal_data', 'dependents']}
+                        label="Количество иждивенцев"
+                        validateStatus={errors.personal_data?.dependents ? 'error' : ''}
+                        help={errors.personal_data?.dependents?.message as string}
+                    >
+                        <Controller
+                            name="personal_data.dependents"
+                            control={control}
+                            rules={{
+                                required: "Кол-во иждивенцев обязательно",
+                                min: { value: 0, message: "Минимум 0 иждивенцев" }
+                            }}
+                            defaultValue={0} // TODO: Consider moving to useForm defaultValues
+                            render={({ field }) => (
+                                <InputNumber 
+                                    {...field} 
+                                    min={0} 
+                                    style={{ width: '100%' }} 
+                                    placeholder="0"
+                                />
+                            )}
+                        />
+                    </Form.Item>
+                </Col>
+            </Row>
+
+            <AntDivider style={{ margin: '24px 0' }} />
+
+            <Form.Item name={['personal_data', 'name_change_info_checkbox']} valuePropName="checked">
+                 <Controller
+                    name="personal_data.name_change_info_checkbox" 
+                    control={control}
+                    defaultValue={false} // TODO: Consider moving to useForm defaultValues
+                    render={({ field: { value, onChange, ref }}) => (
+                        <Checkbox
+                            ref={ref}
+                            checked={!!value} 
+                            onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                onChange(isChecked); 
+                                setValue('personal_data.name_change_info', isChecked ? { old_full_name: '', date_changed: '' } : null, { shouldValidate: true });
+                            }}
+                        >
+                            Была смена ФИО?
+                        </Checkbox>
+                    )}
+                />
+            </Form.Item>
+
+
+            {nameChangeChecked && ( 
+                <Row gutter={[16, 0]} style={{marginTop: '16px'}}>
+                    <Col xs={24} md={12}>
+                        <Form.Item
+                            name={['personal_data', 'name_change_info', 'old_full_name']}
+                            label="Предыдущее ФИО"
+                            validateStatus={errors.personal_data?.name_change_info?.old_full_name ? 'error' : ''}
+                            help={errors.personal_data?.name_change_info?.old_full_name?.message as string}
+                        >
+                            <Controller
+                                name="personal_data.name_change_info.old_full_name"
+                                control={control}
+                                rules={{ required: nameChangeChecked ? "Предыдущее ФИО обязательно" : false }}
+                                render={({ field: { onChange, onBlur, value, ref } }) => (
+                                    <Input 
+                                        onChange={onChange}
+                                        onBlur={onBlur}
+                                        value={value === null ? '' : value}
+                                        ref={ref}
+                                    />
+                                )}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <Form.Item
+                            name={['personal_data', 'name_change_info', 'date_changed']}
+                            label="Дата смены ФИО"
+                            validateStatus={errors.personal_data?.name_change_info?.date_changed ? 'error' : ''}
+                            help={errors.personal_data?.name_change_info?.date_changed?.message as string}
+                        >
+                            <Controller
+                                name="personal_data.name_change_info.date_changed"
+                                control={control}
+                                rules={{ required: nameChangeChecked ? "Дата смены обязательна" : false }}
+                                render={({ field: { onChange, onBlur, value, ref } }) => (
+                                    <AntDatePicker
+                                        onChange={(date) => onChange(date ? date.format('YYYY-MM-DD') : null)}
+                                        onBlur={onBlur}
+                                        value={value && dayjs(value, 'YYYY-MM-DD').isValid() ? dayjs(value, 'YYYY-MM-DD') : null}
+                                        ref={ref} 
+                                        style={{ width: '100%' }}
+                                        placeholder="ДД.ММ.ГГГГ"
+                                        format="DD.MM.YYYY"
+                                        disabledDate={(current) => current && current.valueOf() > today.valueOf()}
+                                        showToday={false}
+                                        inputReadOnly={true} 
+                                    />
+                                )}
+                            />
+                        </Form.Item>
+                    </Col>
+                </Row>
             )}
-        </VStack>
+        </div>
     );
 };
 

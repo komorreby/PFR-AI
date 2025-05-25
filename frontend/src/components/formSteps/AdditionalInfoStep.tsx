@@ -1,28 +1,18 @@
-import React, { useState } from 'react';
-import { FieldErrors, UseFormRegister, Control, Controller, FieldPath, UseFormGetValues, UseFormSetValue, UseFormTrigger } from 'react-hook-form';
-import {
-    VStack,
-    Heading,
-    FormControl,
-    FormLabel,
-    NumberInput,
-    NumberInputField,
-    NumberInputStepper,
-    NumberIncrementStepper,
-    NumberDecrementStepper,
-    Checkbox,
-    FormErrorMessage,
-    Divider,
-    Text,
-    useToast,
-    SimpleGrid,
-    Box,
-    IconButton
-} from '@chakra-ui/react';
-import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
-import { CaseFormDataTypeForRHF, OcrExtractionResponse, OcrOtherDocumentData, OtherDocumentExtractedBlock } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { Control, Controller, FieldErrors, UseFormGetValues, UseFormSetValue, UseFormTrigger, useWatch } from 'react-hook-form';
+import { Form, InputNumber, Checkbox, Divider, Typography, message as antdMessage, Row, Col, Button } from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { 
+    CaseFormDataTypeForRHF, // Глобальный тип для формы RHF
+    OtherDocumentData, // Для данных из OCR
+    DocumentTypeToExtract, 
+    OcrResultData
+} from '../../types';
+
 import TagInput from '../formInputs/TagInput';
 import OcrUploader from '../formInputs/OcrUploader';
+
+const { Title, Text, Paragraph } = Typography;
 
 const BENEFIT_CONFIRMING_DOCUMENT_TYPES = [
     "Военный билет",
@@ -33,16 +23,15 @@ const BENEFIT_CONFIRMING_DOCUMENT_TYPES = [
     "Свидетельство о рождении всех детей",
     "Документ об инвалидности ребенка",
     "Справка об инвалидности",
+    "Справка МСЭ об установлении инвалидности",
     "Документ об иждивении",
+    "Справка медико-социальной экспертизы (МСЭ)",
+    "Справка МСЭ (для гос. пенсии)",
 ];
 
-type AdditionalInfoFieldName = FieldPath<Pick<CaseFormDataTypeForRHF, 'pension_points' | 'benefits' | 'documents' | 'dependents' | 'other_documents_extracted_data'>>;
-
 interface AdditionalInfoStepProps {
-    register: UseFormRegister<CaseFormDataTypeForRHF>;
     control: Control<CaseFormDataTypeForRHF>;
     errors: FieldErrors<CaseFormDataTypeForRHF>;
-    getErrorMessage: (name: AdditionalInfoFieldName) => string | undefined;
     pensionType: string | null;
     setValue: UseFormSetValue<CaseFormDataTypeForRHF>;
     getValues: UseFormGetValues<CaseFormDataTypeForRHF>;
@@ -50,236 +39,216 @@ interface AdditionalInfoStepProps {
 }
 
 const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({
-    register,
     control,
     errors,
-    getErrorMessage,
     pensionType,
     setValue,
     getValues,
     trigger
 }) => {
-    const toast = useToast();
-    const [displayedOtherDocs, setDisplayedOtherDocs] = useState<OtherDocumentExtractedBlock[]>(
-        () => getValues('other_documents_extracted_data') || []
-    );
+    const watchedOtherDocs = useWatch<CaseFormDataTypeForRHF, 'other_documents_extracted_data'>({ 
+        control,
+        name: 'other_documents_extracted_data',
+        defaultValue: [] 
+    });
+    const [displayedOtherDocs, setDisplayedOtherDocs] = useState<Partial<OtherDocumentData>[]>(watchedOtherDocs || []);
 
-    const handleOtherDocOcrSuccess = (ocrData: OcrExtractionResponse) => {
-        if (ocrData.documentType === 'other' && ocrData.data) {
-            const ocrResultData = ocrData.data as OcrOtherDocumentData; // Raw OCR data
-            const newExtractedBlock: OtherDocumentExtractedBlock = {
-                standardized_document_type: ocrResultData.standardized_document_type,
-                extracted_fields: ocrResultData.extracted_fields,
+    useEffect(() => {
+        setDisplayedOtherDocs(watchedOtherDocs || []);
+    }, [watchedOtherDocs]);
+
+    const handleOtherDocOcrSuccess = (ocrData: OcrResultData, docType: DocumentTypeToExtract) => {
+        if (docType === 'other' && ocrData) {
+            const ocrResultDataAsOther = ocrData as OtherDocumentData; 
+            const newExtractedBlock: Partial<OtherDocumentData> = {
+                standardized_document_type: ocrResultDataAsOther.standardized_document_type,
+                extracted_fields: ocrResultDataAsOther.extracted_fields,
+                identified_document_type: ocrResultDataAsOther.identified_document_type, 
+                multimodal_assessment: ocrResultDataAsOther.multimodal_assessment,
+                text_llm_reasoning: ocrResultDataAsOther.text_llm_reasoning
             };
             
-            const displayType = newExtractedBlock.standardized_document_type || ocrResultData.identified_document_type || "Неизвестный документ";
+            const displayType = newExtractedBlock.standardized_document_type || newExtractedBlock.identified_document_type || "Неизвестный документ";
 
-            const currentOtherDocsData = getValues('other_documents_extracted_data') || [];
-            const updatedOtherDocsData = [...currentOtherDocsData, newExtractedBlock];
-            setValue('other_documents_extracted_data', updatedOtherDocsData, { shouldDirty: true });
-            setDisplayedOtherDocs(updatedOtherDocsData);
+            const currentOtherDocsDataInForm = getValues('other_documents_extracted_data') || [];
+            const updatedOtherDocsData = [...currentOtherDocsDataInForm, newExtractedBlock];
+            setValue('other_documents_extracted_data', updatedOtherDocsData, { shouldDirty: true, shouldValidate: true });
 
             let targetField: 'benefits' | 'documents' = 'documents';
             if (newExtractedBlock.standardized_document_type && BENEFIT_CONFIRMING_DOCUMENT_TYPES.includes(newExtractedBlock.standardized_document_type)) {
                 targetField = 'benefits';
             }
             
-            const typeToAdd = newExtractedBlock.standardized_document_type || ocrResultData.identified_document_type;
+            const typeToAdd = newExtractedBlock.standardized_document_type || newExtractedBlock.identified_document_type;
             if (typeToAdd) {
                 const currentTagString = getValues(targetField) || '';
-                let tagsArray = currentTagString.split(',').map(v => v.trim()).filter(Boolean);
+                let tagsArray = currentTagString.split(',').map((v: string) => v.trim()).filter(Boolean);
                 if (!tagsArray.includes(typeToAdd)) {
                     tagsArray.push(typeToAdd);
                     setValue(targetField, tagsArray.join(', '), { shouldDirty: true });
-                    trigger(targetField);
+                    trigger(targetField as string); 
                 }
             }
-
-            toast({
-                title: "Дополнительный документ обработан",
-                description: `Данные из документа "${displayType}" сохранены. Тип добавлен в соответствующее поле.`,
-                status: "success",
-                duration: 4000,
-                isClosable: true,
-            });
-
-        } else if (ocrData.documentType === 'error') {
-            toast({
-                title: "Ошибка OCR",
-                description: ocrData.message || "Не удалось обработать документ.",
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-            });
-        }
+            antdMessage.success(`Данные из документа "${displayType}" сохранены и добавлены в форму.`);
+        } 
     };
     
     const removeOtherDoc = (indexToRemove: number) => {
-        const currentOtherDocsData = getValues('other_documents_extracted_data') || [];
-        const removedDoc = currentOtherDocsData[indexToRemove];
-        const updatedOtherDocsData = currentOtherDocsData.filter((_, index) => index !== indexToRemove);
-        setValue('other_documents_extracted_data', updatedOtherDocsData, { shouldDirty: true });
-        setDisplayedOtherDocs(updatedOtherDocsData);
+        const currentOtherDocsDataInForm = getValues('other_documents_extracted_data') || [];
+        const updatedOtherDocsData = currentOtherDocsDataInForm.filter((_: Partial<OtherDocumentData>, index: number) => index !== indexToRemove);
+        setValue('other_documents_extracted_data', updatedOtherDocsData, { shouldDirty: true, shouldValidate: true });
 
-        if (removedDoc) {
-            const typeToRemoveFromTags = removedDoc.standardized_document_type; // Only use standardized_document_type
-            if (typeToRemoveFromTags) {
-                (['benefits', 'documents'] as const).forEach(field => {
-                    const currentTagString = getValues(field) || '';
-                    let tagsArray = currentTagString.split(',').map(v => v.trim()).filter(Boolean);
-                    if (tagsArray.includes(typeToRemoveFromTags)) {
-                        tagsArray = tagsArray.filter(tag => tag !== typeToRemoveFromTags);
-                        setValue(field, tagsArray.join(', '), { shouldDirty: true });
-                        trigger(field);
-                    }
-                });
-            }
+        const removedDocData = currentOtherDocsDataInForm[indexToRemove];
+        if (removedDocData && removedDocData.standardized_document_type) {
+            const typeToRemoveFromTags = removedDocData.standardized_document_type;
+            (['benefits', 'documents'] as const).forEach(field => {
+                const currentTagString = getValues(field) || '';
+                let tagsArray = currentTagString.split(',').map((v: string) => v.trim()).filter(Boolean);
+                if (tagsArray.includes(typeToRemoveFromTags)) {
+                    tagsArray = tagsArray.filter((tag: string) => tag !== typeToRemoveFromTags);
+                    setValue(field, tagsArray.join(', '), { shouldDirty: true });
+                    trigger(field as string); 
+                }
+            });
         }
-
-        toast({
-            title: "Данные документа удалены",
-            status: "info",
-            duration: 3000,
-            isClosable: true,
-        });
+        antdMessage.info("Данные документа удалены из формы.");
     };
     
-    const handleOtherDocOcrError = (message: string) => {
-        toast({
-            title: "Ошибка загрузки документа",
-            description: message,
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-        });
+    const handleOtherDocOcrError = (message: string, docType: DocumentTypeToExtract) => {
+        antdMessage.error(`Ошибка загрузки документа (${docType}): ${message}`);
     };
 
     return (
-        <VStack spacing={6} align="stretch">
-            <Heading size="md" mb={2}>Дополнительная информация</Heading>
-
-            <FormControl isInvalid={!!getErrorMessage('dependents') || !!errors.dependents}>
-                <FormLabel htmlFor="dependents">Количество иждивенцев</FormLabel>
-                <Controller
-                    name="dependents"
-                    control={control}
-                    defaultValue={0}
-                    rules={{ min: { value: 0, message: "Должно быть не меньше 0" } }}
-                    render={({ field: { onChange, onBlur, value, ref } }) => (
-                        <NumberInput id="dependents" min={0} value={value ?? ''}
-                            onChange={(_valueAsString, valueAsNumber) => onChange(isNaN(valueAsNumber) ? 0 : valueAsNumber)}
-                            onBlur={onBlur} bg="cardBackground">
-                            <NumberInputField ref={ref} />
-                            <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
-                        </NumberInput>
-                    )}
-                />
-                <FormErrorMessage>{getErrorMessage('dependents') || errors.dependents?.message}</FormErrorMessage>
-            </FormControl>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+            <Title level={4} style={{ marginBottom: '20px', textAlign: 'center' }}>Дополнительная информация</Title>
 
             {pensionType === 'retirement_standard' && (
-                <FormControl isInvalid={!!getErrorMessage('pension_points') || !!errors.pension_points}>
-                    <FormLabel htmlFor="pension_points">Пенсионные баллы (ИПК)</FormLabel>
+                <Form.Item
+                    label="Пенсионные баллы (ИПК)"
+                    name="pension_points"
+                    validateStatus={errors.pension_points ? 'error' : ''}
+                    help={errors.pension_points?.message as string | undefined}
+                    rules={[
+                        { required: pensionType === 'retirement_standard', message: "Пенсионные баллы обязательны" },
+                    ]}
+                >
                     <Controller
                         name="pension_points"
                         control={control}
-                        rules={{
-                            required: pensionType === 'retirement_standard' ? "Пенсионные баллы обязательны" : false,
-                            min: { value: 0, message: "Баллы не могут быть отрицательными" }
-                        }}
+                        rules={{ min: {value: 0, message: "Баллы не могут быть отрицательными"}}} 
                         render={({ field }) => (
-                            <NumberInput id="pension_points" min={0} precision={2} step={0.1}
-                                value={field.value ?? ''}
-                                onChange={(_valueAsString, valueAsNumber) => field.onChange(isNaN(valueAsNumber) ? undefined : valueAsNumber)}
-                                onBlur={field.onBlur}>
-                                <NumberInputField ref={field.ref} />
-                                <NumberInputStepper><NumberIncrementStepper /><NumberDecrementStepper /></NumberInputStepper>
-                            </NumberInput>
+                            <InputNumber 
+                                {...field} 
+                                value={typeof field.value === 'number' ? field.value : undefined}
+                                min={0} 
+                                precision={2} 
+                                step={0.1} 
+                                style={{ width: '100%' }} 
+                            />
                         )}
                     />
-                    <FormErrorMessage>{getErrorMessage('pension_points') || errors.pension_points?.message}</FormErrorMessage>
-                </FormControl>
+                </Form.Item>
             )}
 
-            <Divider my={2}/>
+            <Divider style={{ margin: '24px 0' }}/>
             
-            <Heading size="sm" mt={2} mb={1}>Льготы и Документы</Heading>
-            <Text fontSize="xs" color="gray.500" mb={3}>
+            <Title level={5} style={{ marginTop: '20px', marginBottom: '8px' }}>Льготы и Документы</Title>
+            <Paragraph type="secondary" style={{ marginBottom: '16px' }}>
                 Вы можете ввести названия льгот и документов вручную или загрузить скан документа для автоматического добавления его типа и извлеченных данных.
-            </Text>
+            </Paragraph>
 
-            <SimpleGrid columns={1} spacing={4} mb={4}>
-                 <OcrUploader
+            <Form.Item label="Загрузить скан доп. документа / льготы (OCR)">
+                <OcrUploader
                     documentType="other"
                     onOcrSuccess={handleOtherDocOcrSuccess}
                     onOcrError={handleOtherDocOcrError}
-                    uploaderTitle="Загрузить скан доп. документа / льготы (OCR)"
+                    uploaderTitle="Перетащите или выберите файл"
                 />
-            </SimpleGrid>
+            </Form.Item>
 
             {displayedOtherDocs.length > 0 && (
-                <Box mt={4}>
-                    <Heading size="xs" mb={2}>Загруженные дополнительные документы:</Heading>
-                    <VStack spacing={2} align="stretch">
-                        {displayedOtherDocs.map((doc, index) => (
-                            <Box key={index} p={2} borderWidth="1px" borderRadius="md" display="flex" justifyContent="space-between" alignItems="center">
-                                <Text fontSize="sm" isTruncated>
-                                    {doc.standardized_document_type || `Документ ${index + 1}`}
-                                    {doc.extracted_fields && Object.keys(doc.extracted_fields).length > 0 && (
-                                        <Text as="span" fontSize="xs" color="gray.500" ml={2}>
-                                            (извлечено полей: {Object.keys(doc.extracted_fields).length})
-                                        </Text>
-                                    )}
-                                </Text>
-                                <IconButton
-                                    aria-label="Удалить данные документа"
-                                    icon={<DeleteIcon />}
-                                    size="xs"
-                                    variant="ghost"
-                                    colorScheme="red"
-                                    onClick={() => removeOtherDoc(index)}
-                                />
-                            </Box>
-                        ))}
-                    </VStack>
-                </Box>
+                <div style={{ marginTop: '20px' }}>
+                    <Text strong>Загруженные и распознанные доп. документы:</Text>
+                    {displayedOtherDocs.map((doc, index) => (
+                        <div key={index} style={{ padding: '8px', border: '1px solid #e8e8e8', borderRadius: '2px', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <Text >{doc.standardized_document_type || doc.identified_document_type || `Документ ${index + 1}`}</Text>
+                                {doc.extracted_fields && Object.keys(doc.extracted_fields).length > 0 && (
+                                    <Text type="secondary" style={{ fontSize: '0.85em', marginLeft: '8px' }}>
+                                        (извлечено полей: {Object.keys(doc.extracted_fields).length})
+                                    </Text>
+                                )}
+                            </div>
+                            <Button
+                                type="text"
+                                danger
+                                icon={<DeleteOutlined />}
+                                onClick={() => removeOtherDoc(index)}
+                                size="small"
+                            />
+                        </div>
+                    ))}
+                </div>
             )}
-            <Divider my={2}/>
+            <Divider style={{ margin: '24px 0' }}/>
 
             {pensionType !== 'disability_social' && (
-                <FormControl isInvalid={!!getErrorMessage('benefits') || !!errors.benefits}>
-                    <FormLabel htmlFor="benefits">Льготы (введите или отметьте авто-добавленные)</FormLabel>
+                <Form.Item
+                    label="Льготы (введите или будут добавлены автоматически после OCR)"
+                    name="benefits"
+                    validateStatus={errors.benefits ? 'error' : ''}
+                    help={errors.benefits?.message as string | undefined}
+                >
                     <Controller
                         name="benefits"
                         control={control}
                         render={({ field }) => (
-                            <TagInput id={field.name} value={field.value} fieldOnChange={field.onChange}
-                                placeholder="Добавьте льготу и нажмите Enter" />
+                            <TagInput 
+                                fieldOnChange={field.onChange} 
+                                value={field.value}
+                                placeholder="Добавить льготу и нажать Enter"
+                            />
                         )}
                     />
-                    <FormErrorMessage>{getErrorMessage('benefits') || errors.benefits?.message}</FormErrorMessage>
-                </FormControl>
+                </Form.Item>
             )}
 
-            <FormControl isInvalid={!!getErrorMessage('documents') || !!errors.documents}>
-                <FormLabel htmlFor="documents">Представленные документы (введите или отметьте авто-добавленные)</FormLabel>
+            <Form.Item
+                label="Представленные стандартные документы (введите или будут добавлены автоматически после OCR)"
+                name="documents"
+                validateStatus={errors.documents ? 'error' : ''}
+                help={errors.documents?.message as string | undefined}
+            >
                 <Controller
                     name="documents"
                     control={control}
                     render={({ field }) => (
-                        <TagInput id={field.name} value={field.value} fieldOnChange={field.onChange}
-                            placeholder="Добавьте документ и нажмите Enter" />
+                        <TagInput 
+                            fieldOnChange={field.onChange} 
+                            value={field.value}
+                            placeholder="Добавить документ и нажать Enter"
+                        />
                     )}
                 />
-                <FormErrorMessage>{getErrorMessage('documents') || errors.documents?.message}</FormErrorMessage>
-            </FormControl>
+            </Form.Item>
 
-            <FormControl mt={3}>
-                <Checkbox id="has_incorrect_document" {...register("has_incorrect_document")}>
-                    Есть некорректно оформленные документы
-                </Checkbox>
-            </FormControl>
-        </VStack>
+            <Form.Item name="has_incorrect_document" valuePropName="checked">
+                 <Controller
+                    name="has_incorrect_document"
+                    control={control}
+                    defaultValue={false} 
+                    render={({ field: {onChange, value, ref} }) => (
+                        <Checkbox 
+                            onChange={onChange} 
+                            checked={!!value}
+                            ref={ref}
+                        >
+                            Есть некорректно оформленные документы
+                        </Checkbox>
+                    )}
+                />
+            </Form.Item>
+        </div>
     );
 };
 
