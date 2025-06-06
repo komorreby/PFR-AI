@@ -42,8 +42,7 @@ const renderSimpleList = (itemsString: string | undefined | null, title: string)
 const SummaryStep: React.FC<SummaryStepProps> = ({ formData, onEditStep }) => {
   const { 
     personal_data = {}, 
-    dependents,
-    work_experience = { total_years: 0, records: [] },
+    work_experience = { total_years: 0, records: [], raw_events: [] },
     pension_points,
     benefits,
     // documents, // Это поле, вероятно, было для старой структуры. В CaseFormDataTypeForRHF есть submitted_documents
@@ -107,7 +106,7 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ formData, onEditStep }) => {
                     <AntList.Item>
                       <AntList.Item.Meta
                         title={<Text strong>{index + 1}. {record.organization}</Text>}
-                        description={`Период: ${record.start_date || '-'} - ${record.end_date || '-'}, Должность: ${record.position || '-'}`}
+                        description={`Период: ${record.date_in || '-'} - ${record.date_out || '-'}, Должность: ${record.position || '-'}`}
                       />
                       {record.special_conditions && <AntBadge status="warning" text="Особые условия" />}
                     </AntList.Item>
@@ -137,7 +136,7 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ formData, onEditStep }) => {
       <Divider />
       <Descriptions bordered column={{ xxl: 2, xl: 2, lg: 1, md: 1, sm: 1, xs: 1 }} title={<><InfoCircleOutlined style={{marginRight: 8}}/>Дополнительная информация</>}>
         <Descriptions.Item label="Количество иждивенцев">
-            {dependents !== null && dependents !== undefined ? dependents : 'Не указано'}
+            {personal_data.dependents !== null && personal_data.dependents !== undefined ? personal_data.dependents : 'Не указано'}
         </Descriptions.Item>
         {pension_type === 'retirement_standard' && (
             <Descriptions.Item label="Пенсионные баллы (ИПК)">

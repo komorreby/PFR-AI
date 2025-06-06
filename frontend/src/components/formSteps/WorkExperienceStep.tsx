@@ -16,7 +16,7 @@ import {
     Card
 } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-import { CaseFormDataTypeForRHF, WorkExperienceRecord } from '../../types';
+import { CaseFormDataTypeForRHF, WorkBookRecordEntry } from '../../types';
 
 const { Title, Text } = Typography;
 
@@ -88,7 +88,7 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
                                 <Controller
                                     name={`work_experience.records.${index}.organization` as const}
                                     control={control}
-                                    render={({ field }) => <Input {...field} />}
+                                    render={({ field }) => <Input {...field} value={field.value ?? ''} />}
                                 />
                             </Form.Item>
                         </Col>
@@ -101,18 +101,18 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
                                 <Controller
                                     name={`work_experience.records.${index}.position` as const}
                                     control={control}
-                                    render={({ field }) => <Input {...field} />}
+                                    render={({ field }) => <Input {...field} value={field.value ?? ''} />}
                                 />
                             </Form.Item>
                         </Col>
                         <Col xs={24} md={12}>
                             <Form.Item
                                 label="Дата начала"
-                                name={[`work_experience`, `records`, index, `start_date`]}
+                                name={[`work_experience`, `records`, index, `date_in`]}
                                 rules={[{ required: true, message: "Дата начала обязательна" }]}
                             >
                                 <Controller
-                                    name={`work_experience.records.${index}.start_date` as const}
+                                    name={`work_experience.records.${index}.date_in` as const}
                                     control={control}
                                     render={({ field }) => (
                                         <AntDatePicker
@@ -132,12 +132,12 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
                         <Col xs={24} md={12}>
                             <Form.Item
                                 label="Дата окончания"
-                                name={[`work_experience`, `records`, index, `end_date`]}
+                                name={[`work_experience`, `records`, index, `date_out`]}
                                 rules={[
                                     { required: true, message: "Дата окончания обязательна" },
                                     {
                                         validator: async (_, value) => {
-                                            const startDateStr = getValues(`work_experience.records.${index}.start_date`);
+                                            const startDateStr = getValues(`work_experience.records.${index}.date_in`);
                                             if (startDateStr && value) {
                                                 const startDate = dayjs(startDateStr, 'YYYY-MM-DD');
                                                 const endDate = dayjs(value, 'YYYY-MM-DD');
@@ -151,7 +151,7 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
                                 ]}
                             >
                                 <Controller
-                                    name={`work_experience.records.${index}.end_date` as const}
+                                    name={`work_experience.records.${index}.date_out` as const}
                                     control={control}
                                     render={({ field }) => (
                                         <AntDatePicker
@@ -162,7 +162,7 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
                                             value={field.value && dayjs(field.value, 'YYYY-MM-DD').isValid() ? dayjs(field.value, 'YYYY-MM-DD') : null}
                                             onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : null)}
                                             disabledDate={(current) => {
-                                                const startDateStr = getValues(`work_experience.records.${index}.start_date`);
+                                                const startDateStr = getValues(`work_experience.records.${index}.date_in`);
                                                 const startDate = startDateStr && dayjs(startDateStr, 'YYYY-MM-DD').isValid() 
                                                                   ? dayjs(startDateStr, 'YYYY-MM-DD') 
                                                                   : null;
@@ -197,7 +197,7 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
 
             <Button
                 type="dashed"
-                onClick={() => append({ organization: '', start_date: '', end_date: '', position: '', special_conditions: false } as WorkExperienceRecord)}
+                onClick={() => append({ organization: '', position: '', date_in: null, date_out: null, special_conditions: false })}
                 icon={<PlusOutlined />}
                 style={{ width: '100%', marginTop: fields.length > 0 ? '0px' : '16px'}}
             >

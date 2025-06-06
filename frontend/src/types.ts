@@ -1,7 +1,5 @@
 // src/types.ts
 
-// 6. Основные Сущности (Модели Данных)
-
 export interface NameChangeInfo {
   old_full_name: string | null;
   date_changed: string | null; // YYYY-MM-DD
@@ -25,17 +23,32 @@ export interface DisabilityInfo {
   cert_number: string | null;
 }
 
-export interface WorkExperienceRecord {
-  organization: string;
-  position: string;
-  start_date: string; // YYYY-MM-DD
-  end_date: string; // YYYY-MM-DD
-  special_conditions: boolean | null;
+// Новые типы для событийно-ориентированной модели трудовой книжки
+export type WorkBookEventType = "ПРИЕМ" | "ПЕРЕВОД" | "УВОЛЬНЕНИЕ" | "НАГРАЖДЕНИЕ" | "ДРУГОЕ";
+
+export interface WorkBookEventRecord {
+    event_type: WorkBookEventType | null;
+    date: string | null; // YYYY-MM-DD
+    organization: string | null;
+    position: string | null;
+    raw_text: string;
 }
 
+// Обновленная запись о периоде работы. Используется как в WorkExperience, так и в WorkBookData.
+export interface WorkBookRecordEntry {
+  organization: string | null;
+  position: string | null;
+  date_in: string | null; // YYYY-MM-DD
+  date_out: string | null; // YYYY-MM-DD
+  // Поле для UI, может не присутствовать в данных от OCR, но используется в форме.
+  special_conditions?: boolean | null;
+}
+
+// Новая модель для трудового стажа, консистентная с бэкендом
 export interface WorkExperience {
-  total_years: number;
-  records: WorkExperienceRecord[] | null;
+  raw_events?: WorkBookEventRecord[] | null;
+  records?: WorkBookRecordEntry[] | null;
+  total_years?: number | null;
 }
 
 export interface OtherDocumentData {
@@ -44,6 +57,7 @@ export interface OtherDocumentData {
   extracted_fields: Record<string, any> | null; // object | null
   multimodal_assessment: string | null;
   text_llm_reasoning: string | null;
+  birth_place: string | null;
 }
 
 export interface CaseDataInput {
@@ -120,15 +134,10 @@ export interface SnilsData {
   birth_place: string | null;
 }
 
-export interface WorkBookRecordEntry {
-  date_in: string | null; // YYYY-MM-DD
-  date_out: string | null; // YYYY-MM-DD
-  organization: string | null;
-  position: string | null;
-}
-
+// Обновленная модель данных из ТК, которую возвращает OCR
 export interface WorkBookData {
-  records: WorkBookRecordEntry[]; // По умолчанию пустой массив []
+  raw_events: WorkBookEventRecord[];
+  records: WorkBookRecordEntry[];
   calculated_total_years: number | null;
 }
 

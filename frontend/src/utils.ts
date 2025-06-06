@@ -18,7 +18,7 @@ export const prepareDataForApi = (formData: CaseFormDataTypeForRHF): CaseDataInp
     snils: formData.personal_data?.snils || '',
     gender: formData.personal_data?.gender || '',
     citizenship: formData.personal_data?.citizenship || '',
-    dependents: typeof formData.dependents === 'number' ? formData.dependents : 0, // Обеспечиваем тип number
+    dependents: typeof formData.personal_data?.dependents === 'number' ? formData.personal_data.dependents : 0, // Обеспечиваем тип number, исправлен баг с расположением
     name_change_info: (formData.personal_data?.name_change_info?.old_full_name || formData.personal_data?.name_change_info?.date_changed) && formData.personal_data?.name_change_info
             ? {
                 old_full_name: formData.personal_data.name_change_info.old_full_name,
@@ -45,8 +45,15 @@ export const prepareDataForApi = (formData: CaseFormDataTypeForRHF): CaseDataInp
     personal_data: apiPersonalData,
     work_experience: formData.work_experience 
         ? { // Обеспечиваем структуру WorkExperience
-            total_years: formData.work_experience.total_years || 0,
-            records: formData.work_experience.records || null
+            total_years: formData.work_experience.total_years ?? null,
+            records: formData.work_experience.records?.map(r => ({
+                organization: r.organization,
+                position: r.position,
+                date_in: r.date_in,
+                date_out: r.date_out,
+                // special_conditions - поле только для UI, не отправляем его
+            })) ?? null,
+            raw_events: formData.work_experience.raw_events ?? null
           } 
         : null,
     pension_points: formData.pension_points || null,
@@ -63,9 +70,5 @@ export const prepareDataForApi = (formData: CaseFormDataTypeForRHF): CaseDataInp
         : null,
     other_documents_extracted_data: sanitizedOtherDocumentsData || null
   };
-  // Удаляем dependents с верхнего уровня, если он там случайно оказался после spread (...)
-  // Этого не должно быть из-за типизации, но для безопасности:
-  // delete (dataToSend as any).dependents; 
-
   return dataToSend;
 }; 

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Typography, Spin, Alert, Descriptions, Tag, Collapse, Button, Space, Modal, message, List, Card, Divider } from 'antd';
 import { getFullCaseData, downloadCaseDocument } from '../services/apiClient';
-import { FullCaseData, ApiError, WorkExperienceRecord, OtherDocumentData, PersonalData, DisabilityInfo, WorkExperience } from '../types';
+import { FullCaseData, ApiError, WorkBookRecordEntry, OtherDocumentData, PersonalData, DisabilityInfo, WorkExperience } from '../types';
 import { ArrowLeftOutlined, DownloadOutlined, InfoCircleOutlined, UserOutlined, IdcardOutlined, SolutionOutlined, PaperClipOutlined, WarningOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -217,20 +217,39 @@ const CaseDetailPage: React.FC = () => {
             <Descriptions bordered column={1} size="small" style={{ marginBottom: '16px' }}>
                  <Descriptions.Item label="Общий заявленный стаж (лет)">{caseData.work_experience.total_years ?? '-'}</Descriptions.Item>
             </Descriptions>
+            <Title level={5} style={{marginTop: '16px', marginBottom: '8px'}}>Периоды работы:</Title>
             <List
                 size="small"
                 bordered
                 dataSource={caseData.work_experience.records}
-                renderItem={(item: WorkExperienceRecord) => (
+                renderItem={(item: WorkBookRecordEntry) => (
                     <List.Item>
                         <List.Item.Meta
                             title={`${item.organization} (${item.position})`}
-                            description={`Период: ${item.start_date} - ${item.end_date}`}
+                            description={`Период: ${item.date_in} - ${item.date_out}`}
                         />
                         {item.special_conditions && <Tag color="orange">Особые условия</Tag>}
                     </List.Item>
                 )}
             />
+            {caseData.work_experience.raw_events && caseData.work_experience.raw_events.length > 0 && (
+                <Collapse ghost style={{ marginTop: '16px' }}>
+                    <Panel header="Показать сырые события из OCR" key="raw_events">
+                        <List
+                            size="small"
+                            bordered
+                            dataSource={caseData.work_experience.raw_events}
+                            renderItem={(event, index) => (
+                                <List.Item>
+                                    <Text>
+                                        <small>({event.date}) [{event.event_type}]</small> {event.raw_text}
+                                    </Text>
+                                </List.Item>
+                            )}
+                        />
+                    </Panel>
+                </Collapse>
+            )}
           </Panel>
         )}
 

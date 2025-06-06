@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Typography, Button, List, message as antdMessage, Space, Divider, Descriptions, Alert } from 'antd';
+import { Typography, message as antdMessage, Space, Divider, Descriptions, Alert } from 'antd';
 import { Control, UseFormSetValue, FieldErrors, UseFormTrigger } from 'react-hook-form';
 import OcrUploader from '../formInputs/OcrUploader';
 import { 
@@ -8,20 +8,17 @@ import {
     SnilsData, 
     WorkBookData, 
     DocumentTypeToExtract,
-    WorkBookRecordEntry,
     CaseFormDataTypeForRHF
 } from '../../types';
 import type { UploadFile } from 'antd/es/upload';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
-// Updated to track individual file statuses within a batch for work_book
 type DocumentProcessStatus = {
-    attempted: boolean; // True if user tried to upload this type
-    processing: boolean; // True if any file of this type is currently being processed (single or batch)
-    error: boolean; // True if the last operation (single or batch) for this type resulted in an error
-    success: boolean; // True if the last operation (single or batch) for this type was successful
-    // For work_book, success means at least one file in a batch was successful, error means any file in batch failed or batch failed
+    attempted: boolean; 
+    processing: boolean;
+    error: boolean;
+    success: boolean;
 };
 
 const initialDocStatus: DocumentProcessStatus = {
@@ -47,8 +44,6 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
 }) => {
     const [passportData, setPassportData] = useState<PassportData | null>(null);
     const [snilsData, setSnilsData] = useState<SnilsData | null>(null);
-    // No longer need single workBookData state, as data is aggregated
-    // const [workBookData, setWorkBookData] = useState<WorkBookData | null>(null);
     const [ocrGlobalError, setOcrGlobalError] = useState<string | null>(null);
 
     const [passportStatus, setPassportStatus] = useState<DocumentProcessStatus>(initialDocStatus);
@@ -57,7 +52,6 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
 
     useEffect(() => {
         if (onOcrStepNextButtonDisabledStateChange) {
-            // Next button should be disabled if any document type that was attempted is currently processing or ended in error.
             let shouldBeDisabled = false;
             const statuses = [passportStatus, snilsStatus, workBookStatus];
             for (const status of statuses) {
@@ -77,7 +71,6 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
         } else if (docType === 'snils') {
             setSnilsStatus({ attempted: true, processing: true, error: false, success: false });
         } else if (docType === 'work_book') {
-            // For work_book, processing is true for the whole batch
             setWorkBookStatus({ attempted: true, processing: true, error: false, success: false });
         }
     }, []);
@@ -134,22 +127,27 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
             fieldsSetForTrigger = true;
         } else if (docType === 'work_book' && data) {
             const wbData = data as WorkBookData;
-            // workBookStatus will be set by onBatchFinished
             
+            // Получаем текущие данные из формы
+            const currentRecords = control._getWatch('work_experience.records') || [];
+            const currentEvents = control._getWatch('work_experience.raw_events') || [];
+
+            // Добавляем новые записи о периодах, инициализируя special_conditions
             if (wbData.records && wbData.records.length > 0) {
-                const currentRecords = control._getWatch('work_experience.records') || [];
                 const newMappedRecords = wbData.records.map(ocrRecord => ({
-                    organization: ocrRecord.organization || 'Не указано',
-                    position: ocrRecord.position || 'Не указано',
-                    start_date: ocrRecord.date_in || '',
-                    end_date: ocrRecord.date_out || '',
-                    special_conditions: null, // OCR не определяет это, пользователь должен указать
+                    ...ocrRecord,
+                    special_conditions: false, // OCR не определяет это, пользователь может указать позже
                 }));
                 setValue('work_experience.records', [...currentRecords, ...newMappedRecords], { shouldValidate: true, shouldDirty: true });
             }
-            // Обновление общего стажа: суммировать или брать последний? 
-            // Для простоты пока возьмем из последнего обработанного файла, если он есть.
-            // Более сложная логика суммирования может потребовать ручного ввода или подтверждения.
+
+            // Добавляем новые сырые события
+            if (wbData.raw_events && wbData.raw_events.length > 0) {
+                setValue('work_experience.raw_events', [...currentEvents, ...wbData.raw_events], { shouldDirty: true });
+            }
+            
+            // Обновляем общий стаж. Это значение будет перезаписано каждым новым файлом,
+            // что является известным ограничением. Пользователь сможет скорректировать его на следующем шаге.
             if (wbData.calculated_total_years !== null && wbData.calculated_total_years !== undefined) {
                 setValue('work_experience.total_years', wbData.calculated_total_years, { shouldValidate: true, shouldDirty: true });
             }
@@ -157,7 +155,6 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
             trigger('work_experience.total_years');
 
             updateMessage = `Данные из файла трудовой книжки ${file?.name || ''.trim()} добавлены в форму.`;
-             // No fieldsSetForTrigger for workbook here, as it's handled per file and batch status is separate
         }
 
         if (fieldsSetForTrigger) { 
@@ -189,8 +186,6 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
             setSnilsData(null);
             setSnilsStatus({ attempted: true, processing: false, error: true, success: false });
         } else if (docType === 'work_book') {
-            // For work_book, individual file error is noted, batch status handled by onBatchFinished
-            // No need to set workBookStatus here for individual file error in a batch
         }
     };
     
@@ -230,7 +225,6 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
         </Descriptions>
     );
 
-    // Removed renderWorkBookData as individual file previews are part of OcrUploader and data is aggregated directly to form
 
     return (
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>

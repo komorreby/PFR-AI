@@ -73,11 +73,8 @@ const OcrStepComponent: React.FC<OcrStepComponentProps> = ({
           <Descriptions bordered column={1} size="small" title="Предпросмотр: Паспорт">
             <Descriptions.Item label="ФИО">{`${passData.last_name || ''} ${passData.first_name || ''} ${passData.middle_name || ''}`.trim()}</Descriptions.Item>
             <Descriptions.Item label="Дата рождения">{passData.birth_date}</Descriptions.Item>
-            {/* <Descriptions.Item label="Пол">{passData.gender}</Descriptions.Item> */}
             <Descriptions.Item label="Серия">{passData.passport_series}</Descriptions.Item>
             <Descriptions.Item label="Номер">{passData.passport_number}</Descriptions.Item>
-            {/* {passData.issue_date && <Descriptions.Item label="Дата выдачи">{passData.issue_date}</Descriptions.Item>} */}
-            {/* {passData.issued_by && <Descriptions.Item label="Кем выдан">{passData.issued_by}</Descriptions.Item>} */}
           </Descriptions>
         );
       case 'snils':
@@ -91,9 +88,12 @@ const OcrStepComponent: React.FC<OcrStepComponentProps> = ({
         const wbData = data as WorkBookData;
         return (
           <Descriptions bordered column={1} size="small" title="Предпросмотр: Трудовая книжка">
-            {/* <Descriptions.Item label="ФИО Владельца">{`${wbData.owner_surname || ''} ${wbData.owner_name || ''} ${wbData.owner_patronymic || ''}`.trim()}</Descriptions.Item> */}
-            {/* <Descriptions.Item label="Дата рождения владельца">{wbData.owner_birth_date}</Descriptions.Item> */}
-            <Descriptions.Item label="Записи">
+            <Descriptions.Item label="Рассчитанный стаж (лет)">
+                {wbData.calculated_total_years !== null && wbData.calculated_total_years !== undefined 
+                    ? wbData.calculated_total_years.toFixed(2) 
+                    : 'Не рассчитан'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Обработанные периоды работы">
               {wbData.records && wbData.records.length > 0 ? (
                 <List
                   size="small"
@@ -101,13 +101,30 @@ const OcrStepComponent: React.FC<OcrStepComponentProps> = ({
                   dataSource={wbData.records}
                   renderItem={(item: WorkBookRecordEntry, index) => (
                     <List.Item>
-                      <Text strong>{`Запись ${index + 1}:`}</Text> {item.organization} 
-                      {/* (c {item.start_date} по {item.end_date || 'н.в.'}) */}
-                       - {item.position}
+                      <List.Item.Meta
+                        title={`${index + 1}. ${item.organization || 'Организация не указана'}`}
+                        description={`Период: ${item.date_in || '?'} - ${item.date_out || 'н.в.'}. Должность: ${item.position || 'не указана'}`}
+                      />
                     </List.Item>
                   )}
                 />
-              ) : <Text type="secondary">Записи отсутствуют</Text>}
+              ) : <Text type="secondary">Периоды работы не найдены</Text>}
+            </Descriptions.Item>
+             <Descriptions.Item label="Распознанные события из документа">
+              {wbData.raw_events && wbData.raw_events.length > 0 ? (
+                <List
+                  size="small"
+                  bordered
+                  dataSource={wbData.raw_events}
+                  renderItem={(event, index) => (
+                    <List.Item>
+                       <Text>
+                          <small>({event.date || 'нет даты'}) [{event.event_type || 'НЕИЗВЕСТНО'}]</small> — {event.raw_text}
+                       </Text>
+                    </List.Item>
+                  )}
+                />
+              ) : <Text type="secondary">События не найдены</Text>}
             </Descriptions.Item>
           </Descriptions>
         );
@@ -140,7 +157,6 @@ const OcrStepComponent: React.FC<OcrStepComponentProps> = ({
         documentType={documentType}
         onOcrSuccess={(data, docType) => { setIsProcessing(true); handleOcrSuccess(data, docType); }}
         onOcrError={(message, docType) => { setIsProcessing(true); handleOcrError(message, docType); }}
-        // onUploadInitiated НЕ ИСПОЛЬЗУЕТСЯ, т.к. его нет в OcrUploaderProps и это вызывает ошибку
         uploaderTitle={`Перетащите или выберите файл для "${documentType}"`}
       />
 
@@ -157,8 +173,8 @@ const OcrStepComponent: React.FC<OcrStepComponentProps> = ({
       <Button 
         type="primary" 
         onClick={handleConfirmAndProceed}
-        disabled={!ocrData || isProcessing} // Дизейблим, если нет данных или пока идет обработка ответа
-        loading={isProcessing} // Показываем состояние загрузки на кнопке
+        disabled={!ocrData || isProcessing}
+        loading={isProcessing}
         style={{ marginTop: '20px', width: '100%' }}
       >
         Подтвердить и использовать эти данные
