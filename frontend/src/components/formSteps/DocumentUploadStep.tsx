@@ -11,14 +11,17 @@ import {
     WorkBookRecordEntry,
     CaseFormDataTypeForRHF
 } from '../../types';
+import type { UploadFile } from 'antd/es/upload';
 
 const { Title, Text, Paragraph } = Typography;
 
+// Updated to track individual file statuses within a batch for work_book
 type DocumentProcessStatus = {
-    attempted: boolean;
-    processing: boolean;
-    error: boolean;
-    success: boolean;
+    attempted: boolean; // True if user tried to upload this type
+    processing: boolean; // True if any file of this type is currently being processed (single or batch)
+    error: boolean; // True if the last operation (single or batch) for this type resulted in an error
+    success: boolean; // True if the last operation (single or batch) for this type was successful
+    // For work_book, success means at least one file in a batch was successful, error means any file in batch failed or batch failed
 };
 
 const initialDocStatus: DocumentProcessStatus = {
@@ -44,7 +47,8 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
 }) => {
     const [passportData, setPassportData] = useState<PassportData | null>(null);
     const [snilsData, setSnilsData] = useState<SnilsData | null>(null);
-    const [workBookData, setWorkBookData] = useState<WorkBookData | null>(null);
+    // No longer need single workBookData state, as data is aggregated
+    // const [workBookData, setWorkBookData] = useState<WorkBookData | null>(null);
     const [ocrGlobalError, setOcrGlobalError] = useState<string | null>(null);
 
     const [passportStatus, setPassportStatus] = useState<DocumentProcessStatus>(initialDocStatus);
@@ -53,9 +57,9 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
 
     useEffect(() => {
         if (onOcrStepNextButtonDisabledStateChange) {
-            const statuses = [passportStatus, snilsStatus, workBookStatus];
+            // Next button should be disabled if any document type that was attempted is currently processing or ended in error.
             let shouldBeDisabled = false;
-
+            const statuses = [passportStatus, snilsStatus, workBookStatus];
             for (const status of statuses) {
                 if (status.attempted && (status.processing || status.error)) {
                     shouldBeDisabled = true;
@@ -66,26 +70,33 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
         }
     }, [passportStatus, snilsStatus, workBookStatus, onOcrStepNextButtonDisabledStateChange]);
 
-    const handleProcessingStart = useCallback((docType: DocumentTypeToExtract) => {
+    const handleProcessingStart = useCallback((docType: DocumentTypeToExtract, _file?: UploadFile) => {
         setOcrGlobalError(null);
         if (docType === 'passport') {
             setPassportStatus({ attempted: true, processing: true, error: false, success: false });
         } else if (docType === 'snils') {
             setSnilsStatus({ attempted: true, processing: true, error: false, success: false });
         } else if (docType === 'work_book') {
+            // For work_book, processing is true for the whole batch
             setWorkBookStatus({ attempted: true, processing: true, error: false, success: false });
         }
     }, []);
 
-    const handleOcrSuccess = (data: OcrResultData, docType: DocumentTypeToExtract) => {
+    const handleOcrSuccess = (data: OcrResultData, docType: DocumentTypeToExtract, file?: UploadFile) => {
         setOcrGlobalError(null);
         let updateMessage = "";
-        let fieldsSet = false;
+        let fieldsSetForTrigger = false;
 
         const capitalizeField = (text: string | null | undefined): string | undefined => {
             if (!text) return undefined;
             return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
         };
+        
+        const docNameToAdd = 
+            docType === 'passport' ? "Паспорт РФ" :
+            docType === 'snils' ? "СНИЛС" :
+            docType === 'work_book' ? "Трудовая книжка" :
+            docType.toString();
 
         if (docType === 'passport' && data) {
             const passData = data as PassportData;
@@ -112,53 +123,49 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
             setValue('personal_data.issuing_authority', passData.issuing_authority || undefined, { shouldValidate: true, shouldDirty: true });
             setValue('personal_data.department_code', passData.department_code || undefined, { shouldValidate: true, shouldDirty: true });
             
-            updateMessage = "Данные паспорта обновлены.";
-            fieldsSet = true;
+            updateMessage = `Данные из ${file?.name || 'паспорта'} обновлены.`;
+            fieldsSetForTrigger = true;
         } else if (docType === 'snils' && data) {
             const snlsData = data as SnilsData;
             setSnilsData(snlsData);
             setSnilsStatus({ attempted: true, processing: false, error: false, success: true });
             setValue('personal_data.snils', snlsData.snils_number || undefined, { shouldValidate: true, shouldDirty: true });
-            updateMessage = "Номер СНИЛС обновлен.";
-            fieldsSet = true;
+            updateMessage = `Данные из ${file?.name || 'СНИЛС'} обновлены.`;
+            fieldsSetForTrigger = true;
         } else if (docType === 'work_book' && data) {
             const wbData = data as WorkBookData;
-            setWorkBookData(wbData);
-            setWorkBookStatus({ attempted: true, processing: false, error: false, success: true });
+            // workBookStatus will be set by onBatchFinished
             
             if (wbData.records && wbData.records.length > 0) {
-                const mappedRecords = wbData.records.map(ocrRecord => ({
+                const currentRecords = control._getWatch('work_experience.records') || [];
+                const newMappedRecords = wbData.records.map(ocrRecord => ({
                     organization: ocrRecord.organization || 'Не указано',
                     position: ocrRecord.position || 'Не указано',
                     start_date: ocrRecord.date_in || '',
                     end_date: ocrRecord.date_out || '',
-                    special_conditions: null,
+                    special_conditions: null, // OCR не определяет это, пользователь должен указать
                 }));
-                setValue('work_experience.records', mappedRecords, { shouldValidate: true, shouldDirty: true });
+                setValue('work_experience.records', [...currentRecords, ...newMappedRecords], { shouldValidate: true, shouldDirty: true });
             }
+            // Обновление общего стажа: суммировать или брать последний? 
+            // Для простоты пока возьмем из последнего обработанного файла, если он есть.
+            // Более сложная логика суммирования может потребовать ручного ввода или подтверждения.
             if (wbData.calculated_total_years !== null && wbData.calculated_total_years !== undefined) {
                 setValue('work_experience.total_years', wbData.calculated_total_years, { shouldValidate: true, shouldDirty: true });
             }
             trigger('work_experience.records');
             trigger('work_experience.total_years');
 
-            updateMessage = "Данные трудовой книжки обновлены и добавлены в форму.";
+            updateMessage = `Данные из файла трудовой книжки ${file?.name || ''.trim()} добавлены в форму.`;
+             // No fieldsSetForTrigger for workbook here, as it's handled per file and batch status is separate
         }
 
-        if (fieldsSet) { 
+        if (fieldsSetForTrigger) { 
             trigger('personal_data.first_name');
             trigger('personal_data.last_name');
             trigger('personal_data.birth_date');
             trigger('personal_data.snils');
         }
-
-        const docTypeRussian: Record<string, string> = {
-            passport: "Паспорт РФ",
-            snils: "СНИЛС",
-            work_book: "Трудовая книжка",
-            other: "Другой документ"
-        };
-        const docNameToAdd = docTypeRussian[docType] || docType.toString();
         
         const currentDocsString = control._getWatch('documents') || '';
         const currentDocuments = currentDocsString.split(',').map((s: string) => s.trim()).filter(Boolean);
@@ -171,9 +178,10 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
         antdMessage.success(updateMessage || "Документ обработан.");
     };
 
-    const handleOcrError = (message: string, docType: DocumentTypeToExtract) => {
-        setOcrGlobalError(`Ошибка OCR (${docType}): ${message}`);
-        antdMessage.error(`Ошибка OCR (${docType}): ${message}`);
+    const handleOcrError = (message: string, docType: DocumentTypeToExtract, file?: UploadFile) => {
+        const errorMsg = `Ошибка OCR (${docType}${file ? ", "+file.name : ''}): ${message}`;
+        setOcrGlobalError(errorMsg);
+        antdMessage.error(errorMsg);
         if (docType === 'passport') {
             setPassportData(null);
             setPassportStatus({ attempted: true, processing: false, error: true, success: false });
@@ -181,13 +189,29 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
             setSnilsData(null);
             setSnilsStatus({ attempted: true, processing: false, error: true, success: false });
         } else if (docType === 'work_book') {
-            setWorkBookData(null);
-            setWorkBookStatus({ attempted: true, processing: false, error: true, success: false });
+            // For work_book, individual file error is noted, batch status handled by onBatchFinished
+            // No need to set workBookStatus here for individual file error in a batch
+        }
+    };
+    
+    const handleWorkBookBatchFinished = (docType: DocumentTypeToExtract, errorsInBatch: boolean) => {
+        if (docType === 'work_book') {
+            setWorkBookStatus({
+                attempted: true,
+                processing: false,
+                error: errorsInBatch,
+                success: !errorsInBatch, // Consider batch successful if no errors occurred
+            });
+            if (errorsInBatch) {
+                antdMessage.warning('При обработке файлов трудовой книжки возникли ошибки. Проверьте данные.');
+            } else {
+                antdMessage.info('Все файлы трудовой книжки обработаны.');
+            }
         }
     };
 
     const renderPassportData = (data: PassportData) => (
-        <Descriptions bordered column={1} size="small" title="Данные паспорта">
+        <Descriptions bordered column={1} size="small" title="Данные паспорта (предпросмотр)">
             <Descriptions.Item label="ФИО">{`${data.last_name || ''} ${data.first_name || ''} ${data.middle_name || ''}`.trim()}</Descriptions.Item>
             <Descriptions.Item label="Дата рождения">{data.birth_date}</Descriptions.Item>
             <Descriptions.Item label="Пол">{data.sex}</Descriptions.Item>
@@ -201,30 +225,12 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
     );
 
     const renderSnilsData = (data: SnilsData) => (
-        <Descriptions bordered column={1} size="small" title="Данные СНИЛС">
+        <Descriptions bordered column={1} size="small" title="Данные СНИЛС (предпросмотр)">
             <Descriptions.Item label="Номер СНИЛС">{data.snils_number}</Descriptions.Item>
         </Descriptions>
     );
 
-    const renderWorkBookData = (data: WorkBookData) => (
-        <Descriptions bordered column={1} size="small" title="Данные трудовой книжки">
-            {data.calculated_total_years !== null && <Descriptions.Item label="Рассчитанный стаж (лет)">{data.calculated_total_years}</Descriptions.Item>}
-            <Descriptions.Item label="Записи">
-                {data.records && data.records.length > 0 ? (
-                    <List
-                        size="small"
-                        bordered
-                        dataSource={data.records}
-                        renderItem={(item: WorkBookRecordEntry, index: number) => (
-                            <List.Item>
-                                <Text strong>{`Запись ${index + 1}:`}</Text> {item.organization} (c {item.date_in} по {item.date_out || 'н.в.'}) - {item.position}
-                            </List.Item>
-                        )}
-                    />
-                ) : <Text type="secondary">Записи отсутствуют</Text>}
-            </Descriptions.Item>
-        </Descriptions>
-    );
+    // Removed renderWorkBookData as individual file previews are part of OcrUploader and data is aggregated directly to form
 
     return (
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
@@ -243,6 +249,7 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                     onOcrError={handleOcrError}
                     onProcessingStart={handleProcessingStart}
                     uploaderTitle="Загрузить скан паспорта (разворот с фото)"
+                    allowMultipleFiles={false} // Паспорт - один файл
                 />
                 {passportStatus.success && passportData && renderPassportData(passportData)}
                 {passportStatus.error && <Alert message="Ошибка обработки паспорта. Попробуйте загрузить другой файл." type="warning" showIcon />}
@@ -255,6 +262,7 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                     onOcrError={handleOcrError}
                     onProcessingStart={handleProcessingStart}
                     uploaderTitle="Загрузить скан СНИЛС"
+                    allowMultipleFiles={false} // СНИЛС - один файл
                 />
                 {snilsStatus.success && snilsData && renderSnilsData(snilsData)}
                 {snilsStatus.error && <Alert message="Ошибка обработки СНИЛС. Попробуйте загрузить другой файл." type="warning" showIcon />}
@@ -263,13 +271,20 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
 
                 <OcrUploader
                     documentType="work_book"
-                    onOcrSuccess={handleOcrSuccess}
-                    onOcrError={handleOcrError}
-                    onProcessingStart={handleProcessingStart}
-                    uploaderTitle="Загрузить скан трудовой книжки (все страницы)"
+                    onOcrSuccess={handleOcrSuccess} // individual file success
+                    onOcrError={handleOcrError}     // individual file error
+                    onProcessingStart={handleProcessingStart} // batch processing start
+                    onBatchFinished={handleWorkBookBatchFinished} // batch finished
+                    uploaderTitle="Загрузить сканы трудовой книжки (все страницы)"
+                    allowMultipleFiles={true} // Трудовая может быть из нескольких файлов
                 />
-                {workBookStatus.success && workBookData && renderWorkBookData(workBookData)}
-                {workBookStatus.error && <Alert message="Ошибка обработки трудовой книжки. Попробуйте загрузить другой файл." type="warning" showIcon />}
+                {/* Предпросмотр для трудовой теперь не отображается здесь, т.к. данные агрегируются в форму */}
+                {workBookStatus.attempted && workBookStatus.error && 
+                    <Alert message="При обработке файлов трудовой книжки возникли ошибки. Проверьте данные на следующем шаге." type="warning" showIcon />
+                }
+                 {workBookStatus.attempted && !workBookStatus.error && workBookStatus.success && 
+                    <Alert message="Все файлы трудовой книжки успешно обработаны и данные добавлены в форму." type="success" showIcon />
+                }
             </Space>
         </div>
     );

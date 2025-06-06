@@ -1,6 +1,6 @@
 // src/pages/CaseDetailPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Typography, Spin, Alert, Descriptions, Tag, Collapse, Button, Space, Modal, message, List, Card, Divider } from 'antd';
 import { getFullCaseData, downloadCaseDocument } from '../services/apiClient';
 import { FullCaseData, ApiError, WorkExperienceRecord, OtherDocumentData, PersonalData, DisabilityInfo, WorkExperience } from '../types';
@@ -245,7 +245,7 @@ const CaseDetailPage: React.FC = () => {
             <>
                 <Title level={5} style={{marginTop: '16px', marginBottom: '8px'}}>Данные из прочих загруженных документов:</Title>
                 <Collapse ghost>
-                    {caseData.other_documents_extracted_data.map((doc, index) => (
+                    {caseData.other_documents_extracted_data.map((doc: OtherDocumentData, index) => (
                         <Panel header={`Документ ${index + 1}: ${doc.identified_document_type || 'Неизвестный тип'} (станд.: ${doc.standardized_document_type || '-'})`} key={`other_doc_${index}`}>
                             <Descriptions bordered column={1} size="small">
                                 {doc.extracted_fields && Object.entries(doc.extracted_fields).map(([key, value]) => (
@@ -267,7 +267,7 @@ const CaseDetailPage: React.FC = () => {
                     size="small"
                     bordered
                     dataSource={caseData.errors}
-                    renderItem={(errorItem: any, index: number) => (
+                    renderItem={(errorItem: any, _index: number) => (
                         <List.Item>
                             <pre style={{whiteSpace: 'pre-wrap', wordBreak: 'break-all'}}>{JSON.stringify(errorItem, null, 2)}</pre>
                         </List.Item>

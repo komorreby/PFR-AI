@@ -26,7 +26,6 @@ import type {
 } from '../types';
 
 const { Title, Text, Paragraph } = Typography;
-const { Option } = Select;
 const { Panel } = Collapse;
 
 const ConfigAndGuidesPage: React.FC = () => {

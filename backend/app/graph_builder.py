@@ -284,7 +284,3 @@ class KnowledgeGraphBuilder:
         except Exception as e:
             logger.error(f"KnowledgeGraphBuilder: Error retrieving articles for pension types {pension_types}: {e}", exc_info=True)
             return []
-
-
-if __name__ == '__main__':
-     pass

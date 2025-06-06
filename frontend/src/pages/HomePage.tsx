@@ -1,7 +1,6 @@
 // src/pages/HomePage.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Layout,
   Steps,
   Button,
   Form,
@@ -14,13 +13,11 @@ import {
   Row,
   Col,
   Tag,
-  Select,
 } from 'antd';
 import {
   SolutionOutlined,
   UserOutlined,
   FileDoneOutlined,
-  ExperimentOutlined,
   AuditOutlined,
   ScheduleOutlined,
   IdcardOutlined,
@@ -30,25 +27,16 @@ import {
 import { useForm, FormProvider, useFieldArray, Controller } from 'react-hook-form';
 
 // API клиент и типы
-import { createCase, getCaseStatus, getPensionTypes, getStandardDocumentNames, getPensionDocuments, submitOcrTask, getOcrTaskStatus } from '../services/apiClient';
+import { createCase, getCaseStatus, getPensionTypes, getStandardDocumentNames, getPensionDocuments } from '../services/apiClient';
 import type {
   CaseDataInput,
   ProcessOutput,
   ApiError,
   PensionTypeInfo,
-  PersonalData,
-  WorkExperience,
   DisabilityInfo,
   OtherDocumentData,
-  OcrTaskSubmitResponse,
-  OcrTaskStatusResponse,
-  DocumentTypeToExtract,
-  PassportData,
-  SnilsData,
-  WorkBookData,
   DocumentDetail,
-  CaseFormDataTypeForRHF,
-  OcrResultData
+  CaseFormDataTypeForRHF
 } from '../types';
 
 // Компоненты шагов (будем создавать их позже)
@@ -62,7 +50,6 @@ import SummaryStep from '../components/formSteps/SummaryStep';
 import ProcessResultDisplay from '../components/ProcessResultDisplay';
 
 const { Title } = Typography;
-const { Content } = Layout; // Если нужен свой Layout для страницы
 
 const POLLING_INTERVAL = 5000; // 5 секунд для опроса статуса дела
 
@@ -125,7 +112,6 @@ const HomePage: React.FC = () => {
   const [pollingCaseId, setPollingCaseId] = useState<number | null>(null);
   const [finalCaseStatus, setFinalCaseStatus] = useState<ProcessOutput | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [allOcrDocsProcessed, setAllOcrDocsProcessed] = useState(false);
   const [ocrStepNextButtonDisabled, setOcrStepNextButtonDisabled] = useState(false);
   const [personalDataStepValid, setPersonalDataStepValid] = useState(false);
 
@@ -280,6 +266,8 @@ const HomePage: React.FC = () => {
           setValue={setValue}
           getValues={getValues}
           trigger={trigger}
+          standardDocNames={standardDocNames}
+          requiredDocsForType={requiredDocsForType}
         />
       ),
       fieldsToValidate: selectedPensionTypeRHF === 'retirement_standard' ? ['pension_points'] : [],

@@ -411,3 +411,165 @@ LLM-based RE: Написать функцию, которая отправляе
 
 Что делать: Исследовать возможность использования логического вывода на графе (inference), обучения графовых эмбеддингов для улучшения поиска, более сложных алгоритмов обхода графа.
 
+
+
+## Детализированный План Доработки Системы Анализа Пенсионных Дел
+
+### Часть 1: Бэкенд (Python)
+
+#### Этап 1.1: Обновление Моделей Данных и Схемы БД
+
+1.  **Добавление `record_number` в Pydantic модель `WorkBookRecordEntry`:**
+    *   **Файл:** `app/models.py`
+    *   **Действие:** В классе `WorkBookRecordEntry` добавить поле: `record_number: Optional[int] = Field(None, description="Порядковый номер записи из трудовой книжки")`.
+
+2.  **Использование `DateTime(timezone=True)`:**
+    *   **Файл:** `app/database.py`
+    *   **Действие:** В определении `cases_table`, для колонок `created_at` и `updated_at` заменить `DateTime` на `DateTime(timezone=True)`.
+
+3.  **Использование `sqlalchemy.JSON`:**
+    *   **Файл:** `app/database.py`
+    *   **Действие:** В определении `cases_table`, для колонок `personal_data`, `errors`, `disability`, `work_experience`, `benefits`, `documents`, `other_documents_extracted_data` заменить тип `Text` (или аналогичный строковый) на `JSON` (импортировать `from sqlalchemy import JSON`).
+
+4.  **Добавление индексов в БД:**
+    *   **Файл:** `app/database.py`
+    *   **Действие:**
+        *   Для `cases_table`: добавить `index=True` к колонкам `pension_type`, `final_status`, `created_at`.
+        *   Для `ocr_tasks_table`: добавить `index=True` к колонкам `status`, `expire_at`.
+
+#### Этап 1.2: Обновление Сервиса Обработки Изображений (OCR)
+
+1.  **Обновление промпта для трудовой книжки:**
+    *   **Файл:** `app/vision_services.py`
+    *   **Действие:** В строке `WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE`:
+        *   Добавить инструкцию для LLM извлекать `record_number`.
+        *   Обновить пример JSON в промпте, включив в него `record_number`.
+
+2.  **Обновление Pydantic модели `WorkBookRecordEntry` (если используется для парсинга ответа LLM в `vision_services.py`):**
+    *   **Файл:** `app/vision_services.py` (если модель определена локально) или `app/models.py` (если используется общая).
+    *   **Действие:** Убедиться, что модель `WorkBookRecordEntry`, используемая для разбора ответа LLM, содержит поле `record_number: Optional[int]`.
+
+#### Этап 1.3: Улучшение Аутентификации
+
+1.  **Добавление `is_active` в JWT токен:**
+    *   **Файл:** `app/auth.py`
+    *   **Действие (в `login_for_access_token`):** При формировании `data` для `create_access_token`, добавить ` "is_active": user_in_db.is_active`.
+    *   **Действие (в `get_current_user`):**
+        *   Извлечь `is_active_from_token: Optional[bool] = payload.get("is_active")`.
+        *   Если `is_active_from_token is False`, генерировать `HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is inactive based on token")`.
+        *   Обновить возвращаемый словарь, чтобы он включал ` "is_active": is_active_from_token if is_active_from_token is not None else True` (или более строгую логику, если `is_active` обязательно должно быть в новых токенах).
+    *   **Действие (в `require_role_dependency_factory` или аналогичной функции):** Добавить проверку `if not current_user.get("is_active"): raise HTTPException(...)` в начало функции `role_checker` (или аналогичной).
+
+2.  **Безопасность `SECRET_KEY`:**
+    *   **Файл:** `app/auth.py`
+    *   **Действие:** Проверить, что `SECRET_KEY = os.getenv("SECRET_KEY", "...")` используется, и напомнить (в комментарии или документации) о необходимости установки переменной окружения `SECRET_KEY` в продакшене.
+
+#### Этап 1.4: Доработка RAG Core
+
+1.  **Изменение ключа кэша RAG:**
+    *   **Файл:** `app/main.py` (внутри фоновой задачи `process_case_in_background`)
+    *   **Действие:**
+        *   Импортировать `hashlib` и `json`.
+        *   Изменить формирование `cache_key`:
+            ```python
+            sorted_case_data_json = json.dumps(case_data_dict, sort_keys=True) # case_data_dict уже словарь
+            cache_key_hash = hashlib.md5(sorted_case_data_json.encode('utf-8')).hexdigest()
+            cache_key = f"rag_case_{case_data_dict.get('pension_type')}_{cache_key_hash}"
+            ```
+
+2.  **Передача `temperature` для LLM как параметра:**
+    *   **Файл:** `app/rag_core/engine.py` (в методе `PensionRAG.query`)
+    *   **Действие:**
+        *   Попытаться передать `temperature=0.1` напрямую в метод `await self.llm.acomplete(final_prompt, temperature=0.1)`. Проверить, поддерживает ли это используемая версия LlamaIndex и клиент Ollama.
+        *   Если параметр не поддерживается, оставить текущую логику с сохранением и восстановлением `self.llm.temperature`, но добавить `import asyncio` и обернуть блок изменения `temperature` и вызова LLM в `async with self.llm_temp_lock:` (где `self.llm_temp_lock = asyncio.Lock()` инициализируется в `__init__` `PensionRAG`). Это предотвратит гонки состояний, если экземпляр `self.llm` общий.
+
+#### Этап 1.5: Управление Транзакциями в CRUD
+
+1.  **Проверка управления транзакциями:**
+    *   **Файл:** `app/crud.py` и файлы, вызывающие CRUD-функции (например, `app/main.py`).
+    *   **Действие:** Проанализировать функции в `crud.py`. Если функция (например, `create_case`, `update_ocr_task_result`) вызывается внутри блока `async with conn.begin():` в `main.py` или сервисном слое, то явный `await conn.commit()` внутри CRUD-функции избыточен и его можно удалить. Если CRUD-функция задумана как полностью атомарная операция, которая может вызываться и без внешнего управления транзакцией, то внутренний коммит оставить. Цель – избежать вложенных транзакций без необходимости или двойных коммитов.
+
+---
+
+### Часть 2: Фронтенд (React, TypeScript)
+
+#### Этап 2.1: Обновление Типов Данных
+
+1.  **Добавление `record_number` в `WorkBookRecordEntry`:**
+    *   **Файл:** `src/types.ts`
+    *   **Действие:** В интерфейсе `WorkBookRecordEntry` добавить поле `record_number: number | null;`.
+
+2.  **Использование Enum для строковых литералов (пример для `gender`):**
+    *   **Файл:** `src/types.ts`
+    *   **Действие:**
+        *   Создать `export enum Gender { Male = 'male', Female = 'female' }`.
+        *   В интерфейсе `PersonalData`, изменить тип поля `gender` на `gender: Gender | '';` (или `Gender | null`, в зависимости от того, как обрабатываются пустые значения).
+    *   **Действие (в компонентах):** Обновить использование поля `gender` (например, в `PersonalDataStep.tsx` для `Select` использовать `Gender.Male` и `Gender.Female` в качестве `value`). Аналогично для других полей, где это применимо (`disability.group`, `OcrTaskStatus`).
+
+3.  **Согласованность имен полей для документов:**
+    *   **Файлы:** `src/types.ts` (для `CaseFormDataTypeForRHF`), `src/utils.ts` (в `prepareDataForApi`), `src/components/formSteps/AdditionalInfoStep.tsx`.
+    *   **Действие:** Решить, будет ли поле для стандартных документов в RHF называться `documents` или `submitted_documents`.
+        *   **Если `submitted_documents` (рекомендуется для ясности):**
+            *   В `CaseFormDataTypeForRHF`: переименовать `documents?: string;` в `submitted_documents?: string;`.
+            *   В `AdditionalInfoStep.tsx`: изменить `name="documents"` и `control={control}` для `Controller` на `name="submitted_documents"`.
+            *   В `prepareDataForApi`: изменить `documents: (formData.documents || '')...` на `submitted_documents: (formData.submitted_documents || '')...`.
+        *   **Если оставить `documents` в RHF:** Убедиться, что `prepareDataForApi` корректно маппит `formData.documents` в `apiPayload.submitted_documents`. Текущая версия `prepareDataForApi` из вашего файла, кажется, ожидает `formData.documents` и маппит его в `dataToSend.documents`, что не соответствует `CaseDataInput.submitted_documents`. **Это нужно исправить.**
+
+#### Этап 2.2: Реализация Многостраничной Загрузки Трудовой Книжки
+
+1.  **Создание/Модификация `OcrUploader` для многостраничности (`MultiPageOcrUploader.tsx`):**
+    *   **Файл:** Создать новый `src/components/formInputs/MultiPageOcrUploader.tsx` или значительно модифицировать существующий `OcrUploader.tsx`.
+    *   **Действие:**
+        *   В `UploadProps` установить `multiple: true`.
+        *   Управлять состоянием `fileList` для накопления выбранных файлов.
+        *   Реализовать `beforeUpload` так, чтобы файлы добавлялись в `fileList`, а не загружались автоматически (`return false;`).
+        *   Добавить кнопку "Обработать все загруженные страницы".
+        *   Реализовать функцию `handleProcessAll` (или аналогичную), которая по нажатию на кнопку:
+            *   Последовательно отправляет каждый файл из `fileList` на OCR-эндпоинт (`submitOcrTask`).
+            *   Для каждого файла запускает поллинг статуса (`pollOcrStatus`).
+            *   Вызывает коллбэк `onOcrSuccessPerPage(data, docType, fileName, pageIndex, totalPages)` при успешной обработке каждой страницы.
+            *   Обрабатывает ошибки для каждой страницы, вызывает `onOcrError`.
+            *   Управляет общим состоянием загрузки (`isProcessingAll`).
+        *   Опционально: реализовать UI для изменения порядка файлов в `fileList`.
+
+2.  **Интеграция `MultiPageOcrUploader` в `DocumentUploadStep.tsx`:**
+    *   **Файл:** `src/components/formSteps/DocumentUploadStep.tsx`
+    *   **Действие:**
+        *   Использовать `MultiPageOcrUploader` для типа документа `work_book`.
+        *   Создать состояние `workBookPagesData: WorkBookRecordEntry[]` для сбора записей со всех страниц.
+        *   Реализовать `handleWorkBookPageSuccess`: добавлять полученные `WorkBookRecordEntry` в `workBookPagesData`.
+        *   Добавить состояние `allWorkBookPagesProcessed: boolean`, которое устанавливается в `true`, когда все отправленные страницы трудовой обработаны.
+        *   В `useEffect`, который зависит от `allWorkBookPagesProcessed` и `workBookPagesData`:
+            *   Сортировать `workBookPagesData` по `record_number` (первичный ключ) и `date_in` (вторичный).
+            *   Выполнить опциональную проверку на корректность нумерации записей.
+            *   Установить отсортированные и смапленные записи в RHF: `setValue('work_experience.records', mappedSortedRecords)`.
+            *   Если решено рассчитывать общий стаж на клиенте, рассчитать его здесь и установить: `setValue('work_experience.total_years', calculatedTotalYears)`.
+            *   Вызвать `trigger` для обновленных полей.
+
+3.  **Расчет/Ввод Общего Стажа:**
+    *   **Файлы:** `src/components/formSteps/WorkExperienceStep.tsx`, `src/components/formSteps/DocumentUploadStep.tsx`.
+    *   **Действие:** Принять решение:
+        *   **Оставить ручной ввод:** В `WorkExperienceStep.tsx` поле "Общий подтвержденный стаж" остается редактируемым.
+        *   **Клиентский расчет:** Реализовать функцию `calculateClientSideTotalYears(records: WorkBookRecordEntry[]): number` (с учетом пересечений периодов, если это требуется). Вызывать ее в `DocumentUploadStep.tsx` после получения и сортировки всех записей и обновлять поле `work_experience.total_years` в RHF. Поле в `WorkExperienceStep.tsx` можно сделать `readOnly` или отображать расчетное значение рядом с полем для ручного ввода.
+
+#### Этап 2.3: Улучшения UI/UX и Вспомогательных Функций
+
+1.  **Консистентность работы с датами:**
+    *   **Файлы:** `src/utils.ts`, `src/components/formSteps/PersonalDataStep.tsx`, `src/components/formSteps/WorkExperienceStep.tsx`, `src/components/formSteps/DisabilityInfoStep.tsx`, `src/pages/CaseHistoryPage.tsx`, `src/pages/CaseDetailPage.tsx`.
+    *   **Действие:** Выбрать одну библиотеку (`dayjs` или `date-fns`). Если `dayjs` уже используется в большинстве мест, заменить использование `date-fns` в `src/utils.ts` на `dayjs`. Обеспечить корректное форматирование (`YYYY-MM-DD` для API, `DD.MM.YYYY` для отображения) и парсинг дат во всех компонентах.
+
+2.  **Корректность `prepareDataForApi`:**
+    *   **Файл:** `src/utils.ts`
+    *   **Действие:** Убедиться, что поле `submitted_documents` для API формируется из правильного поля RHF (например, `formData.documents` или `formData.submitted_documents`). Сейчас в `prepareDataForApi` используется `formData.documents` и маппится в `dataToSend.documents`. Это нужно исправить на `dataToSend.submitted_documents` в соответствии с `CaseDataInput`.
+
+3.  **Локализация дат:**
+    *   **Файлы:** Везде, где отображаются даты (например, `CaseHistoryPage.tsx`, `CaseDetailPage.tsx`).
+    *   **Действие:** Если используется `dayjs`, убедиться, что `dayjs.locale('ru')` вызван (как в `SystemHealthPage.tsx`) и используется при форматировании дат для отображения (например, `dayjs(date).format('DD MMMM YYYY HH:mm')`).
+
+4.  **Обратная связь при загрузке многостраничных документов:**
+    *   **Файл:** `src/components/formInputs/MultiPageOcrUploader.tsx` (или модифицированный `OcrUploader.tsx`).
+    *   **Действие:** Улучшить `antdMessage` или добавить другую индикацию, показывающую прогресс обработки страниц (например, "Обработано N из M страниц...").
+
+5.  **Инструкции для пользователя по порядку страниц:**
+    *   **Файл:** `src/components/formSteps/DocumentUploadStep.tsx` (в части для `work_book`).
+    *   **Действие:** Добавить текстовое пояснение для пользователя о важности загрузки страниц трудовой книжки в правильном хронологическом порядке.

@@ -25,18 +25,23 @@ import {
   EyeOutlined,
   FilePdfOutlined,
   FileWordOutlined,
+  DeleteOutlined,
+  ExclamationCircleFilled,
 } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
-import { getCaseHistory, downloadCaseDocument } from '../services/apiClient';
+import { getCaseHistory, downloadCaseDocument, deleteCase } from '../services/apiClient';
 import type { CaseHistoryEntry, ApiError, PersonalData, DocumentFormat } from '../types';
 import dayjs from 'dayjs';
+import { useAuth } from '../contexts/AuthContext';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
+const { confirm } = Modal;
 
 const ITEMS_PER_PAGE = 10; // Количество элементов на одной странице таблицы
 
 const CaseHistoryPage: React.FC = () => {
+  const { user } = useAuth();
   const [historyData, setHistoryData] = useState<CaseHistoryEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +112,30 @@ const CaseHistoryPage: React.FC = () => {
       console.error('Download error:', apiErr);
       antdMessage.error({ content: `Ошибка скачивания: ${apiErr.message}`, key, duration: 5 });
     }
+  };
+
+  const showDeleteConfirm = (caseId: number) => {
+    confirm({
+      title: 'Вы уверены, что хотите удалить это дело?',
+      icon: <ExclamationCircleFilled />,
+      content: `Дело #${caseId} будет удалено без возможности восстановления.`,
+      okText: 'Да, удалить',
+      okType: 'danger',
+      cancelText: 'Отмена',
+      onOk: async () => {
+        try {
+          antdMessage.loading({ content: `Удаление дела #${caseId}...`, key: `delete-${caseId}` });
+          await deleteCase(caseId);
+          antdMessage.success({ content: `Дело #${caseId} успешно удалено.`, key: `delete-${caseId}` });
+          // Обновляем список дел после удаления
+          fetchHistory(currentPage, searchTerm);
+        } catch (err) {
+          const apiErr = err as ApiError;
+          console.error('Delete error:', apiErr);
+          antdMessage.error({ content: `Ошибка удаления: ${apiErr.message}`, key: `delete-${caseId}`, duration: 5 });
+        }
+      },
+    });
   };
 
   const filteredData = useMemo(() => {
@@ -213,6 +242,16 @@ const CaseHistoryPage: React.FC = () => {
               disabled={record.final_status === "PROCESSING"}
             />
           </Tooltip>
+          {(user?.role === 'admin' || user?.role === 'manager') && (
+            <Tooltip title="Удалить дело">
+              <Button
+                icon={<DeleteOutlined />}
+                size="small"
+                danger
+                onClick={() => showDeleteConfirm(record.id)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },

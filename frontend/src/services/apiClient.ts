@@ -14,11 +14,13 @@ import {
     PensionTypeInfo,
     ProcessOutput,
     StandardErrorResponse,
-    StandardizedValidationErrorResponse,
     TasksStatsResponse,
     HttpValidationError,
     TokenResponse,
-    User
+    User,
+    DocumentListResponse,
+    DocumentUploadResponse,
+    DocumentDeleteResponse
 } from '../types';
 
 // Используем переменные окружения Vite для API_BASE_URL
@@ -114,7 +116,7 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
     return data as T;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, rawResponse: boolean = false): Promise<T> {
     const token = getToken();
     const headers = new Headers(options.headers || {});
     
@@ -133,6 +135,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         ...options,
         headers,
     });
+    if (rawResponse) {
+        return response as unknown as T;
+    }
     return handleApiResponse<T>(response);
 }
 
@@ -199,10 +204,25 @@ export async function getCaseHistory(skip: number = 0, limit: number = 10): Prom
 }
 
 export async function downloadCaseDocument(caseId: number, format: DocumentFormat): Promise<Blob> {
-    // Функция request вызывает handleApiResponse, которая умеет обрабатывать blob
-    return request<Blob>(`/cases/${caseId}/document?format=${format}`, {
-        // Важно: не устанавливаем Content-Type, т.к. это GET запрос
-        // Accept header может быть полезен, но обычно браузер и сервер договорятся
+    const response = await request<Response>(`/cases/${caseId}/document?format=${format}`, {
+        method: 'GET',
+    }, true); // Pass true to get raw response
+    if (!response.ok) {
+        // Try to parse error from body if it's not a success response
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        throw new Error(errorData.detail || 'Failed to download document');
+    }
+    return response.blob();
+}
+
+export interface DeleteCaseResponse {
+    message: string;
+    case_id: number;
+}
+
+export async function deleteCase(caseId: number): Promise<DeleteCaseResponse> {
+    return request<DeleteCaseResponse>(`/cases/${caseId}`, {
+        method: 'DELETE',
     });
 }
 
@@ -230,15 +250,28 @@ export async function getOcrTasksStats(): Promise<TasksStatsResponse> {
     return request<TasksStatsResponse>('/tasks/stats');
 }
 
-// --- Служебные Эндпоинты ---
-
-// Корневой GET / не определен в API документации как часть /api/v1, 
-// но если бы был, то выглядел бы так:
-// export async function getRootMessage(): Promise<{ message: string }> {
-//    return request<{ message: string }>('/'); 
-// }
-// Пока оставим его закомментированным, так как оригинальный getRootMessage был для VITE_API_BASE_URL без /api/v1
-
 export async function getHealthCheck(): Promise<HealthCheckResponse> {
     return request<HealthCheckResponse>('/health');
+}
+
+// Функции для работы с RAG документами (требуют прав администратора)
+export async function listRagDocuments(): Promise<DocumentListResponse> {
+    return request<DocumentListResponse>('/documents');
+}
+
+export async function uploadRagDocument(file: File): Promise<DocumentUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return request<DocumentUploadResponse>('/documents', {
+        method: 'POST',
+        body: formData,
+        // Заголовки Content-Type для FormData устанавливаются браузером автоматически
+    });
+}
+
+export async function deleteRagDocument(filename: string): Promise<DocumentDeleteResponse> {
+    return request<DocumentDeleteResponse>(`/documents/${encodeURIComponent(filename)}`, {
+        method: 'DELETE',
+    });
 }

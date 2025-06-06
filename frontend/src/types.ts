@@ -287,3 +287,18 @@ export interface CaseFormDataTypeForRHF {
   // Могут быть и другие поля, специфичные для UI или временные
   [key: string]: any; // Для гибкости, если есть другие поля в RHF
 }
+
+// Типы для RAG документов
+export interface DocumentListResponse {
+  filenames: string[];
+}
+
+export interface DocumentUploadResponse {
+  filename: string;
+  message: string;
+}
+
+export interface DocumentDeleteResponse {
+  filename: string;
+  message: string;
+}

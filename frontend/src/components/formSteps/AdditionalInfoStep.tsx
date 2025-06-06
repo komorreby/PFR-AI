@@ -6,8 +6,10 @@ import type {
     CaseFormDataTypeForRHF, // Глобальный тип для формы RHF
     OtherDocumentData, // Для данных из OCR
     DocumentTypeToExtract, 
-    OcrResultData
+    OcrResultData,
+    DocumentDetail
 } from '../../types';
+import type { UploadFile } from 'antd/es/upload'; // Ensure UploadFile is imported
 
 import TagInput from '../formInputs/TagInput';
 import OcrUploader from '../formInputs/OcrUploader';
@@ -36,6 +38,8 @@ interface AdditionalInfoStepProps {
     setValue: UseFormSetValue<CaseFormDataTypeForRHF>;
     getValues: UseFormGetValues<CaseFormDataTypeForRHF>;
     trigger: UseFormTrigger<CaseFormDataTypeForRHF>;
+    standardDocNames?: string[];
+    requiredDocsForType?: DocumentDetail[];
 }
 
 const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({
@@ -44,7 +48,9 @@ const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({
     pensionType,
     setValue,
     getValues,
-    trigger
+    trigger,
+    standardDocNames,
+    requiredDocsForType
 }) => {
     const watchedOtherDocs = useWatch<CaseFormDataTypeForRHF, 'other_documents_extracted_data'>({ 
         control,
@@ -53,11 +59,14 @@ const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({
     });
     const [displayedOtherDocs, setDisplayedOtherDocs] = useState<Partial<OtherDocumentData>[]>(watchedOtherDocs || []);
 
+    // State to track if the batch of 'other' documents is currently processing
+    const [isOtherDocsBatchProcessing, setIsOtherDocsBatchProcessing] = useState(false);
+
     useEffect(() => {
         setDisplayedOtherDocs(watchedOtherDocs || []);
     }, [watchedOtherDocs]);
 
-    const handleOtherDocOcrSuccess = (ocrData: OcrResultData, docType: DocumentTypeToExtract) => {
+    const handleOtherDocOcrSuccess = (ocrData: OcrResultData, docType: DocumentTypeToExtract, file?: UploadFile) => {
         if (docType === 'other' && ocrData) {
             const ocrResultDataAsOther = ocrData as OtherDocumentData; 
             const newExtractedBlock: Partial<OtherDocumentData> = {
@@ -68,7 +77,7 @@ const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({
                 text_llm_reasoning: ocrResultDataAsOther.text_llm_reasoning
             };
             
-            const displayType = newExtractedBlock.standardized_document_type || newExtractedBlock.identified_document_type || "Неизвестный документ";
+            const displayType = newExtractedBlock.standardized_document_type || newExtractedBlock.identified_document_type || (file ? file.name : "Неизвестный документ");
 
             const currentOtherDocsDataInForm = getValues('other_documents_extracted_data') || [];
             const updatedOtherDocsData = [...currentOtherDocsDataInForm, newExtractedBlock];
@@ -82,7 +91,7 @@ const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({
             const typeToAdd = newExtractedBlock.standardized_document_type || newExtractedBlock.identified_document_type;
             if (typeToAdd) {
                 const currentTagString = getValues(targetField) || '';
-                let tagsArray = currentTagString.split(',').map((v: string) => v.trim()).filter(Boolean);
+                const tagsArray = currentTagString.split(',').map((v: string) => v.trim()).filter(Boolean);
                 if (!tagsArray.includes(typeToAdd)) {
                     tagsArray.push(typeToAdd);
                     setValue(targetField, tagsArray.join(', '), { shouldDirty: true });
@@ -114,8 +123,27 @@ const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({
         antdMessage.info("Данные документа удалены из формы.");
     };
     
-    const handleOtherDocOcrError = (message: string, docType: DocumentTypeToExtract) => {
-        antdMessage.error(`Ошибка загрузки документа (${docType}): ${message}`);
+    const handleOtherDocOcrError = (message: string, docType: DocumentTypeToExtract, file?: UploadFile) => {
+        antdMessage.error(`Ошибка загрузки документа ${file ? `(${file.name})` : ''} (${docType}): ${message}`);
+    };
+
+    const handleOtherDocBatchFinished = (docType: DocumentTypeToExtract, errorsInBatch: boolean) => {
+        setIsOtherDocsBatchProcessing(false);
+        if (errorsInBatch) {
+            antdMessage.warning('При обработке некоторых дополнительных документов возникли ошибки.');
+        } else {
+            antdMessage.info('Все дополнительные документы были обработаны.');
+        }
+    };
+
+    const handleOtherDocProcessingStart = (docType: DocumentTypeToExtract, file?: UploadFile) => {
+        // If file is undefined, it means a batch is starting
+        if (docType === 'other' && file === undefined) { 
+            setIsOtherDocsBatchProcessing(true);
+        }
+        // If file is defined, it means a single file upload (which should not happen if allowMultipleFiles is true and used for batch)
+        // or it could be the first file in a batch, depending on OcrUploader's onProcessingStart logic.
+        // For now, we primarily use this to set batch processing state.
     };
 
     return (
@@ -162,7 +190,10 @@ const AdditionalInfoStep: React.FC<AdditionalInfoStepProps> = ({
                     documentType="other"
                     onOcrSuccess={handleOtherDocOcrSuccess}
                     onOcrError={handleOtherDocOcrError}
-                    uploaderTitle="Перетащите или выберите файл"
+                    uploaderTitle="Перетащите или выберите файл(ы) для доп. документов"
+                    allowMultipleFiles={true} // Разрешаем несколько файлов
+                    onBatchFinished={handleOtherDocBatchFinished} // Обрабатываем завершение пачки
+                    onProcessingStart={handleOtherDocProcessingStart} // Обрабатываем начало обработки (пачки)
                 />
             </Form.Item>
 

@@ -13,16 +13,13 @@ from reportlab.lib.units import cm
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, Cm
-from docx.oxml.ns import qn # Для установки кастомного шрифта для всего документа
+from docx.oxml.ns import qn
 
-# Попытка импортировать markdown2. Если не получится, будет использоваться заглушка.
 MarkdownImportError = None
 try:
     import markdown2
 except ImportError as e:
-    MarkdownImportError = e
     markdown2 = None
-    # Добавим логирование, если markdown2 не найден
     import logging
     logging.warning("Markdown2 library not found. Markdown formatting will be basic. Please install with: pip install markdown2")
 
@@ -194,26 +191,44 @@ def _generate_pdf_report(
     if work_experience_info or pension_points is not None:
         elements.append(Paragraph("3.2. Сведения о трудовом стаже и пенсионных баллах", subsection_title_style))
         if work_experience_info:
-            elements.append(Paragraph(f"<b>Общий страховой стаж (лет):</b> {work_experience_info.get('total_years', 'Не указан')}", label_style))
+            # Используем поле calculated_total_years из новой модели WorkBookData
+            total_years = work_experience_info.get('calculated_total_years', 'Не указан')
+            elements.append(Paragraph(f"<b>Общий страховой стаж (лет):</b> {total_years}", label_style))
         if pension_points is not None:
             elements.append(Paragraph(f"<b>Индивидуальный пенсионный коэффициент (ИПК):</b> {pension_points}", label_style))
         
+        # Данные берем из records, которые теперь являются WorkBookRecordEntry (периодами)
         if work_experience_info and work_experience_info.get("records"):
             elements.append(Paragraph("<b>Периоды трудовой деятельности:</b>", label_style))
-            table_data = [["Организация", "Должность", "Период работы", "Особые условия"]]
+            table_data = [["Организация", "Должность", "Период работы", "Доп. инфо"]]
+            
+            # work_experience_info["records"] теперь содержит обработанные периоды
             for record in work_experience_info["records"]:
-                start_date_str = record.get('start_date').strftime("%d.%m.%Y") if record.get('start_date') else 'N/A'
-                end_date_str = record.get('end_date').strftime("%d.%m.%Y") if record.get('end_date') else 'N/A'
+                start_date_obj = record.get('date_in')
+                end_date_obj = record.get('date_out')
+
+                start_date_str = start_date_obj.strftime("%d.%m.%Y") if start_date_obj else 'N/A'
+                end_date_str = end_date_obj.strftime("%d.%m.%Y") if end_date_obj else 'по н.в.'
+                
                 period_str = f"{start_date_str} - {end_date_str}"
+                
+                # Собираем дополнительную информацию из raw_text
+                org_details = Paragraph(record.get('organization', 'N/A'), normal_style_left)
+                pos_details = Paragraph(record.get('position', 'N/A'), normal_style_left)
+
+                # Для дополнительной информации можно использовать raw_text, если он есть
+                additional_info_str = record.get('raw_text', '')
+                additional_info_paragraph = Paragraph(additional_info_str, styles['Normal'])
+
                 table_data.append([
-                    Paragraph(record.get('organization', 'N/A')  + " (Данные могут быть обезличены)", styles['Normal']), # Обезличивание если нужно
-                    Paragraph(record.get('position', 'N/A'), styles['Normal']),
+                    org_details,
+                    pos_details,
                     Paragraph(period_str, styles['Normal']),
-                    Paragraph("Да" if record.get('special_conditions') else "Нет", styles['Normal'])
+                    additional_info_paragraph
                 ])
             
             if len(table_data) > 1: # Если есть записи кроме заголовка
-                work_table = Table(table_data, colWidths=[6*cm, 4*cm, 4*cm, 3*cm])
+                work_table = Table(table_data, colWidths=[5*cm, 4*cm, 3.5*cm, 4.5*cm])
                 work_table.setStyle(TableStyle([
                     ('BACKGROUND', (0,0), (-1,0), colors.grey),
                     ('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke),
@@ -408,65 +423,62 @@ def _generate_docx_report(
     
     disability_info = case_details.get("disability")
     if disability_info:
-        doc.add_heading("3.1. Сведения об инвалидности", level=3)
-        p = doc.add_paragraph()
-        p.add_run("Группа инвалидности: ").bold = True
-        p.add_run(str(disability_info.get('group', 'Не указана')))
+        p_disability = doc.add_heading("3.1. Сведения об инвалидности", level=3)
         dis_date = disability_info.get('date')
         dis_date_str = dis_date.strftime("%d.%m.%Y") if isinstance(dis_date, datetime) or isinstance(dis_date, date) else str(dis_date or 'Не указана')
-        p = doc.add_paragraph()
-        p.add_run("Дата установления: ").bold = True
-        p.add_run(dis_date_str)
-        p = doc.add_paragraph()
-        p.add_run("Номер справки МСЭ: ").bold = True
-        p.add_run(str(disability_info.get('cert_number', 'Не указан')))
+        add_field(doc, "Дата установления:", dis_date_str)
+        add_field(doc, "Номер справки МСЭ:", disability_info.get('cert_number', 'Не указан'))
 
     work_experience_info = case_details.get("work_experience")
     pension_points = case_details.get("pension_points")
     if work_experience_info or pension_points is not None:
-        doc.add_heading("3.2. Сведения о трудовом стаже и пенсионных баллах", level=3)
+        p_work = doc.add_heading("3.2. Сведения о трудовом стаже и пенсионных баллах", level=3)
         if work_experience_info:
-            p = doc.add_paragraph()
-            p.add_run("Общий страховой стаж (лет): ").bold = True
-            p.add_run(str(work_experience_info.get('total_years', 'Не указан')))
+            total_years = work_experience_info.get('calculated_total_years', 'Не указан')
+            add_field(doc, "Общий страховой стаж (лет):", str(total_years))
         if pension_points is not None:
-            p = doc.add_paragraph()
-            p.add_run("Индивидуальный пенсионный коэффициент (ИПК): ").bold = True
-            p.add_run(str(pension_points))
-        
+            add_field(doc, "Индивидуальный пенсионный коэффициент (ИПК):", str(pension_points))
+
         if work_experience_info and work_experience_info.get("records"):
-            p = doc.add_paragraph()
-            p.add_run("Периоды трудовой деятельности:").bold = True
+            p_work_records = doc.add_paragraph()
+            p_work_records.add_run("Периоды трудовой деятельности:").bold = True
             
-            if work_experience_info["records"]:
-                table = doc.add_table(rows=1, cols=4)
-                table.style = 'Table Grid' # Применяем стиль таблицы
-                hdr_cells = table.rows[0].cells
-                hdr_cells[0].text = "Организация"
-                hdr_cells[1].text = "Должность"
-                hdr_cells[2].text = "Период работы"
-                hdr_cells[3].text = "Особые условия"
-                for cell in hdr_cells: # Делаем заголовки жирными
-                    for paragraph in cell.paragraphs:
-                        for run_ in paragraph.runs:
-                            run_.bold = True
+            table = doc.add_table(rows=1, cols=3)
+            table.style = 'Table Grid'
+            hdr_cells = table.rows[0].cells
+            hdr_cells[0].text = 'Организация / Должность'
+            hdr_cells[1].text = 'Период работы'
+            hdr_cells[2].text = 'Дополнительная информация'
+
+            # work_experience_info["records"] теперь содержит обработанные периоды
+            for record in work_experience_info["records"]:
+                row_cells = table.add_row().cells
                 
-                for record in work_experience_info["records"]:
-                    row_cells = table.add_row().cells
-                    start_date_str = record.get('start_date').strftime("%d.%m.%Y") if record.get('start_date') else 'N/A'
-                    end_date_str = record.get('end_date').strftime("%d.%m.%Y") if record.get('end_date') else 'N/A'
-                    period_str = f"{start_date_str} - {end_date_str}"
-                    row_cells[0].text = record.get('organization', 'N/A') + " (Данные могут быть обезличены)"
-                    row_cells[1].text = record.get('position', 'N/A')
-                    row_cells[2].text = period_str
-                    row_cells[3].text = "Да" if record.get('special_conditions') else "Нет"
-            else:
-                doc.add_paragraph("Записи о периодах трудовой деятельности отсутствуют.", style='Normal')
+                # Ячейка 1: Организация и должность
+                org_text = record.get('organization', 'N/A')
+                pos_text = record.get('position', 'N/A')
+                cell1_paragraph = row_cells[0].paragraphs[0]
+                cell1_paragraph.add_run(f"{org_text}\n").bold = True
+                cell1_paragraph.add_run(pos_text)
+
+                # Ячейка 2: Период
+                start_date_obj = record.get('date_in')
+                end_date_obj = record.get('date_out')
+                start_date_str = start_date_obj.strftime("%d.%m.%Y") if start_date_obj else 'N/A'
+                end_date_str = end_date_obj.strftime("%d.%m.%Y") if end_date_obj else 'по н.в.'
+                row_cells[1].text = f"{start_date_str} - {end_date_str}"
+                
+                # Ячейка 3: Доп. инфо из raw_text
+                row_cells[2].text = record.get('raw_text', '')
+
+            # Автоподбор ширины колонок
+            for column in table.columns:
+                column.autofit = True
 
 
     benefits = case_details.get("benefits")
     if benefits:
-        doc.add_heading("3.3. Заявленные льготы", level=3)
+        p_benefits = doc.add_heading("3.3. Заявленные льготы", level=3)
         for benefit in benefits:
             doc.add_paragraph(str(benefit), style='ListBullet')
     

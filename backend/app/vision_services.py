@@ -4,15 +4,15 @@ from typing import Optional, Union, Dict, Any, List, Tuple
 import base64
 import json
 import re
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 import httpx # <--- ДОБАВЛЕН ИМПОРТ
 import ollama # Используем официальный клиент Ollama
 from fastapi import HTTPException # <--- ДОБАВЛЕН ИМПОРТ HTTPException
-from pydantic import BaseModel # Убедимся, что BaseModel импортирован
+from pydantic import BaseModel, ValidationError # Убедимся, что BaseModel и ValidationError импортированы
 
 from .rag_core import config # Импорт конфигурации
-from .models import PassportData, SnilsData, DocumentTypeToExtract, OtherDocumentData, WorkBookRecordEntry, WorkBookData, PENSION_DOCUMENT_TYPES # Импорт моделей данных
+from .models import PassportData, SnilsData, DocumentTypeToExtract, OtherDocumentData, WorkBookRecordEntry, WorkBookData, PENSION_DOCUMENT_TYPES, WorkBookEventRecord, WorkBookEventType # Импорт моделей данных
 
 logger = logging.getLogger(__name__)
 
@@ -54,59 +54,90 @@ SNILS_EXTRACTION_PROMPT = """Извлеки, пожалуйста, всю инф
 """
 
 # WORK_BOOK_EXTRACTION_PROMPT теперь будет форматируемой строкой
-WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE = """Извлеки, пожалуйста, всю информацию о трудовой деятельности из этого изображения разворота трудовой книжки.
-Мне нужен список всех записей о работе. Каждая запись должна содержать следующую информацию:
-- 'date_in': дата приема на работу (обычно из левой части колонки 2 'Дата'). Формат ДД.ММ.ГГГГ.
-- 'date_out': дата увольнения с работы (обычно из левой части колонки 2 'Дата'). Формат ДД.ММ.ГГГГ. Если работник не уволен, это поле должно быть null.
-- 'organization': полное наименование организации (из колонки 3 'Сведения о приеме на работу, о переводах...').
-- 'position': должность. Извлеки **только название должности, стараясь уложиться в 1-2 ключевых слова** (например, "учитель математики", "бухгалтер").
+WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE = """Ты — опытный эксперт-кадровик, специализирующийся на расшифровке сложных, рукописных трудовых книжек советского и российского образца. Тебе будет предоставлено изображение разворота такой книжки. Текст может быть неразборчивым, написанным от руки и частично перекрыт печатями или штампами.
 
-Представь ответ в формате JSON. В ответе должен быть ключ "records": список объектов с информацией о работе.
-Поле "calculated_total_years" НЕ НУЖНО рассчитывать или включать в ответ. Оно должно быть null или отсутствовать.
+Твоя задача — внимательно проанализировать КАЖДУЮ запись о работе (по номеру в колонке 1) и извлечь информацию в строго заданном формате JSON. Работай пошагово:
 
-Пример:
-{{
+### ШАГ 1: Пойми структуру таблицы
+- **Колонка 1:** Порядковый номер записи.
+- **Колонка 2:** Дата события. ВНИМАНИЕ: она разделена на 3 части ('число', 'месяц', 'год'). Твоя задача — собрать их в единую дату.
+- **Колонка 3:** Основные сведения. Здесь самое сложное. Одна запись может занимать несколько строк.
+- **Колонка 4:** Документ-основание (например, "Приказ №...").
+
+### ШАГ 2: Извлеки данные запись за записью
+Для каждой записи (каждого номера из колонки 1) создай объект в JSON. ВАЖНО: запись об увольнении относится к предыдущей записи о приеме/переводе.
+
+**Извлечение полей:**
+- `event_date` (ОБЯЗАТЕЛЬНО): Собери дату из колонки 2 в формат "ДД.ММ.ГГГГ".
+- `event_type` (ОБЯЗАТЕЛЬНО): Определи тип события из колонки 3. Возможные значения: "ПРИЕМ", "УВОЛЬНЕНИЕ", "ПЕРЕВОД", "СЛУЖБА", "ДРУГОЕ".
+- `organization` (ОПЦИОНАЛЬНО): Извлеки ПОЛНОЕ название организации из колонки 3. Оно может быть на нескольких строках.
+- `position` (ОПЦИОНАЛЬНО): Извлеки ПОЛНОЕ название должности. Не сокращай его.
+- `raw_text` (ОБЯЗАТЕЛЬНО): Включи сюда полный, дословный текст из колонки 3 для этой записи. Это поможет для проверки.
+- `document_info` (ОПЦИОНАЛЬНО): Текст из колонки 4.
+
+### ШАГ 3: Представь результат в формате JSON
+
+Твой ответ должен содержать ТОЛЬКО JSON и ничего больше.
+
+**Пример структуры JSON:**
+{
   "records": [
-    {{
-      "date_in": "01.09.1999",
-      "date_out": "31.03.2003",
-      "organization": "Долгопрудненская физмат школа №5",
-      "position": "учитель математики"
-    }},
-    {{
-      "date_in": "26.12.2003",
-      "date_out": null,
-      "organization": "МОУ 'Средняя общеобразовательная школа №5'",
-      "position": "учитель"
-    }}
-  ],
-  "calculated_total_years": null
-}}
-Убедись, что все поля ('date_in', 'date_out', 'organization', 'position') присутствуют для каждой записи.
-Если не удается четко определить даты, организацию или должность, лучше пропусти эту запись.
+    {
+      "event_date": "01.09.1998",
+      "event_type": "ПРИЕМ",
+      "organization": "Лицейское-техническое училище",
+      "position": "мастер производственного обучения",
+      "raw_text": "Принят мастером производственного обучения в Лицейское-техническое училище",
+      "document_info": "Приказ №15 §10 от 31.08.98 г."
+    },
+    {
+      "event_date": "01.09.1999",
+      "event_type": "ПЕРЕВОД",
+      "organization": "Лицейское-техническое училище",
+      "position": "педагог-психолог",
+      "raw_text": "Переведен на должность педагога-психолога",
+      "document_info": "Пр. №22 §8 от 01.09.99 г."
+    },
+    {
+      "event_date": "01.04.2001",
+      "event_type": "УВОЛЬНЕНИЕ",
+      "organization": null,
+      "position": null,
+      "raw_text": "Уволен по собственному желанию",
+      "document_info": "Пр №5 §3 от 02.04.2001 г."
+    }
+  ]
+}
+
+### Ключевые правила и ограничения:
+1.  **РУКОПИСНЫЙ ТЕКСТ:** Будь готов к неразборчивому почерку. Если не можешь прочитать слово, лучше пропусти его, чем придумай.
+2.  **ПЕЧАТИ:** Старайся прочитать текст, даже если он под печатью. Если это невозможно, укажи это в `raw_text`.
+3.  **СБОРКА ДАТЫ:** Всегда собирай дату из трех частей колонки 2.
+4.  **УВОЛЬНЕНИЕ:** Запись об увольнении — это отдельное событие со своей датой. Не пытайся добавить `date_out` в запись о приеме.
+5.  **НЕРЕЛЕВАНТНЫЕ ЗАПИСИ:** Если запись не относится к трудовой деятельности (например, "сведения о смене фамилии" или "вкладыш выдан"), НЕ включай ее в массив `records`.
+6.  **ТОЧНОСТЬ ПРЕВЫШЕ ВСЕГО:** Если ты не уверен в каком-либо поле для записи, установи для него значение `null`, но ОБЯЗАТЕЛЬНО заполни `raw_text` и `event_date`.
 """
 
-# Промпт для LLM (Другие документы)
-OTHER_DOCUMENT_EXTRACTION_PROMPT = """Это изображение документа. Пожалуйста, внимательно изучи его и предоставь следующую информацию в формате JSON:
-1.  **identified_document_type**: Определи тип документа. **Важно: это значение должно быть ОБЯЗАТЕЛЬНО одним из следующих предопределенных типов**: ["Заявление о назначении пенсии", "Трудовая книжка", "Трудовой договор", "Справка от работодателя", "Справка от госоргана", "Военный билет", "Свидетельство о рождении ребенка", "Документ об уплате взносов", "Справка о зарплате за 60 месяцев до 2002 года", "Документ, подтверждающий особые условия труда", "Документ, подтверждающий педагогический стаж", "Документ, подтверждающий медицинский стаж", "Документ, подтверждающий льготный стаж", "Свидетельство о рождении всех детей", "Документ об инвалидности ребенка", "Справка об инвалидности", "Свидетельство о смерти кормильца", "Документ о родстве с умершим", "Документ об иждивении", "Справка из учебного заведения", "Свидетельство о перемене ФИО", "Документ о месте жительства", "Документ о месте пребывания", "Справка о составе семьи", "Документ, подтверждающий наличие иждивенцев"]. Выбери наиболее подходящий тип из этого списка.
-2.  **extracted_fields**: Извлеки все значимые поля и их значения из документа в виде словаря ключ-значение. Например, для свидетельства о рождении это могут быть ФИО ребенка, дата рождения, место рождения, ФИО родителей и т.д. Для договора - стороны договора, предмет договора, даты, суммы. Для справки - кем выдана, кому, содержание справки. Адаптируй ключи в зависимости от типа документа.
-3.  **multimodal_assessment**: Дай краткую оценку изображения документа: его общее качество, читаемость текста, наличие видимых дефектов или искажений. (например, "Хорошее качество, текст четкий", "Среднее качество, есть небольшие размытия", "Низкое качество, текст трудночитаем").
-4.  **raw_text**: Извлеки весь текст, который ты видишь на документе.
+OTHER_DOCUMENT_EXTRACTION_PROMPT = """
+Проанализируй изображение этого документа.
+1.  Определи тип документа (например, "Справка о доходах", "Свидетельство о рождении", "Военный билет", "Диплом" и т.д.).
+2.  Извлеки все значимые поля и их значения из документа.
+3.  Извлеки весь видимый текст (OCR).
+4.  Дай краткую оценку изображения (например, "качественное фото", "скан с замятыми углами", "текст частично нечитаем").
 
-Вот структура JSON, которую ты должен вернуть:
-```json
+Представь ответ СТРОГО в формате JSON. Пример структуры:
 {
-  "identified_document_type": "...",
+  "identified_document_type": "Справка о доходах 2-НДФЛ",
   "extracted_fields": {
-    "ключ1": "значение1",
-    "ключ2": "значение2"
+    "financial_year": "2023",
+    "employer_name": "ООО 'Ромашка'",
+    "employee_name": "Иванов Иван Иванович",
+    "total_income": "1200000.00"
   },
-  "multimodal_assessment": "...",
-  "raw_text": "..."
+  "raw_text": "Справка о доходах и суммах налога физического лица...\\nООО 'Ромашка'...",
+  "multimodal_assessment": "Качественный скан документа, все поля хорошо читаемы."
 }
-```
-Всегда возвращай все четыре ключа: `identified_document_type`, `extracted_fields`, `multimodal_assessment`, `raw_text`.
-Если какое-то поле не удалось извлечь или оно неприменимо, используй null или пустую строку/словарь для соответствующего значения, но ключ должен присутствовать.
+Убедись, что все поля в JSON присутствуют, даже если они пустые (null или пустой объект/строка).
 """
 
 def _extract_json_from_text(text: str) -> Optional[str]:
@@ -160,28 +191,86 @@ def parse_date_flexible(date_str: Optional[str]) -> Optional[date]:
     logger.warning(f"Не удалось распознать строку с датой '{date_str}' ни одним из форматов. Возвращено None.")
     return None
 
-def calculate_total_work_years(records: List[WorkBookRecordEntry]) -> Optional[float]:
-    if not records:
-        return None
+def _calculate_work_periods_and_total_years_from_events(
+    events: List[WorkBookEventRecord]
+) -> Tuple[List[WorkBookRecordEntry], float]:
+    """
+    Рассчитывает общий стаж и формирует периоды работы на основе списка событий.
+    Возвращает кортеж: (список периодов работы, общий стаж в годах).
+    """
+    if not events:
+        return [], 0.0
 
     total_days = 0
-    current_date_for_calc = date.today() # Используем текущую дату для открытых периодов
-
-    for record in records:
-        if record.date_in:
-            start_date = record.date_in
-            end_date = record.date_out if record.date_out else current_date_for_calc
-
-            if end_date >= start_date: # Проверка корректности дат
-                period_days = (end_date - start_date).days + 1
-                total_days += period_days
-            else:
-                logger.warning(f"Обнаружен некорректный период работы: {start_date} - {end_date}. Пропускается.")
+    work_periods: List[WorkBookRecordEntry] = []
     
-    if total_days > 0:
-        total_years = total_days / 365.25
-        return round(total_years, 1)
-    return 0.0
+    # Сортируем записи по дате, если они еще не отсортированы
+    sorted_events = sorted(events, key=lambda r: r.event_date if r.event_date else date.min)
+
+    active_period_start_date: Optional[date] = None
+    active_period_details: Dict[str, Any] = {}
+
+    for event in sorted_events:
+        if not event.event_date or not event.event_type:
+            logger.warning(f"Пропуск события из-за отсутствия даты или типа: {event}")
+            continue
+
+        # Начало нового периода работы
+        if event.event_type in [WorkBookEventType.RECEPTION, WorkBookEventType.SERVICE, WorkBookEventType.TRANSFER]:
+            # Если уже был активный период, его нужно закрыть датой, предшествующей текущему событию
+            if active_period_start_date:
+                end_date_for_previous = event.event_date - timedelta(days=1)
+                if end_date_for_previous >= active_period_start_date:
+                    period_days = (end_date_for_previous - active_period_start_date).days + 1
+                    total_days += period_days
+                    active_period_details['date_out'] = end_date_for_previous
+                    work_periods.append(WorkBookRecordEntry(**active_period_details))
+                    logger.info(f"Период работы закрыт (переводом/новым приемом): {active_period_start_date} - {end_date_for_previous}. Дней: {period_days}")
+
+            # Начинаем новый активный период
+            active_period_start_date = event.event_date
+            active_period_details = {
+                "date_in": active_period_start_date,
+                "organization": event.organization,
+                "position": event.position,
+                "raw_text": event.raw_text,
+                "document_info": event.document_info
+            }
+            logger.info(f"Начало нового периода работы: {active_period_start_date} ({event.raw_text})")
+
+        # Завершение периода работы
+        elif event.event_type == WorkBookEventType.DISMISSAL and active_period_start_date:
+            end_date = event.event_date
+            if end_date >= active_period_start_date:
+                period_days = (end_date - active_period_start_date).days + 1
+                total_days += period_days
+                
+                # Завершаем и добавляем период
+                active_period_details['date_out'] = end_date
+                # Дополняем текст информацией об увольнении
+                active_period_details['raw_text'] = f"{active_period_details.get('raw_text', '')}\n{event.raw_text or ''}".strip()
+                active_period_details['document_info'] = f"{active_period_details.get('document_info', '')}\n{event.document_info or ''}".strip()
+
+                work_periods.append(WorkBookRecordEntry(**active_period_details))
+                logger.info(f"Завершение периода работы: {end_date}. Добавлено дней: {period_days}")
+            else:
+                logger.warning(f"Обнаружен некорректный период: увольнение {end_date} раньше приема {active_period_start_date}. Пропускается.")
+            
+            # Сбрасываем активный период
+            active_period_start_date = None
+            active_period_details = {}
+
+    # Если после цикла остался незавершенный период (работник не уволен)
+    if active_period_start_date:
+        end_date = date.today()
+        period_days = (end_date - active_period_start_date).days + 1
+        total_days += period_days
+        active_period_details['date_out'] = None # Явно указываем, что период не закрыт
+        work_periods.append(WorkBookRecordEntry(**active_period_details))
+        logger.info(f"Обнаружен незакрытый период работы с {active_period_start_date}. Стаж посчитан до сегодня. Добавлено дней: {period_days}")
+
+    total_years = round(total_days / 365.25, 2) if total_days > 0 else 0.0
+    return work_periods, total_years
 
 async def get_reasoning_and_standardized_type_from_text_llm(
     extracted_data_from_multimodal: Dict[str, Any], 
@@ -396,10 +485,8 @@ async def extract_document_data_from_image(
         prompt = SNILS_EXTRACTION_PROMPT
         data_model = SnilsData
     elif document_type == DocumentTypeToExtract.WORK_BOOK:
-        # Форматируем промпт для трудовой книжки с текущей датой
-        current_date_str = datetime.now().strftime("%d.%m.%Y")
-        prompt = WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE.replace("{current_date_placeholder}", current_date_str)
-        data_model = WorkBookData 
+        prompt = WORK_BOOK_EXTRACTION_PROMPT_TEMPLATE
+        data_model = None 
     elif document_type == DocumentTypeToExtract.OTHER:
         prompt = OTHER_DOCUMENT_EXTRACTION_PROMPT
         data_model = OtherDocumentData # Эта модель будет использоваться для начального извлечения
@@ -465,26 +552,31 @@ async def extract_document_data_from_image(
             return SnilsData(**parsed_multimodal_data)
         
         elif document_type == DocumentTypeToExtract.WORK_BOOK:
-            extracted_records = []
-            raw_records = parsed_multimodal_data.get("records", [])
-            if isinstance(raw_records, list):
-                for rec_data in raw_records:
-                    if isinstance(rec_data, dict):
-                        # Преобразование дат для каждой записи
-                        rec_data['date_in'] = parse_date_flexible(rec_data.get('date_in'))
-                        rec_data['date_out'] = parse_date_flexible(rec_data.get('date_out'))
-                        try:
-                            extracted_records.append(WorkBookRecordEntry(**rec_data))
-                        except Exception as e_rec:
-                            logger.warning(f"Ошибка валидации записи трудовой книжки: {rec_data}. Ошибка: {e_rec}")
+            # 1. Извлекаем "сырые" события, как их вернула LLM
+            raw_events_data = parsed_multimodal_data.get("records", [])
+            if not isinstance(raw_events_data, list):
+                 raise HTTPException(status_code=500, detail=f"LLM вернула для трудовой книжки не список, а {type(raw_events_data)}.")
             
-            # Рассчитываем стаж здесь с помощью Python функции
-            calculated_years_python = calculate_total_work_years(extracted_records)
-            logger.info(f"Work book OCR: Python calculated total years: {calculated_years_python}")
-
+            # 2. Валидируем "сырые" события в нашу модель WorkBookEventRecord
+            validated_events: List[WorkBookEventRecord] = []
+            for event_data in raw_events_data:
+                try:
+                    # Преобразование event_date в объект date перед валидацией
+                    event_data['event_date'] = parse_date_flexible(event_data.get('event_date'))
+                    validated_events.append(WorkBookEventRecord(**event_data))
+                except (ValidationError, TypeError) as e:
+                    logger.warning(f"Ошибка валидации Pydantic для события трудовой книжки: {e}. Данные: {event_data}")
+                    # Пропускаем невалидные записи, но логируем их
+                    continue
+            
+            # 3. Обрабатываем события: создаем периоды работы и считаем стаж
+            processed_periods, calculated_years = _calculate_work_periods_and_total_years_from_events(validated_events)
+            
+            # 4. Собираем итоговый объект WorkBookData
             return WorkBookData(
-                records=extracted_records,
-                calculated_total_years=calculated_years_python 
+                raw_events=validated_events,
+                records=processed_periods,
+                calculated_total_years=calculated_years
             )
 
         elif document_type == DocumentTypeToExtract.OTHER:
@@ -512,4 +604,4 @@ async def extract_document_data_from_image(
         logger.debug(f"Данные, вызвавшие ошибку валидации: {parsed_multimodal_data}")
         raise HTTPException(status_code=500, detail=f"Ошибка обработки данных, полученных от сервиса ({config.OLLAMA_MULTIMODAL_LLM_MODEL_NAME}). Некорректные данные.")
     
-    return parsed_multimodal_data # Возврат по умолчанию, если ни один тип не совпал (не должно случиться) 
+    return parsed_multimodal_data # Возврат по умолчанию, если ни один тип не совпал 

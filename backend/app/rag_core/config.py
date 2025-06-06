@@ -174,7 +174,7 @@ if RERANKER_TOP_N > INITIAL_RETRIEVAL_TOP_K: # Проверяем относит
 # Мультимодальная LLM для анализа изображений (например, паспортов)
 OLLAMA_MULTIMODAL_LLM_MODEL_NAME = "qwen2.5vl:latest" # Убедитесь, что имя правильное для вашей Ollama
 # Таймаут для мультимодальной LLM
-MULTIMODAL_LLM_REQUEST_TIMEOUT = 900.0
+MULTIMODAL_LLM_REQUEST_TIMEOUT = 9000.0
 
 # --- Промпты для RAG ---
 

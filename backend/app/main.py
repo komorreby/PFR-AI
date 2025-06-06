@@ -14,7 +14,7 @@ from .config_loader import load_configuration, get_standard_document_names_from_
 
 from .database import create_db_and_tables, get_db_connection, async_engine, cases_table
 from sqlalchemy.ext.asyncio import AsyncConnection
-from sqlalchemy.sql import select, text
+from sqlalchemy.sql import select, text, delete
 from sqlalchemy.exc import SQLAlchemyError
 from . import crud
 from . import services
@@ -145,13 +145,20 @@ def format_case_description_for_rag_background(
 
     if case_data.pension_type == 'retirement_standard' and case_data.work_experience:
         we = case_data.work_experience
-        parts.append(f"Общий страховой стаж: {we.total_years} лет.")
-        parts.append(f"Пенсионные баллы (ИПК): {case_data.pension_points}.")
+        parts.append(f"Общий страховой стаж: {we.calculated_total_years or 0.0} лет.")
+        parts.append(f"Пенсионные баллы (ИПК): {case_data.pension_points or 'Не указаны'}.")
+        
         if we.records:
-            parts.append("Записи о стаже:")
+            parts.append("Записи о стаже (обработанные периоды):")
             for i, r in enumerate(we.records):
-                special_text = " (Особые условия)" if r.special_conditions else ""
-                parts.append(f"  {i+1}. {r.organization} ({r.start_date.strftime('%d.%m.%Y')} - {r.end_date.strftime('%d.%m.%Y')}), Должность: {r.position}{special_text}.")
+                start_date_str = r.date_in.strftime('%d.%m.%Y') if r.date_in else '?'
+                end_date_str = r.date_out.strftime('%d.%m.%Y') if r.date_out else 'н.в.'
+                period_str = f"{start_date_str} - {end_date_str}"
+                
+                org_info = r.organization or "Организация не указана"
+                pos_info = r.position or "Должность не указана"
+                
+                parts.append(f"  {i+1}. {org_info}, Должность: {pos_info} ({period_str}).")
         else:
             parts.append("Записи о стаже отсутствуют.")
     
@@ -1205,3 +1212,48 @@ async def delete_rag_document(
     return DocumentDeleteResponse(filename=filename, message="Документ успешно удален. Переиндексация запущена в фоновом режиме.")
 
 # --- Конец эндпоинтов для управления документами RAG --- 
+
+@app.delete(
+    "/api/v1/cases/{case_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Удалить дело по ID",
+    description="Удаляет запись о деле из базы данных по его уникальному идентификатору.",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Дело с указанным ID не найдено"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Внутренняя ошибка сервера при удалении дела"}
+    },
+    dependencies=[Depends(auth.require_manager_role)]
+)
+async def delete_case(
+    case_id: int = Path(..., description="Уникальный идентификатор дела для удаления"),
+    db_conn: AsyncConnection = Depends(get_db_connection),
+    current_user_with_role: Dict[str, Any] = Depends(auth.require_manager_role)
+):
+    """
+    Удаляет дело из базы данных. Доступно администраторам и менеджерам.
+    """
+    logger.info(f"User '{current_user_with_role['username']}' (role: {current_user_with_role['role']}) is attempting to delete case ID: {case_id}.")
+
+    # Сначала проверим, существует ли дело
+    check_query = select(cases_table.c.id).where(cases_table.c.id == case_id)
+    existing_case = await db_conn.execute(check_query)
+    if existing_case.scalar_one_or_none() is None:
+        logger.warning(f"Attempted to delete non-existent case with ID: {case_id}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Дело с ID {case_id} не найдено.")
+
+    # Если существует, удаляем
+    delete_query = delete(cases_table).where(cases_table.c.id == case_id)
+    try:
+        result = await db_conn.execute(delete_query)
+        await db_conn.commit()
+        if result.rowcount == 0:
+            # Эта ситуация маловероятна из-за проверки выше, но для надежности
+            logger.error(f"Failed to delete case with ID: {case_id} after existence check.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Не удалось удалить дело с ID {case_id}. Возможно, оно было удалено другим процессом.")
+        
+        logger.info(f"Successfully deleted case with ID: {case_id}")
+        return {"message": "Дело успешно удалено", "case_id": case_id}
+    except Exception as e:
+        await db_conn.rollback()
+        logger.error(f"Error deleting case with ID {case_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Внутренняя ошибка сервера при удалении дела: {e}")

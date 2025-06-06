@@ -74,16 +74,19 @@ class WorkRecord(BaseModel):
             raise ValueError('Дата окончания не может быть раньше даты начала')
         return v
 
-class WorkExperienceRecord(BaseModel):
-    organization: str
-    position: str
-    start_date: date
-    end_date: date
-    special_conditions: Optional[bool] = False
-
 class WorkExperience(BaseModel):
-    total_years: int = Field(ge=0)
-    records: Optional[List[WorkExperienceRecord]] = None
+    """
+    Модель для хранения информации о трудовом стаже.
+    Соответствует структуре WorkBookData, возвращаемой сервисом OCR.
+    """
+    # Список обработанных периодов работы. Основная структура для использования.
+    records: List['WorkBookRecordEntry'] = Field(default_factory=list, description="Список обработанных периодов работы из трудовой книжки")
+    
+    # Исходный список событий от LLM. Полезно для отладки и полноты.
+    raw_events: List['WorkBookEventRecord'] = Field(default_factory=list, description="Исходный список событий, извлеченных LLM")
+    
+    # Рассчитанный стаж
+    calculated_total_years: Optional[float] = Field(None, description="Общий стаж, рассчитанный на основе периодов работы (в годах).")
 
 class OtherDocumentData(BaseModel):
     identified_document_type: Optional[str] = Field(None, description="Тип документа, определенный мультимодальной моделью (например, 'Свидетельство о рождении', 'Договор').")
@@ -91,6 +94,8 @@ class OtherDocumentData(BaseModel):
     extracted_fields: Optional[Dict[str, Any]] = Field(None, description="Извлеченные поля из документа в формате ключ-значение.")
     multimodal_assessment: Optional[str] = Field(None, description="Оценка документа мультимодальной моделью (например, качество, читаемость, полнота).")
     text_llm_reasoning: Optional[str] = Field(None, description="Дополнительный анализ или 'осмысление' от текстовой LLM на основе извлеченных данных.")
+
+    # Можно добавить валидаторы для форматов серии, номера, кода подразделения, если нужно
 
 class CaseDataInput(BaseModel):
     personal_data: PersonalData
@@ -194,18 +199,52 @@ class PassportData(BaseModel):
 
     # Можно добавить валидаторы для форматов серии, номера, кода подразделения, если нужно
 
-class WorkBookRecordEntry(BaseModel):
-    """Одна запись (период работы) из трудовой книжки."""
-    date_in: Optional[date] = Field(None, description="Дата приема на работу")
-    date_out: Optional[date] = Field(None, description="Дата увольнения с работы (если есть)")
+# --- Новые модели для Трудовой книжки на основе событий ---
+
+class WorkBookEventType(str, Enum):
+    """Типы событий в трудовой книжке."""
+    RECEPTION = "ПРИЕМ"
+    DISMISSAL = "УВОЛЬНЕНИЕ"
+    TRANSFER = "ПЕРЕВОД"
+    SERVICE = "СЛУЖБА"
+    OTHER = "ДРУГОЕ"
+
+class WorkBookEventRecord(BaseModel):
+    """Модель для одной записи-события из трудовой книжки, как ее возвращает LLM."""
+    event_date: Optional[date] = Field(None, description="Дата события (прием, увольнение, перевод)")
+    event_type: Optional[WorkBookEventType] = Field(None, description="Тип события")
     organization: Optional[str] = Field(None, description="Наименование организации")
-    position: Optional[str] = Field(None, description="Должность (1-2 слова)")
-    # basis_document_raw: Optional[str] = Field(None, description="Необработанный текст из колонки 'На основании чего внесена запись'") # Опционально, если нужно извлекать
+    position: Optional[str] = Field(None, description="Должность")
+    raw_text: Optional[str] = Field(None, description="Полный текст из колонки 'Сведения о работе'")
+    document_info: Optional[str] = Field(None, description="Информация из колонки 'Документ-основание'")
+
+
+class WorkBookRecordEntry(BaseModel):
+    """
+    Одна запись (период работы) из трудовой книжки.
+    Эта модель используется для хранения обработанных данных в базе и для генерации отчетов.
+    Она создается из последовательности событий WorkBookEventRecord.
+    """
+    date_in: Optional[date] = Field(None, description="Дата начала периода работы")
+    date_out: Optional[date] = Field(None, description="Дата окончания периода работы (если есть)")
+    organization: Optional[str] = Field(None, description="Наименование организации")
+    position: Optional[str] = Field(None, description="Должность")
+    raw_text: Optional[str] = Field(None, description="Агрегированный текст из событий, относящихся к этому периоду")
+    document_info: Optional[str] = Field(None, description="Агрегированная информация о документах-основаниях")
 
 class WorkBookData(BaseModel):
-    """Структурированные данные, извлеченные из трудовой книжки."""
-    records: List[WorkBookRecordEntry] = Field(default_factory=list, description="Список записей о трудовой деятельности")
-    calculated_total_years: Optional[float] = Field(None, description="Общий стаж, рассчитанный на основе извлеченных записей (в годах).")
+    """
+    Структурированные данные, извлеченные из трудовой книжки.
+    Включает в себя как сырые события от LLM, так и обработанные периоды работы.
+    """
+    # Теперь records - это список периодов, а не событий.
+    # Это основная структура для использования в остальной части приложения.
+    records: List[WorkBookRecordEntry] = Field(default_factory=list, description="Список обработанных периодов работы из трудовой книжки")
+    
+    # Сохраняем и сырые события, которые вернула LLM, для отладки и полноты данных.
+    raw_events: List[WorkBookEventRecord] = Field(default_factory=list, description="Исходный список событий, извлеченных LLM из трудовой книжки")
+    
+    calculated_total_years: Optional[float] = Field(None, description="Общий стаж, рассчитанный на основе периодов работы (в годах).")
 
 class FullCaseData(BaseModel):
     id: int

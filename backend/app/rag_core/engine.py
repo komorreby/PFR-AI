@@ -957,18 +957,3 @@ class PensionRAG:
             logger.error(f"Error during forced RAG index rebuild: {e}", exc_info=True)
             # Возможно, стоит здесь пробросить исключение или установить флаг ошибки
             raise RuntimeError(f"Failed to rebuild RAG index: {e}") from e
-
-# --- Пример использования (для локального тестирования) ---
-if __name__ == '__main__':
-    logging.getLogger(__name__).setLevel(logging.DEBUG)
-         
-    logger.info("="*20 + " Starting PensionRAG engine test " + "="*20)
-    try:
-        # Создаем экземпляр двигателя. Инициализация и загрузка/создание индекса происходят здесь.
-        rag_engine = PensionRAG() 
-    except Exception as e:
-        logger.exception("An error occurred during the PensionRAG test run.")
-        print(f"\n--- FATAL ERROR ---")
-        print(f"An critical error occurred during initialization or querying: {e}")
-        
-    logger.info("="*20 + " PensionRAG engine test finished " + "="*20) 
