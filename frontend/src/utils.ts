@@ -40,22 +40,20 @@ export const prepareDataForApi = (formData: CaseFormDataTypeForRHF): CaseDataInp
     return newDoc as OtherDocumentData; // Приводим к OtherDocumentData, если уверены в структуре
   }).filter(Boolean) as OtherDocumentData[] | undefined; // Фильтруем null/undefined и приводим тип
 
+  // Подготовка work_experience
+  const workExperienceData = formData.work_experience ? {
+      ...formData.work_experience,
+      calculated_total_years: formData.work_experience.calculated_total_years ?? null,
+      records: formData.work_experience.records?.map(r => ({
+          ...r,
+          special_conditions: r.special_conditions ?? false
+      })) ?? null
+  } : null;
+
   const dataToSend: CaseDataInput = {
     pension_type: formData.pension_type || '', // Обеспечиваем наличие значения
     personal_data: apiPersonalData,
-    work_experience: formData.work_experience 
-        ? { // Обеспечиваем структуру WorkExperience
-            total_years: formData.work_experience.total_years ?? null,
-            records: formData.work_experience.records?.map(r => ({
-                organization: r.organization,
-                position: r.position,
-                date_in: r.date_in,
-                date_out: r.date_out,
-                // special_conditions - поле только для UI, не отправляем его
-            })) ?? null,
-            raw_events: formData.work_experience.raw_events ?? null
-          } 
-        : null,
+    work_experience: workExperienceData,
     pension_points: formData.pension_points || null,
     benefits: (formData.benefits || '').split(',').map((s: string) => s.trim()).filter(Boolean),
     // Для submitted_documents теперь используется submitted_documents, а не documents

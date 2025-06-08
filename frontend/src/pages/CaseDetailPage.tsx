@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { Typography, Spin, Alert, Descriptions, Tag, Collapse, Button, Space, Modal, message, List, Card, Divider } from 'antd';
 import { getFullCaseData, downloadCaseDocument } from '../services/apiClient';
 import { FullCaseData, ApiError, WorkBookRecordEntry, OtherDocumentData, PersonalData, DisabilityInfo, WorkExperience } from '../types';
-import { ArrowLeftOutlined, DownloadOutlined, InfoCircleOutlined, UserOutlined, IdcardOutlined, SolutionOutlined, PaperClipOutlined, WarningOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import { ArrowLeftOutlined, DownloadOutlined, InfoCircleOutlined, UserOutlined, IdcardOutlined, SolutionOutlined, PaperClipOutlined, WarningOutlined, ExclamationCircleFilled, ScheduleOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -215,7 +215,7 @@ const CaseDetailPage: React.FC = () => {
         {caseData.work_experience && caseData.work_experience.records && caseData.work_experience.records.length > 0 && (
           <Panel header={<Text strong><SolutionOutlined /> Трудовой стаж</Text>} key="work">
             <Descriptions bordered column={1} size="small" style={{ marginBottom: '16px' }}>
-                 <Descriptions.Item label="Общий заявленный стаж (лет)">{caseData.work_experience.total_years ?? '-'}</Descriptions.Item>
+                 <Descriptions.Item label="Общий страховой стаж (лет)">{caseData.work_experience.calculated_total_years ?? '-'}</Descriptions.Item>
             </Descriptions>
             <Title level={5} style={{marginTop: '16px', marginBottom: '8px'}}>Периоды работы:</Title>
             <List

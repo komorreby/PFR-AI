@@ -46,9 +46,9 @@ export interface WorkBookRecordEntry {
 
 // Новая модель для трудового стажа, консистентная с бэкендом
 export interface WorkExperience {
-  raw_events?: WorkBookEventRecord[] | null;
+  calculated_total_years?: number | null;
   records?: WorkBookRecordEntry[] | null;
-  total_years?: number | null;
+  raw_events?: WorkBookEventRecord[] | null;
 }
 
 export interface OtherDocumentData {

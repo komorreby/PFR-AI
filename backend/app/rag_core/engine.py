@@ -795,7 +795,14 @@ class PensionRAG:
 
             case_details_str += f"Тип запрашиваемой пенсии: {pension_type_display}.\n"
             case_details_str += f"Возраст заявителя: {age} лет.\n"
-            case_details_str += f"Общий стаж: {case_data.work_experience.total_years if case_data.work_experience else 'не указан'} лет.\n"
+            if case_data.work_experience:
+                # Используем новое поле calculated_total_years
+                total_years_val = case_data.work_experience.calculated_total_years
+                total_years_str = f"{total_years_val:.1f}" if total_years_val is not None else "не указан"
+                case_details_str += f"Общий стаж: {total_years_str} лет.\\n"
+                
+                if case_data.work_experience.records:
+                    case_details_str += "Периоды работы:\\n"
             case_details_str += f"Пенсионные баллы (ИПК): {case_data.pension_points if case_data.pension_points is not None else 'не указаны'}.\n"
             if case_data.benefits:
                 case_details_str += f"Заявленные льготы: {', '.join(case_data.benefits)}.\n"

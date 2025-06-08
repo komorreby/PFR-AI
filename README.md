@@ -151,22 +151,16 @@
 
 ## Технологический стек
 
-### Фронтенд
+В проекте используется современный стек технологий для frontend и backend разработки, а также для реализации RAG-системы.
 
-*   Next.js, React
-*   Daisy UI, Tailwind CSS
-*   Zustand
-*   TypeScript
+Подробный перечень всех используемых библиотек, фреймворков и инструментов доступен в файле [TECHNOLOGIES.md](./TECHNOLOGIES.md).
 
-### Бэкенд
+### Ключевые технологии
 
-*   FastAPI (Python 3.10+)
-*   PyTorch, scikit-learn
-*   LlamaIndex
-*   Neo4j (граф знаний пенсионного законодательства)
-*   Языковые модели:
-    *   Mistral 7B (для анализа соответствия законодательству)
-    *   Bert-подобная модель (для классификации ошибок в пенсионном деле)
+*   **Frontend:** React, TypeScript, Vite, Ant Design
+*   **Backend:** Python, FastAPI, SQLAlchemy
+*   **RAG и AI:** LlamaIndex, Transformers, PyTorch, Ollama
+*   **Базы данных:** neo4j (векторная), SQLite (реляционная)
 
 ## Архитектура системы
 

@@ -5,45 +5,44 @@ from datetime import datetime, timedelta
 import sqlite3
 
 from .database import cases_table, async_engine, ocr_tasks_table, users_table
-from .models import CaseDataInput, UserCreate # Нужны для аннотации типов
+from .models import CaseDataInput, UserCreate, OtherDocumentData, WorkExperience, DisabilityInfo, PersonalData # Нужны для аннотации типов
 from typing import List, Dict, Any, Optional, Union
 from .auth import get_password_hash # Импортируем get_password_hash
 
+# Вспомогательная функция для безопасного дампа Pydantic моделей
+def pydantic_to_json_str(data: Optional[Union[Dict, List, PersonalData, WorkExperience, DisabilityInfo, OtherDocumentData]]) -> Optional[str]:
+    if data is None:
+        return None
+    if isinstance(data, list):
+        # Обрабатываем список моделей
+        return json.dumps([item.model_dump() if hasattr(item, 'model_dump') else item for item in data])
+    if hasattr(data, 'model_dump'):
+        # Обрабатываем одну модель
+        return json.dumps(data.model_dump())
+    # Для обычных словарей
+    return json.dumps(data)
+
 async def create_case(
     conn: AsyncConnection,
-    personal_data: Dict[str, Any],
-    errors: List[Dict[str, Any]],
-    pension_type: str,
-    disability: Optional[Dict[str, Any]] = None,
-    work_experience: Optional[Dict[str, Any]] = None,
-    pension_points: Optional[float] = None,
-    benefits: Optional[List[str]] = None,
-    submitted_documents: Optional[List[str]] = None,
-    has_incorrect_document: Optional[bool] = False,
-    final_status: Optional[str] = None,
-    final_explanation: Optional[str] = None,
-    rag_confidence: Optional[float] = None,
-    other_documents_extracted_data: Optional[List[Dict[str, Any]]] = None
+    case_data: CaseDataInput
 ):
     """Сохраняет данные дела, ошибки, тип пенсии и данные об инвалидности."""
     insert_stmt = insert(cases_table).values(
-        personal_data=json.dumps(personal_data),
-        errors=json.dumps(errors),
-        pension_type=pension_type,
-        disability=json.dumps(disability) if disability else None,
-        work_experience=json.dumps(work_experience) if work_experience else None,
-        pension_points=pension_points,
-        benefits=json.dumps(benefits) if benefits else None,
-        documents=json.dumps(submitted_documents) if submitted_documents else None,  # Сохраняем как documents в БД для обратной совместимости
-        has_incorrect_document=has_incorrect_document,
-        final_status=final_status,
-        final_explanation=final_explanation,
-        rag_confidence=rag_confidence,
-        other_documents_extracted_data=json.dumps(other_documents_extracted_data) if other_documents_extracted_data else None
+        personal_data=pydantic_to_json_str(case_data.personal_data),
+        errors=json.dumps([]), # Ошибки теперь должны обрабатываться на другом уровне
+        pension_type=case_data.pension_type,
+        disability=pydantic_to_json_str(case_data.disability),
+        work_experience=pydantic_to_json_str(case_data.work_experience),
+        pension_points=case_data.pension_points,
+        benefits=json.dumps(case_data.benefits) if case_data.benefits else None,
+        documents=json.dumps(case_data.submitted_documents) if case_data.submitted_documents else None,
+        has_incorrect_document=case_data.has_incorrect_document,
+        final_status="PROCESSING", # Начальный статус
+        other_documents_extracted_data=pydantic_to_json_str(case_data.other_documents_extracted_data)
     )
     result = await conn.execute(insert_stmt)
-    await conn.commit() # Явно коммитим транзакцию
-    return result.lastrowid # Возвращаем ID вставленной записи
+    await conn.commit()
+    return result.lastrowid
 
 async def get_cases(conn: AsyncConnection, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
     """Получает список дел из базы данных."""

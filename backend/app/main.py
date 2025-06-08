@@ -785,48 +785,53 @@ async def submit_case_for_processing(
     conn: AsyncConnection = Depends(get_db_connection),
     current_user_with_role: Dict[str, Any] = Depends(auth.require_manager_role)
 ):
-    logger.info(f"User '{current_user_with_role['username']}' (role: {current_user_with_role['role']}) submitted case for processing: type {case_data.pension_type}")
+    """
+    Принимает данные дела, сохраняет их в БД, 
+    и запускает фоновую задачу для RAG-анализа.
+    """
+    logger.info(f"User '{current_user_with_role.get('username')}' (role: {current_user_with_role.get('role')}) submitted case for processing: type {case_data.pension_type}")
     logger.info(f"Получен запрос на создание и обработку дела для типа пенсии: {case_data.pension_type}")
-    personal_data_dict = case_data.personal_data.model_dump(mode='json')
-    disability_dict = case_data.disability.model_dump(mode='json') if case_data.disability else None
-    work_experience_dict = case_data.work_experience.model_dump(mode='json') if case_data.work_experience else {}
     
-    other_docs_data = case_data.other_documents_extracted_data
+    rag_engine = request.app.state.rag_engine
+    if not rag_engine:
+        logger.error("RAG engine is not available.")
+        raise HTTPException(status_code=503, detail="Сервис анализа временно недоступен.")
 
-    async with conn.begin(): 
-        case_id = await crud.create_case(
-            conn=conn,
-            personal_data=personal_data_dict,
-            errors=[], 
-            pension_type=case_data.pension_type,
-            disability=disability_dict,
-            work_experience=work_experience_dict,
-            pension_points=case_data.pension_points,
-            benefits=case_data.benefits,
-            submitted_documents=case_data.submitted_documents,
-            has_incorrect_document=case_data.has_incorrect_document,
-            final_status="PROCESSING",
-            final_explanation="Дело принято и находится в процессе автоматической обработки.",
-            rag_confidence=None, 
-            other_documents_extracted_data=other_docs_data
+    try:
+        # 1. Создание записи в БД. Теперь передаем весь объект case_data.
+        case_id = await crud.create_case(conn, case_data)
+        logger.info(f"Дело успешно создано в БД с ID: {case_id}")
+
+        # 2. Подготовка и запуск фоновой задачи
+        # Преобразуем Pydantic модель в словарь для передачи в фоновую задачу
+        case_data_dict = case_data.model_dump(mode='json')
+
+        background_tasks.add_task(
+            process_case_in_background,
+            case_id,
+            case_data_dict,
+            rag_engine,
+            request.app.state.pension_types_config,
+            request.app.state.document_requirements_config
         )
-    logger.info(f"Создана начальная запись для дела case_id: {case_id} со статусом PROCESSING")
+        logger.info(f"Фоновая задача для обработки дела #{case_id} добавлена.")
+        
+        # 3. Возвращаем ответ клиенту
+        return ProcessOutput(
+            case_id=case_id,
+            final_status="PROCESSING",
+            explanation="Ваше дело принято и поставлено в очередь на обработку. Вы можете отслеживать его статус на странице истории.",
+        )
 
-    background_tasks.add_task(
-        process_case_in_background,
-        case_id=case_id,
-        case_data_dict=case_data.model_dump(mode='json'), 
-        rag_engine=request.app.state.rag_engine,
-        pension_types_config=request.app.state.pension_types_config, 
-        document_requirements_config=request.app.state.document_requirements_config 
-    )
-    logger.info(f"Запущена фоновая задача для обработки case_id: {case_id}")
-
-    return ProcessOutput(
-        case_id=case_id,
-        final_status="PROCESSING",
-        explanation="Дело принято в обработку. Результаты будут доступны позже."
-    )
+    except Exception as e:
+        logger.error(f"Произошла ошибка при создании дела или запуске фоновой задачи: {e}", exc_info=True)
+        # Откатывать транзакцию не нужно, т.к. `create_case` делает commit. 
+        # Если ошибка произошла после, запись в БД останется со статусом PROCESSING, 
+        # что позволит позже ее отследить и, возможно, перезапустить.
+        raise HTTPException(
+            status_code=500,
+            detail=f"Внутренняя ошибка сервера при обработке вашего запроса: {str(e)}"
+        )
 
 @app.get(
     "/api/v1/cases/{case_id}/status", 

@@ -31,36 +31,40 @@ interface WorkExperienceStepProps {
 }
 
 const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({ 
-    control, fields, append, remove, getValues, form
+    control, errors, fields, append, remove, getValues, form
 }) => {
     const today = new Date();
 
     return (
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
             <Title level={4} style={{ marginBottom: '24px', textAlign: 'center' }}>Трудовой стаж</Title>
-            <Form.Item
-                label="Общий подтвержденный стаж (лет)"
-                name={["work_experience", "total_years"]}
-                rules={[
-                    { required: true, message: "Общий стаж обязателен" },
-                    { type: 'number', min: 0, message: "Стаж не может быть отрицательным" },
-                ]}
-            >
-                <Controller
-                    name="work_experience.total_years"
-                    control={control}
-                    render={({ field }) => (
-                        <InputNumber 
-                            {...field}
-                            min={0} 
-                            precision={1} 
-                            step={0.5}
-                            style={{ width: '100%' }}
-                            onChange={(value) => field.onChange(value)}
+            <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                    <Form.Item
+                        label="Общий страховой стаж (лет)"
+                        help={errors.work_experience?.calculated_total_years?.message || "Рассчитывается автоматически из записей или вводится вручную."}
+                        validateStatus={errors.work_experience?.calculated_total_years ? 'error' : ''}
+                    >
+                        <Controller
+                            name="work_experience.calculated_total_years"
+                            control={control}
+                            rules={{
+                                min: { value: 0, message: 'Стаж не может быть отрицательным' },
+                                // valueAsNumber is not a rule, InputNumber handles the value type
+                            }}
+                            render={({ field }) => (
+                                <InputNumber 
+                                    {...field} 
+                                    style={{ width: '100%' }} 
+                                    placeholder="Например, 15.5"
+                                    onChange={(value) => field.onChange(value)} // Ensure value is passed correctly
+                                    value={typeof field.value === 'number' ? field.value : null} // Ensure value is a number or null
+                                />
+                            )}
                         />
-                    )}
-                />
-            </Form.Item>
+                    </Form.Item>
+                </Col>
+            </Row>
 
             <AntDivider style={{ margin: '24px 0' }}/>
             <Title level={5} style={{ marginBottom: '16px' }}>Записи о трудовой деятельности</Title>

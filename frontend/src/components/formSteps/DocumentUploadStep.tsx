@@ -146,15 +146,22 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                 setValue('work_experience.raw_events', [...currentEvents, ...wbData.raw_events], { shouldDirty: true });
             }
             
-            // Обновляем общий стаж. Это значение будет перезаписано каждым новым файлом,
-            // что является известным ограничением. Пользователь сможет скорректировать его на следующем шаге.
+            // После успешного получения данных из ТК, обновляем поля react-hook-form
             if (wbData.calculated_total_years !== null && wbData.calculated_total_years !== undefined) {
-                setValue('work_experience.total_years', wbData.calculated_total_years, { shouldValidate: true, shouldDirty: true });
+                setValue('work_experience.calculated_total_years', wbData.calculated_total_years, { shouldValidate: true, shouldDirty: true });
             }
+            if (wbData.records) {
+                // Заменяем существующие записи на новые из OCR
+                setValue('work_experience.records', wbData.records, { shouldValidate: true, shouldDirty: true });
+            }
+            if (wbData.raw_events) {
+                setValue('work_experience.raw_events', wbData.raw_events, { shouldValidate: true, shouldDirty: true });
+            }
+            // Триггерим валидацию, чтобы UI обновился
+            trigger('work_experience.calculated_total_years');
             trigger('work_experience.records');
-            trigger('work_experience.total_years');
-
-            updateMessage = `Данные из файла трудовой книжки ${file?.name || ''.trim()} добавлены в форму.`;
+            
+            updateMessage = `Данные из трудовой книжки успешно загружены и обработаны.`;
         }
 
         if (fieldsSetForTrigger) { 

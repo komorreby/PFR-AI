@@ -77,8 +77,9 @@ const initialRHFValues: CaseFormDataTypeForRHF = {
   },
   disability: null,
   work_experience: {
-    total_years: 0,
+    calculated_total_years: 0,
     records: [],
+    raw_events: [],
   },
   pension_points: null,
   benefits: '', // Строка тегов
@@ -242,7 +243,7 @@ const HomePage: React.FC = () => {
           form={antdForm}
         />
       ),
-      fieldsToValidate: ['work_experience.total_years'],
+      fieldsToValidate: ['work_experience.calculated_total_years'],
     },
     {
       title: 'Инвалидность',
@@ -353,8 +354,9 @@ const HomePage: React.FC = () => {
                         : null,
         work_experience: data.work_experience 
             ? {
-                total_years: data.work_experience.total_years || 0,
+                calculated_total_years: data.work_experience.calculated_total_years || 0,
                 records: data.work_experience.records || [],
+                raw_events: data.work_experience.raw_events || [],
               }
             : null,
         pension_points: data.pension_points || null,

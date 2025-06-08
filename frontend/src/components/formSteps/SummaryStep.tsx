@@ -42,7 +42,7 @@ const renderSimpleList = (itemsString: string | undefined | null, title: string)
 const SummaryStep: React.FC<SummaryStepProps> = ({ formData, onEditStep }) => {
   const { 
     personal_data = {}, 
-    work_experience = { total_years: 0, records: [], raw_events: [] },
+    work_experience = { calculated_total_years: 0, records: [], raw_events: [] },
     pension_points,
     benefits,
     // documents, // Это поле, вероятно, было для старой структуры. В CaseFormDataTypeForRHF есть submitted_documents
@@ -93,8 +93,10 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ formData, onEditStep }) => {
         <>
           <Divider />
           <Descriptions bordered column={1} title={<><ProfileOutlined style={{marginRight: 8}}/>Трудовой стаж</>}>
-            <Descriptions.Item label="Заявленный общий стаж">
-              {work_experience.total_years !== null && work_experience.total_years !== undefined ? `${work_experience.total_years} лет` : 'Не указан'}
+            <Descriptions.Item label="Общий страховой стаж">
+              {work_experience.calculated_total_years !== null && work_experience.calculated_total_years !== undefined 
+                ? `${work_experience.calculated_total_years} лет` 
+                : 'Не указан'}
             </Descriptions.Item>
             {work_experience.records && work_experience.records.length > 0 ? (
               <Descriptions.Item label="Записи о стаже" span={1}>

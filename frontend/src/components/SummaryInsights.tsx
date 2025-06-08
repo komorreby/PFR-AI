@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Alert, Space, Button } from 'antd';
 import { CaseFormDataTypeForRHF } from '../types';
 import {
@@ -7,6 +7,7 @@ import {
     WarningOutlined,
     CloseCircleOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 
 interface InsightMessage {
     text: string;
@@ -48,7 +49,7 @@ const SummaryInsights: React.FC<SummaryInsightsProps> = ({ formData, onEditStep 
 
     // Правило 3: Потенциальные несоответствия для типа пенсии
     if (formData.pension_type === 'retirement_standard') {
-        const workYears = formData.work_experience?.total_years;
+        const workYears = formData.work_experience?.calculated_total_years;
         const points = formData.pension_points;
         if ((workYears !== null && workYears !== undefined && workYears < 15) || (points !== null && points !== undefined && points < 10)) { // Примерные пороговые значения
             insights.push({
@@ -87,7 +88,6 @@ const SummaryInsights: React.FC<SummaryInsightsProps> = ({ formData, onEditStep 
         displayedInsights = warnings; // Или только предупреждения, если нет ошибок
     }
 
-
     // Правило 5: Все хорошо (если нет других сообщений)
     if (insights.length === 0) {
         insights.push({
@@ -96,7 +96,6 @@ const SummaryInsights: React.FC<SummaryInsightsProps> = ({ formData, onEditStep 
         });
         displayedInsights = insights;
     }
-
 
     if (displayedInsights.length === 0) {
         return null; // Не отображаем ничего, если нет релевантных подсказок
