@@ -107,7 +107,3 @@ def load_documents(directory_path: str) -> List[Document]:
 
     print(f"\nОбработка завершена. Загружено {len(all_documents)} документов LlamaIndex из '{directory_path}'.")
     return all_documents
-
-# В будущем здесь будет логика:
-# - Разбиения на чанки (chunking)
-# - Возможно, предварительной обработки текста

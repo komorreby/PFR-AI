@@ -64,6 +64,7 @@ cover/
 
 # IDE / Editor
 .vscode/
+.cursor
 .idea/
 *.swp
 *~
