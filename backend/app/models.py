@@ -6,6 +6,8 @@ import logging
 import re
 import json
 
+logger = logging.getLogger(__name__)
+
 # Enum для формата документа
 class DocumentFormat(str, Enum):
     pdf = "pdf"
@@ -148,8 +150,6 @@ class SnilsData(BaseModel):
     def format_snils(cls, v: Optional[str]):
         if v is None:
             return None
-        # Импортируем logger здесь, чтобы избежать проблем на уровне модуля, если он не настроен глобально
-        logger = logging.getLogger(__name__) # Используем имя текущего модуля для логгера
         # Удаляем все нецифровые символы
         cleaned = "".join(filter(str.isdigit, v))
         # Проверяем, что осталось 11 цифр

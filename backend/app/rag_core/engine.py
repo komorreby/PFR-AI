@@ -1,10 +1,10 @@
 # backend/app/rag_core/engine.py
-import asyncio # <--- Добавлено
+import asyncio
 import os
 import glob
 import json
 import logging
-import re # <--- ДОБАВЛЕН ИМПОРТ
+import re
 from typing import List, Optional, Dict, Any, Tuple, Set
 from datetime import datetime, date
 
@@ -28,7 +28,7 @@ from cachetools import TTLCache # Импорт для кэширования
 
 from . import config
 from . import document_parser
-from ..graph_builder import KnowledgeGraphBuilder # Позже заменим на GraphService
+from ..graph_builder import KnowledgeGraphBuilder 
 from .document_parser import extract_graph_data_from_document
 
 logging.basicConfig(level=config.LOGGING_LEVEL, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

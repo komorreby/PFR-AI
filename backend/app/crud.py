@@ -13,14 +13,36 @@ from .auth import get_password_hash # Импортируем get_password_hash
 def pydantic_to_json_str(data: Optional[Union[Dict, List, PersonalData, WorkExperience, DisabilityInfo, OtherDocumentData]]) -> Optional[str]:
     if data is None:
         return None
+    # 1. Если это Pydantic модель (не список), используем model_dump_json()
+    if hasattr(data, 'model_dump_json') and not isinstance(data, list):
+        return data.model_dump_json()
+
+    # 2. Если это список, нужно обработать каждый элемент
     if isinstance(data, list):
-        # Обрабатываем список моделей
-        return json.dumps([item.model_dump() if hasattr(item, 'model_dump') else item for item in data])
-    if hasattr(data, 'model_dump'):
-        # Обрабатываем одну модель
-        return json.dumps(data.model_dump())
-    # Для обычных словарей
-    return json.dumps(data)
+        processed_list = []
+        for item in data:
+            # Если элемент списка - это Pydantic модель, берем ее dict-представление
+            if hasattr(item, 'model_dump'):
+                processed_list.append(item.model_dump())
+            else: # Иначе оставляем как есть (для списков строк, чисел и т.д.)
+                processed_list.append(item)
+        
+        # Теперь сериализуем весь список, используя кастомный обработчик дат
+        def json_serial(obj):
+            if isinstance(obj, date):
+                return obj.isoformat()
+            raise TypeError(f"Type {type(obj)} not serializable")
+
+        return json.dumps(processed_list, default=json_serial)
+
+    # 3. Для обычных словарей и других типов, которые не являются Pydantic моделями
+    # Используем стандартный json.dumps с обработчиком дат на всякий случай
+    def json_serial_default(obj):
+        if isinstance(obj, date):
+            return obj.isoformat()
+        raise TypeError(f"Type {type(obj)} not serializable")
+        
+    return json.dumps(data, default=json_serial_default)
 
 async def create_case(
     conn: AsyncConnection,

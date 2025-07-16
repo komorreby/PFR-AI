@@ -341,6 +341,12 @@ def _generate_pdf_report(
     buffer.seek(0)
     return buffer
 
+def add_field(doc: Document, label: str, value: Any):
+    """Вспомогательная функция для добавления поля 'метка: значение' в DOCX."""
+    p = doc.add_paragraph()
+    p.add_run(label + " ").bold = True
+    p.add_run(str(value))
+
 def _generate_docx_report(
     case_details: Dict[str, Any],
     pension_types_list_config: List[PensionTypeInfo],
@@ -424,6 +430,7 @@ def _generate_docx_report(
     disability_info = case_details.get("disability")
     if disability_info:
         p_disability = doc.add_heading("3.1. Сведения об инвалидности", level=3)
+        add_field(doc, "Группа инвалидности:", disability_info.get('group', 'Не указана'))
         dis_date = disability_info.get('date')
         dis_date_str = dis_date.strftime("%d.%m.%Y") if isinstance(dis_date, datetime) or isinstance(dis_date, date) else str(dis_date or 'Не указана')
         add_field(doc, "Дата установления:", dis_date_str)
